@@ -21,18 +21,26 @@
  *   showCloseButton
  *   onClose={() => navigation.goBack()}
  * >
- *   {// Form content here //}
+ *   <TextField label="Email" />
+ *   <Button title="Sign In" />
  * </AuthScreenLayout>
  * ```
  */
 
-import { ReactNode } from "react"
-import { View, KeyboardAvoidingView, Platform, useWindowDimensions, ViewStyle } from "react-native"
+import { Children, ReactNode } from "react"
+import {
+  View,
+  KeyboardAvoidingView,
+  Platform,
+  useWindowDimensions,
+  ViewStyle,
+  TouchableOpacity,
+} from "react-native"
 import { LinearGradient } from "expo-linear-gradient"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
+import { Ionicons } from "@expo/vector-icons"
 import { StyleSheet, useUnistyles } from "react-native-unistyles"
 
-import { IconButton } from "../IconButton"
 import { ScrollView } from "../ScrollView"
 import { Text } from "../Text"
 
@@ -70,7 +78,7 @@ export interface AuthScreenLayoutProps {
 // =============================================================================
 
 const MODAL_MAX_WIDTH = 480
-const BREAKPOINT_LARGE = 768
+const BREAKPOINT_TABLET = 768
 
 // =============================================================================
 // COMPONENT
@@ -92,9 +100,14 @@ export const AuthScreenLayout = ({
   const { theme } = useUnistyles()
   const insets = useSafeAreaInsets()
   const { width: windowWidth } = useWindowDimensions()
+  // Web can complain if a View receives a raw string/number child. Normalize children so
+  // any stray whitespace or primitive nodes are filtered out before rendering.
+  const safeChildren = Children.toArray(children).filter(
+    (child) => typeof child !== "string" && typeof child !== "number",
+  )
 
   // Responsive layout
-  const isLargeScreen = windowWidth > BREAKPOINT_LARGE
+  const isTabletOrLarger = windowWidth >= BREAKPOINT_TABLET
   const isWeb = Platform.OS === "web"
 
   // Content wrapper - either ScrollView or View
@@ -102,10 +115,11 @@ export const AuthScreenLayout = ({
 
   const contentWrapperProps = scrollable
     ? {
-        style: isWeb ? { flex: 1 } : undefined,
+        style: [styles.scrollArea, isWeb && styles.scrollAreaWeb],
         contentContainerStyle: [
           styles.scrollContent,
-          { paddingBottom: Math.max(insets.bottom, 40) },
+          centerContent && styles.centeredContent,
+          { paddingBottom: Math.max(insets.bottom, theme.spacing.xl) },
         ],
         keyboardShouldPersistTaps: "handled" as const,
         showsVerticalScrollIndicator: false,
@@ -113,16 +127,10 @@ export const AuthScreenLayout = ({
     : {
         style: [
           styles.staticContent,
-          { paddingBottom: Math.max(insets.bottom, 40) },
           centerContent && styles.centeredContent,
+          { paddingBottom: Math.max(insets.bottom, theme.spacing.xl) },
         ],
       }
-
-  const modalCardWidthStyle = isWeb
-    ? isLargeScreen
-      ? styles.modalCardMaxWidth
-      : styles.modalCardFullWidth
-    : undefined
 
   return (
     <View style={styles.container}>
@@ -130,69 +138,92 @@ export const AuthScreenLayout = ({
         colors={[theme.colors.gradientStart, theme.colors.gradientMiddle, theme.colors.gradientEnd]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={[styles.gradient, isWeb && isLargeScreen && styles.gradientCentered]}
+        style={styles.gradient}
       >
-        <View
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
           style={[
-            styles.safeArea,
-            isWeb && styles.safeAreaWeb,
-            isWeb && isLargeScreen && styles.safeAreaCentered,
+            styles.keyboardView,
+            isWeb && isTabletOrLarger && styles.keyboardViewCentered,
           ]}
         >
-          <KeyboardAvoidingView
-            behavior={Platform.OS === "ios" ? "padding" : "height"}
-            style={styles.keyboardView}
+          <View
+            style={[
+              styles.modalCard,
+              // On mobile (non-centered), give the card flex to expand
+              !isWeb && styles.modalCardMobile,
+              isWeb && isTabletOrLarger && styles.modalCardCentered,
+              { paddingBottom: Math.max(insets.bottom, theme.spacing.xl) },
+              cardStyle,
+            ]}
           >
-            <View
-              style={[
-                styles.modalCard,
-                isWeb && styles.modalCardWeb,
-                modalCardWidthStyle,
-                cardStyle,
-              ]}
-            >
-              <ContentWrapper {...contentWrapperProps}>
-                {/* Close Button (top right) */}
-                {showCloseButton && onClose && (
-                  <View style={styles.closeButton}>
-                    <IconButton icon="close" variant="ghost" size="md" onPress={onClose} />
+            <ContentWrapper {...contentWrapperProps}>
+              {/* Close Button (top right) */}
+              {showCloseButton && onClose && (
+                <TouchableOpacity
+                  style={styles.closeButton}
+                  onPress={onClose}
+                  activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel="Close"
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <View style={styles.closeButtonCircle}>
+                    <Ionicons
+                      name="close"
+                      size={24}
+                      color={theme.colors.foreground}
+                    />
                   </View>
-                )}
+                </TouchableOpacity>
+              )}
 
-                {/* Back Button (top left) */}
-                {showBackButton && onBack && (
-                  <View style={styles.backButton}>
-                    <IconButton icon="arrow-back" variant="ghost" size="md" onPress={onBack} />
+              {/* Back Button (top left) */}
+              {showBackButton && onBack && (
+                <TouchableOpacity
+                  style={styles.backButton}
+                  onPress={onBack}
+                  activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel="Go back"
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <View style={styles.backButtonCircle}>
+                    <Ionicons
+                      name="arrow-back"
+                      size={24}
+                      color={theme.colors.foreground}
+                    />
                   </View>
-                )}
+                </TouchableOpacity>
+              )}
 
-                {/* Header Icon */}
-                {headerIcon && (
-                  <View style={styles.headerIconContainer}>
-                    <Text style={styles.headerIcon}>{headerIcon}</Text>
-                  </View>
-                )}
+              {/* Header Icon */}
+              {headerIcon && (
+                <View style={styles.headerIconContainer}>
+                  <Text style={styles.headerIcon}>{headerIcon}</Text>
+                </View>
+              )}
 
-                {/* Title */}
-                {title && (
-                  <Text size="3xl" weight="bold" style={styles.title}>
-                    {title}
-                  </Text>
-                )}
+              {/* Title */}
+              {title && (
+                <Text size="3xl" weight="bold" style={styles.title}>
+                  {title}
+                </Text>
+              )}
 
-                {/* Subtitle */}
-                {subtitle && (
-                  <Text color="secondary" style={styles.subtitle}>
-                    {subtitle}
-                  </Text>
-                )}
+              {/* Subtitle */}
+              {subtitle && (
+                <Text color="secondary" style={styles.subtitle}>
+                  {subtitle}
+                </Text>
+              )}
 
-                {/* Content */}
-                <View style={styles.content}>{children}</View>
-              </ContentWrapper>
-            </View>
-          </KeyboardAvoidingView>
-        </View>
+              {/* Content */}
+              <View style={styles.content}>{safeChildren}</View>
+            </ContentWrapper>
+          </View>
+        </KeyboardAvoidingView>
       </LinearGradient>
     </View>
   )
@@ -205,13 +236,21 @@ export const AuthScreenLayout = ({
 const styles = StyleSheet.create((theme) => ({
   container: {
     flex: 1,
+    backgroundColor: theme.colors.background,
     ...(Platform.OS === "web" && {
       minHeight: "100vh" as unknown as number,
       height: "100vh" as unknown as number,
-      width: "100vw" as unknown as number,
+      width: "100%" as unknown as number,
     }),
   },
   gradient: {
+    flex: 1,
+    ...(Platform.OS === "web" && {
+      height: "100vh" as unknown as number,
+      width: "100%" as unknown as number,
+    }),
+  },
+  keyboardView: {
     flex: 1,
     justifyContent: "flex-end",
     ...(Platform.OS === "web" && {
@@ -220,28 +259,10 @@ const styles = StyleSheet.create((theme) => ({
       width: "100%" as unknown as number,
     }),
   },
-  gradientCentered: {
+  keyboardViewCentered: {
     justifyContent: "center",
     alignItems: "center",
-  },
-  safeArea: {
-    width: "100%",
-  },
-  safeAreaWeb: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "flex-end",
-    width: "100%",
-  },
-  safeAreaCentered: {
-    justifyContent: "center",
-    paddingHorizontal: 40,
-  },
-  keyboardView: {
-    width: "100%",
-    ...(Platform.OS === "web" && {
-      alignItems: "center",
-    }),
+    paddingHorizontal: theme.spacing.lg,
   },
   modalCard: {
     backgroundColor: theme.colors.card,
@@ -250,47 +271,74 @@ const styles = StyleSheet.create((theme) => ({
     paddingHorizontal: theme.spacing.lg,
     paddingTop: theme.spacing.xl,
     ...theme.shadows.xl,
-  },
-  modalCardWeb: {
-    borderRadius: theme.radius["3xl"],
     width: "100%",
-    // Web needs max-height to enable scrolling inside the card
-    maxHeight: "90vh" as unknown as number,
-    overflow: "auto" as unknown as "visible",
   },
-  modalCardMaxWidth: {
+  modalCardMobile: {
+    // Limit height to show gradient at top
+    maxHeight: "85%",
+  },
+  modalCardCentered: {
+    borderRadius: theme.radius["3xl"],
     maxWidth: MODAL_MAX_WIDTH,
-  },
-  modalCardFullWidth: {
-    maxWidth: "100%" as unknown as number,
+    width: "100%",
+    // Size to fit content with reasonable limits
+    minHeight: 400,
+    maxHeight: "80%",
   },
   scrollContent: {
-    flexGrow: 1,
+    paddingBottom: theme.spacing.lg,
   },
   staticContent: {
-    flexGrow: 1,
+    width: "100%",
+  },
+  scrollArea: {
+    flex: 1,
+    width: "100%",
+    minHeight: 0,
+  },
+  scrollAreaWeb: {
+    width: "100%",
+    minHeight: 0,
   },
   centeredContent: {
     justifyContent: "center",
   },
   closeButton: {
     position: "absolute",
-    right: 0,
-    top: 0,
+    right: theme.spacing.md,
+    top: theme.spacing.md,
     zIndex: 10,
+  },
+  closeButtonCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: theme.radius.full,
+    backgroundColor: theme.colors.secondary,
+    alignItems: "center",
+    justifyContent: "center",
   },
   backButton: {
     position: "absolute",
-    left: 0,
-    top: 0,
+    left: theme.spacing.md,
+    top: theme.spacing.md,
     zIndex: 10,
+  },
+  backButtonCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: theme.radius.full,
+    backgroundColor: theme.colors.secondary,
+    alignItems: "center",
+    justifyContent: "center",
   },
   headerIconContainer: {
     marginBottom: theme.spacing.md,
+    alignItems: "center",
   },
   headerIcon: {
-    fontSize: 32,
-    lineHeight: 40,
+    fontSize: 48,
+    lineHeight: 56,
+    textAlign: "center",
   },
   title: {
     textAlign: "center",
@@ -301,6 +349,6 @@ const styles = StyleSheet.create((theme) => ({
     marginBottom: theme.spacing.xl,
   },
   content: {
-    // Content takes remaining space
+    // No flex constraint - let content size naturally
   },
 }))

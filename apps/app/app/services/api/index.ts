@@ -101,6 +101,7 @@ export class Api {
     // Request interceptor
     this.apisauce.addRequestTransform((request) => {
       if (__DEV__) {
+        // Logger automatically redacts sensitive data (passwords, tokens, etc.)
         logger.debug(`API Request: ${request.method?.toUpperCase()} ${request.url}`, {
           params: request.params,
           data: request.data,

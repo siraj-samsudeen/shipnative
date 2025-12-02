@@ -104,9 +104,9 @@ const askQuestion = (index) => {
     console.log("   • See docs/NOTIFICATIONS.md for complete setup guide")
 
     console.log("\n🔗 Deep Linking:")
-    console.log("   • URL Scheme: zennative://")
+    console.log("   • URL Scheme: shipnative://")
     console.log("   • Configure in app.json for universal links")
-    console.log('   • Test: xcrun simctl openurl booted "zennative://profile"')
+    console.log('   • Test: xcrun simctl openurl booted "shipnative://profile"')
     console.log("   • See docs/NOTIFICATIONS.md for deep linking with notifications")
 
     console.log("\n💡 Next Steps:")

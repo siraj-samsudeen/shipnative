@@ -99,7 +99,17 @@ const setupNotificationHandler = (): void => {
 /**
  * Check if we should use mock notifications
  */
+const forceMockNotifications = process.env.EXPO_PUBLIC_USE_MOCK_NOTIFICATIONS === "true"
+
 const shouldUseMock = (): boolean => {
+  // Explicit opt-in to mock mode via env for developers who want to bypass native prompts
+  if (forceMockNotifications) {
+    if (__DEV__) {
+      console.log("📬 [Notifications] Mock mode forced via EXPO_PUBLIC_USE_MOCK_NOTIFICATIONS")
+    }
+    return true
+  }
+
   // If native module is not available, use mock
   if (!isNativeModuleAvailable()) {
     if (__DEV__) {
@@ -108,16 +118,6 @@ const shouldUseMock = (): boolean => {
     return true
   }
 
-  // In dev mode, if no FCM/APNs configured, use mock
-  if (__DEV__) {
-    const fcmKey = process.env.EXPO_PUBLIC_FCM_SERVER_KEY
-    const hasRealConfig = !!fcmKey
-
-    if (!hasRealConfig) {
-      console.log("📬 [Notifications] Mock mode enabled - no push credentials configured")
-      return true
-    }
-  }
   return false
 }
 

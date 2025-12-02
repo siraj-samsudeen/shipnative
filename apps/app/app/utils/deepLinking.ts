@@ -1,15 +1,18 @@
 import { Linking } from "react-native"
 import type * as Notifications from "expo-notifications"
 
+import { logger } from "./Logger"
+import { supabase } from "../services/supabase"
+
 // Note: Navigation will be handled by React Navigation in the app
 // This file provides utility functions for parsing deep links
 // Actual navigation should be done via navigationRef in your navigators
 
 /**
  * Deep link URL scheme
- * Format: zennative://screen/path?param=value
+ * Format: shipnative://screen/path?param=value
  */
-export const DEEP_LINK_SCHEME = "zennative"
+export const DEEP_LINK_SCHEME = "shipnative"
 
 /**
  * Parse deep link URL into components
@@ -44,27 +47,91 @@ export function parseDeepLink(url: string): {
       params: Object.keys(params).length > 0 ? params : undefined,
     }
   } catch (error) {
-    console.error("[DeepLinking] Error parsing deep link:", error)
+    logger.error("[DeepLinking] Error parsing deep link", {}, error as Error)
     return null
+  }
+}
+
+/**
+ * Validate token for sensitive deep links (reset-password, verify-email)
+ * SECURITY: Basic validation - full validation happens when user submits the form
+ * 
+ * Note: We perform basic checks here (format, length) but defer full validation
+ * to the actual password reset/email verification flows where Supabase validates
+ * the token server-side.
+ */
+async function validateDeepLinkToken(
+  screen: string,
+  token?: string,
+): Promise<boolean> {
+  if (!token) {
+    return false
+  }
+
+  // Only validate tokens for sensitive screens
+  if (screen !== "reset-password" && screen !== "verify-email") {
+    return true
+  }
+
+  try {
+    // Basic token validation - check format and length
+    // Full validation happens in the actual reset/verify flows
+    if (screen === "reset-password") {
+      // Password reset tokens are typically JWT or similar format
+      // Basic check: token should be non-empty and have reasonable length
+      return token.length > 10 && token.length < 1000
+    }
+
+    if (screen === "verify-email") {
+      // Email verification tokens are typically UUIDs or similar
+      // Basic check: token should be non-empty and have reasonable length
+      return token.length > 10 && token.length < 1000
+    }
+
+    return false
+  } catch (error) {
+    logger.error("[DeepLinking] Token validation failed", { screen }, error as Error)
+    return false
   }
 }
 
 /**
  * Handle deep link navigation
  * Returns parsed link data for the app to handle navigation
+ * SECURITY: Validates tokens for sensitive operations
  */
-export function handleDeepLink(url: string): {
+export async function handleDeepLink(url: string): Promise<{
   screen: string
   params?: Record<string, string>
-} | null {
+} | null> {
   const parsed = parseDeepLink(url)
 
   if (!parsed || !parsed.screen) {
-    console.warn("[DeepLinking] Invalid deep link:", url)
+    if (__DEV__) {
+      logger.warn("[DeepLinking] Invalid deep link", { url })
+    }
     return null
   }
 
-  console.log("[DeepLinking] Parsed deep link:", parsed)
+  // SECURITY: Validate tokens for sensitive deep links
+  if (parsed.params?.token) {
+    const isValid = await validateDeepLinkToken(parsed.screen, parsed.params.token)
+    if (!isValid) {
+      logger.warn("[DeepLinking] Invalid token in deep link", {
+        screen: parsed.screen,
+        // Don't log the actual token
+      })
+      return null
+    }
+  }
+
+  if (__DEV__) {
+    logger.debug("[DeepLinking] Parsed deep link", {
+      screen: parsed.screen,
+      hasParams: !!parsed.params,
+      // Don't log params as they may contain tokens
+    })
+  }
 
   // Return parsed data for app to handle navigation with React Navigation
   return {
@@ -141,17 +208,27 @@ export async function initializeDeepLinking(
   // Handle app opened from deep link (app was closed)
   const initialUrl = await Linking.getInitialURL()
   if (initialUrl) {
-    console.log("[DeepLinking] App opened with URL:", initialUrl)
-    const parsed = handleDeepLink(initialUrl)
+    if (__DEV__) {
+      logger.debug("[DeepLinking] App opened with URL", {
+        // Don't log full URL as it may contain tokens
+        hasUrl: !!initialUrl,
+      })
+    }
+    const parsed = await handleDeepLink(initialUrl)
     if (parsed && onDeepLink) {
       onDeepLink(parsed)
     }
   }
 
   // Handle deep links while app is running
-  const subscription = Linking.addEventListener("url", ({ url }) => {
-    console.log("[DeepLinking] Received URL while running:", url)
-    const parsed = handleDeepLink(url)
+  const subscription = Linking.addEventListener("url", async ({ url }) => {
+    if (__DEV__) {
+      logger.debug("[DeepLinking] Received URL while running", {
+        // Don't log full URL as it may contain tokens
+        hasUrl: !!url,
+      })
+    }
+    const parsed = await handleDeepLink(url)
     if (parsed && onDeepLink) {
       onDeepLink(parsed)
     }

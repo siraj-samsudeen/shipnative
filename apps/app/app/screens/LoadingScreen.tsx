@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react"
-import { View, Animated, Easing } from "react-native"
+import { View, Animated, Easing, Platform, useWindowDimensions } from "react-native"
 import { LinearGradient } from "expo-linear-gradient"
 import { StyleSheet, useUnistyles } from "react-native-unistyles"
 
@@ -40,6 +40,17 @@ export interface LoadingScreenProps {
 export function LoadingScreen(props: LoadingScreenProps) {
   const { message = "Loading", status } = props
   const { theme } = useUnistyles()
+  const { height: windowHeight } = useWindowDimensions()
+
+  // Ensure we cover the full viewport on web while we wait for app boot.
+  const webViewportStyle =
+    Platform.OS === "web"
+      ? {
+          minHeight: windowHeight,
+          height: windowHeight,
+          width: "100%",
+        }
+      : undefined
 
   // Animation for pulsing effect
   const pulseAnim = useRef(new Animated.Value(1)).current
@@ -81,10 +92,10 @@ export function LoadingScreen(props: LoadingScreenProps) {
   })
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, webViewportStyle]}>
       <LinearGradient
         colors={[theme.colors.gradientStart, theme.colors.gradientMiddle, theme.colors.gradientEnd]}
-        style={styles.gradient}
+        style={[styles.gradient, webViewportStyle]}
       >
         <View style={styles.content}>
           {/* Animated Spinner Container */}

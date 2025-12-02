@@ -25,11 +25,12 @@ const ExpoSecureStoreAdapter = {
   },
 }
 
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || ""
-const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || ""
+export const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || ""
+export const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || ""
 
 // Use mock Supabase if credentials are missing in development
 const useMock = __DEV__ && (!supabaseUrl || !supabaseAnonKey)
+export const isUsingMockSupabase = useMock
 
 export const supabase = useMock
   ? createMockSupabaseClient()
@@ -43,6 +44,7 @@ export const supabase = useMock
     })
 
 if (useMock && __DEV__) {
+  // Use logger for consistency, but this is dev-only so console is acceptable
   console.warn("⚠️  Supabase credentials not found - using mock authentication")
   console.log("💡 Add EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY to .env")
 }

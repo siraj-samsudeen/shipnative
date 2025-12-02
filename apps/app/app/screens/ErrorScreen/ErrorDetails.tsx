@@ -163,6 +163,10 @@ const styles = StyleSheet.create((theme) => ({
     borderRadius: theme.radius.lg,
     marginBottom: theme.spacing.lg,
     ...theme.shadows.md,
+    // Enable mouse wheel scrolling on web
+    ...(Platform.OS === "web" && {
+      overflowY: "auto" as unknown as "scroll",
+    }),
   },
   errorSectionContent: {
     padding: theme.spacing.md,

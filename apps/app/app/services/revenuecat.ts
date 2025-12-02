@@ -10,6 +10,7 @@ import { Platform } from "react-native"
 
 import { mockRevenueCat } from "./mocks/revenueCat"
 import type { PricingPackage, SubscriptionService, SubscriptionInfo } from "../types/subscription"
+import { isDevelopment } from "../config/env"
 
 // API Keys
 const mobileApiKey = Platform.select({
@@ -19,9 +20,10 @@ const mobileApiKey = Platform.select({
 const webApiKey = process.env.EXPO_PUBLIC_REVENUECAT_WEB_KEY
 
 // Determine if we should use mock
+const isDevEnv = __DEV__ || isDevelopment
 const useMock =
-  (__DEV__ && !mobileApiKey && Platform.OS !== "web") ||
-  (__DEV__ && !webApiKey && Platform.OS === "web")
+  (isDevEnv && !mobileApiKey && Platform.OS !== "web") ||
+  (isDevEnv && !webApiKey && Platform.OS === "web")
 
 // SDK instances
 let MobilePurchases: any = null
@@ -408,3 +410,6 @@ export const initRevenueCat = async () => {
 
 // Export both services for direct access if needed
 export { revenueCatMobile, revenueCatWeb }
+
+// Expose mock status for UI hints
+export const isRevenueCatMock = useMock

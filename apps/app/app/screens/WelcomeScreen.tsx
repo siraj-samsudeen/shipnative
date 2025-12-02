@@ -7,7 +7,6 @@ import { Text, Divider, AuthScreenLayout } from "@/components"
 import { features } from "@/config/features"
 import { useAuth } from "@/hooks/useAuth"
 import type { AppStackScreenProps } from "@/navigators/navigationTypes"
-import { useAuthStore } from "@/stores"
 
 // =============================================================================
 // TYPES
@@ -22,7 +21,6 @@ interface WelcomeScreenProps extends AppStackScreenProps<"Welcome"> {}
 export const WelcomeScreen: FC<WelcomeScreenProps> = function WelcomeScreen(_props) {
   const { navigation } = _props
   const { theme } = useUnistyles()
-  const setHasCompletedOnboarding = useAuthStore((state) => state.setHasCompletedOnboarding)
   const { signInWithGoogle, signInWithApple, loading } = useAuth()
 
   const handleGoToLogin = () => {
@@ -55,17 +53,10 @@ export const WelcomeScreen: FC<WelcomeScreenProps> = function WelcomeScreen(_pro
     }
   }
 
-  const handleClose = () => {
-    // Go back to onboarding (reset onboarding state)
-    setHasCompletedOnboarding(false)
-  }
-
   return (
     <AuthScreenLayout
       title="Get Started"
       subtitle="Create an account or sign in to access all features."
-      showCloseButton
-      onClose={handleClose}
       scrollable={false}
       centerContent
     >

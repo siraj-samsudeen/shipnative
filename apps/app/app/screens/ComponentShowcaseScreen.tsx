@@ -1,5 +1,5 @@
 import { FC, useState } from "react"
-import { View, ScrollView, Switch, useWindowDimensions } from "react-native"
+import { View, ScrollView, Switch, useWindowDimensions, Platform } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { StyleSheet, useUnistyles } from "react-native-unistyles"
 
@@ -581,6 +581,10 @@ function ColorSwatch({ color, name, border }: ColorSwatchProps) {
 const styles = StyleSheet.create((theme) => ({
   scrollView: {
     flex: 1,
+    // Enable mouse wheel scrolling on web
+    ...(Platform.OS === "web" && {
+      overflowY: "auto" as unknown as "scroll",
+    }),
   },
   content: {
     paddingHorizontal: theme.spacing.lg,

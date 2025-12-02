@@ -1,4 +1,5 @@
 import {
+  Children,
   createContext,
   FC,
   PropsWithChildren,
@@ -135,9 +136,15 @@ export const ThemeProvider: FC<PropsWithChildren<ThemeProviderProps>> = ({
     themed,
   }
 
+  // React Native Web will warn if a View receives a raw text child. Strip out any
+  // accidental string/number children (e.g., whitespace) before rendering.
+  const safeChildren = Children.toArray(children).filter(
+    (child) => typeof child !== "string" && typeof child !== "number",
+  )
+
   return (
     <ThemeContext.Provider value={value}>
-      <View style={styles.container}>{children}</View>
+      <View style={styles.container}>{safeChildren}</View>
     </ThemeContext.Provider>
   )
 }

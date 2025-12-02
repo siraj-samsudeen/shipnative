@@ -2,10 +2,11 @@ import { FC, useState } from "react"
 import { View, TouchableOpacity } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import { StyleSheet, useUnistyles } from "react-native-unistyles"
+import { useNavigation } from "@react-navigation/native"
 
 import { Text, OnboardingScreenLayout } from "@/components"
 import type { AppStackScreenProps } from "@/navigators/navigationTypes"
-import { useAuthStore } from "@/stores"
+import { useAuthStore, useNotificationStore } from "@/stores"
 
 // =============================================================================
 // TYPES
@@ -19,28 +20,36 @@ interface OnboardingScreenProps extends AppStackScreenProps<"Onboarding"> {}
 
 export const OnboardingScreen: FC<OnboardingScreenProps> = function OnboardingScreen(_props) {
   const { theme } = useUnistyles()
+  const navigation = useNavigation<AppStackScreenProps<"Onboarding">["navigation"]>()
   const setHasCompletedOnboarding = useAuthStore((state) => state.setHasCompletedOnboarding)
+  const togglePush = useNotificationStore((state) => state.togglePush)
   const [step, setStep] = useState(0)
+  const [isRequestingPermission, setIsRequestingPermission] = useState(false)
 
   // Slide animations
   const handleNext = async () => {
     if (step < 2) {
       setStep(step + 1)
     } else {
+      // Navigate to Paywall first, then mark onboarding as complete
+      // This ensures Paywall is shown before the navigator switches stacks
+      navigation.replace("Paywall")
+      // Set onboarding as complete after navigation
+      // The Paywall screen will handle navigation to Main
       await setHasCompletedOnboarding(true)
     }
   }
 
   const handleEnableNotifications = async () => {
-    // Request permissions
+    if (isRequestingPermission) return
+
+    setIsRequestingPermission(true)
     try {
-      // This would be the real implementation
-      // await requestNotificationPermissions()
-      // For now, just simulate success and move next
-      setTimeout(() => {
-        handleNext()
-      }, 1000)
-    } catch {
+      await togglePush()
+    } catch (error) {
+      console.warn("📬 [Onboarding] Failed to enable notifications", error)
+    } finally {
+      setIsRequestingPermission(false)
       handleNext()
     }
   }
@@ -116,12 +125,13 @@ export const OnboardingScreen: FC<OnboardingScreenProps> = function OnboardingSc
       </View>
 
       <TouchableOpacity
-        style={styles.primaryButton}
+        style={[styles.primaryButton, isRequestingPermission && styles.primaryButtonDisabled]}
         onPress={handleEnableNotifications}
         activeOpacity={0.8}
+        disabled={isRequestingPermission}
       >
         <Text weight="semiBold" style={styles.primaryButtonText}>
-          Turn On Notifications
+          {isRequestingPermission ? "Enabling..." : "Turn On Notifications"}
         </Text>
       </TouchableOpacity>
 
@@ -152,6 +162,9 @@ const styles = StyleSheet.create((theme) => ({
   primaryButtonText: {
     color: theme.colors.primaryForeground,
     fontSize: theme.typography.sizes.lg,
+  },
+  primaryButtonDisabled: {
+    opacity: 0.8,
   },
   secondaryButton: {
     alignItems: "center",

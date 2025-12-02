@@ -22,7 +22,9 @@ import {
 export const RegisterScreen = () => {
   const { theme } = useUnistyles()
   const navigation = useNavigation()
-  const signUp = useAuthStore((state) => state.signUp)
+  const { signUp } = useAuthStore((state) => ({
+    signUp: state.signUp,
+  }))
   const { signInWithGoogle, signInWithApple, loading: oauthLoading } = useAuth()
 
   const [email, setEmail] = useState("")
@@ -163,12 +165,21 @@ export const RegisterScreen = () => {
     return `${(passwordStrength.score / 4) * 100}%` as DimensionValue
   }
 
+  const handleClose = () => {
+    if (navigation.canGoBack()) {
+      navigation.goBack()
+      return
+    }
+
+    navigation.navigate("Welcome" as never)
+  }
+
   return (
     <AuthScreenLayout
       title="Create Account"
       subtitle="Sign up to get started"
       showCloseButton
-      onClose={() => navigation.goBack()}
+      onClose={handleClose}
     >
       {/* Email Input */}
       <View style={styles.inputContainer}>

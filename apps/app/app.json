@@ -1,7 +1,7 @@
 {
   "name": "reactnativestarterkit",
   "slug": "reactnativestarterkit",
-  "scheme": "zennative",
+  "scheme": "shipnative",
   "version": "1.0.0",
   "orientation": "portrait",
   "userInterfaceStyle": "automatic",

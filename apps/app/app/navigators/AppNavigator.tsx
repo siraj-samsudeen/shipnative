@@ -6,6 +6,7 @@
  */
 import { NavigationContainer } from "@react-navigation/native"
 import { createNativeStackNavigator } from "@react-navigation/native-stack"
+import { Platform } from "react-native"
 
 import { Spinner } from "@/components/Spinner"
 import Config from "@/config"
@@ -13,6 +14,7 @@ import * as Screens from "@/screens"
 import { ErrorBoundary } from "@/screens/ErrorScreen/ErrorBoundary"
 import { useAuthStore } from "@/stores"
 import { useAppTheme } from "@/theme/context"
+import { logger } from "@/utils/Logger"
 
 import { MainTabNavigator } from "./MainTabNavigator"
 import type { AppStackParamList, NavigationProps } from "./navigationTypes"
@@ -31,6 +33,8 @@ const AppStack = () => {
   const user = useAuthStore((state) => state.user)
   const loading = useAuthStore((state) => state.loading)
   const hasCompletedOnboarding = useAuthStore((state) => state.hasCompletedOnboarding)
+  const shouldShowOnboarding = !!user && !hasCompletedOnboarding
+  const isWeb = Platform.OS === "web"
   const {
     theme: { colors },
     theme: themeContextValue,
@@ -39,14 +43,11 @@ const AppStack = () => {
   const statusBarStyle = themeContextValue.isDark ? "light" : "dark"
 
   if (__DEV__) {
-    console.log(
-      "AppStack rendering. Loading:",
+    logger.debug("AppStack rendering", {
       loading,
-      "User:",
-      user ? "Logged In" : "Guest",
-      "Onboarding:",
+      userStatus: user ? "Logged In" : "Guest",
       hasCompletedOnboarding,
-    )
+    })
   }
 
   if (loading) {
@@ -60,66 +61,86 @@ const AppStack = () => {
         navigationBarColor,
         statusBarStyle,
         contentStyle: {
+          flex: 1,
           backgroundColor: colors.background,
+          ...(isWeb && {
+            minHeight: "100vh" as unknown as number,
+            height: "100vh" as unknown as number,
+            width: "100vw" as unknown as number,
+            maxWidth: "100vw" as unknown as number,
+          }),
         },
         animation: "default",
       }}
-      initialRouteName={hasCompletedOnboarding ? (user ? "Main" : "Welcome") : "Onboarding"}
+      initialRouteName={
+        user
+          ? hasCompletedOnboarding
+            ? "Main"
+            : "Onboarding"
+          : "Welcome"
+      }
     >
-      {hasCompletedOnboarding ? (
-        user ? (
-          // ------------------------------------------------------------------
-          // AUTHENTICATED STACK
-          // ------------------------------------------------------------------
-          <>
-            <Stack.Screen name="Main" component={MainTabNavigator} />
-          </>
-        ) : (
-          // ------------------------------------------------------------------
-          // UNAUTHENTICATED STACK (Welcome, Login, Register)
-          // ------------------------------------------------------------------
-          <>
-            <Stack.Screen
-              name="Welcome"
-              component={Screens.WelcomeScreen}
-              options={{
-                gestureEnabled: false,
-              }}
-            />
-            <Stack.Screen
-              name="Login"
-              component={Screens.LoginScreen}
-              options={{
-                animation: "slide_from_right",
-              }}
-            />
-            <Stack.Screen
-              name="Register"
-              component={Screens.RegisterScreen}
-              options={{
-                animation: "slide_from_right",
-              }}
-            />
-            <Stack.Screen
-              name="ForgotPassword"
-              component={Screens.ForgotPasswordScreen}
-              options={{
-                animation: "slide_from_right",
-              }}
-            />
-            {/* Allow going back to Onboarding from Welcome if needed, 
-                but usually we don't want this in the main flow unless requested.
-                User asked to "go in onboarding too", so we can add it here or 
-                handle it via state change in Welcome screen. 
-            */}
-          </>
-        )
-      ) : (
+      {shouldShowOnboarding ? (
         // ------------------------------------------------------------------
-        // ONBOARDING STACK
+        // ONBOARDING (AUTHENTICATED ONLY)
         // ------------------------------------------------------------------
         <>
           <Stack.Screen name="Onboarding" component={Screens.OnboardingScreen} />
+          <Stack.Screen
+            name="Paywall"
+            component={Screens.PaywallScreen}
+            options={{
+              gestureEnabled: false,
+            }}
+          />
+        </>
+      ) : user ? (
+        // ------------------------------------------------------------------
+        // AUTHENTICATED STACK
+        // ------------------------------------------------------------------
+        <>
+          <Stack.Screen name="Main" component={MainTabNavigator} />
+          <Stack.Screen
+            name="Paywall"
+            component={Screens.PaywallScreen}
+            options={{
+              animation: "slide_from_right",
+            }}
+          />
+        </>
+      ) : (
+        // ------------------------------------------------------------------
+        // UNAUTHENTICATED STACK (Welcome, Login, Register)
+        // ------------------------------------------------------------------
+        <>
+          <Stack.Screen
+            name="Welcome"
+            component={Screens.WelcomeScreen}
+            options={{
+              gestureEnabled: false,
+            }}
+          />
+          <Stack.Screen
+            name="Login"
+            component={Screens.LoginScreen}
+            options={{
+              animation: "slide_from_right",
+            }}
+          />
+          <Stack.Screen
+            name="Register"
+            component={Screens.RegisterScreen}
+            options={{
+              animation: "slide_from_right",
+            }}
+          />
+          <Stack.Screen
+            name="ForgotPassword"
+            component={Screens.ForgotPasswordScreen}
+            options={{
+              animation: "slide_from_right",
+            }}
+          />
         </>
       )}
     </Stack.Navigator>

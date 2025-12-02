@@ -11,7 +11,7 @@ import Animated, {
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { StyleSheet, useUnistyles } from "react-native-unistyles"
 
-import { Avatar, Text, EditProfileModal } from "@/components"
+import { Avatar, Button, DeleteAccountModal, Text, EditProfileModal } from "@/components"
 import { useAuthStore, useNotificationStore, useSubscriptionStore } from "@/stores"
 import { useAppTheme } from "@/theme/context"
 import { haptics } from "@/utils/haptics"
@@ -43,6 +43,7 @@ export const ProfileScreen: FC = () => {
   const { width: windowWidth } = useWindowDimensions()
 
   const [editModalVisible, setEditModalVisible] = useState(false)
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false)
 
   const isLargeScreen = windowWidth > 768
   const contentStyle = isLargeScreen
@@ -225,6 +226,57 @@ export const ProfileScreen: FC = () => {
           </Animated.View>
 
           <Animated.View entering={FadeInDown.delay(400).springify()}>
+            <Text style={styles.sectionTitle}>Account</Text>
+          </Animated.View>
+          <Animated.View entering={FadeInDown.delay(450).springify()} style={styles.dangerCard}>
+            <View style={styles.dangerHeader}>
+              <View style={styles.dangerCopy}>
+                <Text style={styles.dangerTitle}>Delete Account</Text>
+                <Text style={styles.dangerSubtitle}>
+                  Permanently remove your data and sign out from all devices.
+                </Text>
+              </View>
+              <View style={styles.dangerBadge}>
+                <Ionicons name="shield-half-outline" size={16} color={theme.colors.error} />
+                <Text style={styles.dangerBadgeText}>Privacy-first</Text>
+              </View>
+            </View>
+
+            <View style={styles.dangerBullets}>
+              <View style={styles.dangerBullet}>
+                <View style={styles.dangerIcon}>
+                  <Ionicons name="trash-outline" size={16} color={theme.colors.error} />
+                </View>
+                <Text style={styles.dangerBulletText}>Removes your profile and preferences</Text>
+              </View>
+              <View style={styles.dangerBullet}>
+                <View style={styles.dangerIcon}>
+                  <Ionicons name="receipt-outline" size={16} color={theme.colors.error} />
+                </View>
+                <Text style={styles.dangerBulletText}>
+                  Disconnects active subscriptions in RevenueCat
+                </Text>
+              </View>
+              <View style={styles.dangerBullet}>
+                <View style={styles.dangerIcon}>
+                  <Ionicons name="log-out-outline" size={16} color={theme.colors.error} />
+                </View>
+                <Text style={styles.dangerBulletText}>Signs you out on every device</Text>
+              </View>
+            </View>
+
+            <Button
+              text="Delete my account"
+              variant="danger"
+              onPress={() => {
+                haptics.delete()
+                setDeleteModalVisible(true)
+              }}
+              style={styles.dangerButton}
+            />
+          </Animated.View>
+
+          <Animated.View entering={FadeInDown.delay(520).springify()}>
             <Text style={styles.versionText}>Version 1.0.0 (Build 12)</Text>
           </Animated.View>
         </ScrollView>
@@ -232,6 +284,10 @@ export const ProfileScreen: FC = () => {
 
       {/* Edit Profile Modal */}
       <EditProfileModal visible={editModalVisible} onClose={() => setEditModalVisible(false)} />
+      <DeleteAccountModal
+        visible={deleteModalVisible}
+        onClose={() => setDeleteModalVisible(false)}
+      />
     </View>
   )
 }
@@ -254,6 +310,10 @@ const styles = StyleSheet.create((theme) => ({
   },
   scrollView: {
     flex: 1,
+    // Enable mouse wheel scrolling on web
+    ...(isWeb && {
+      overflowY: "auto" as unknown as "scroll",
+    }),
   },
   scrollContent: {
     paddingBottom: 120,
@@ -387,6 +447,78 @@ const styles = StyleSheet.create((theme) => ({
     height: 1,
     marginLeft: 56,
     opacity: 0.6,
+  },
+  dangerCard: {
+    backgroundColor: theme.colors.card,
+    borderWidth: 1,
+    borderColor: theme.colors.errorBackground,
+    borderRadius: theme.radius["2xl"],
+    padding: theme.spacing.lg,
+    gap: theme.spacing.md,
+    ...theme.shadows.md,
+  },
+  dangerHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: theme.spacing.md,
+  },
+  dangerCopy: {
+    flex: 1,
+    gap: theme.spacing.xs,
+  },
+  dangerTitle: {
+    color: theme.colors.foreground,
+    fontFamily: theme.typography.fonts.semiBold,
+    fontSize: theme.typography.sizes.lg,
+    lineHeight: theme.typography.lineHeights.lg,
+  },
+  dangerSubtitle: {
+    color: theme.colors.foregroundSecondary,
+    fontFamily: theme.typography.fonts.regular,
+    fontSize: theme.typography.sizes.sm,
+    lineHeight: theme.typography.lineHeights.sm,
+  },
+  dangerBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    gap: theme.spacing.xs,
+    backgroundColor: theme.colors.errorBackground,
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: theme.spacing.xs,
+    borderRadius: theme.radius.full,
+  },
+  dangerBadgeText: {
+    color: theme.colors.error,
+    fontFamily: theme.typography.fonts.semiBold,
+    fontSize: theme.typography.sizes.xs,
+  },
+  dangerBullets: {
+    gap: theme.spacing.sm,
+  },
+  dangerBullet: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.spacing.sm,
+  },
+  dangerIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: theme.radius.full,
+    backgroundColor: theme.colors.errorBackground,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  dangerBulletText: {
+    flex: 1,
+    color: theme.colors.foreground,
+    fontFamily: theme.typography.fonts.regular,
+    fontSize: theme.typography.sizes.base,
+    lineHeight: theme.typography.lineHeights.base,
+  },
+  dangerButton: {
+    marginTop: theme.spacing.xs,
   },
   versionText: {
     color: theme.colors.foregroundTertiary,

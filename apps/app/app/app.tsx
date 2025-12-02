@@ -10,7 +10,7 @@
  * The app navigation resides in ./app/navigators, so head over there
  * if you're interested in adding screens and navigators.
  */
-if (__DEV__) {
+if (__DEV__ && Platform.OS !== "web") {
   // Load Reactotron in development only.
   // Note that you must be using metro's `inlineRequires` for this to work.
   // If you turn it off in metro.config.js, you'll have to manually import it.
@@ -32,6 +32,7 @@ import { AppNavigator } from "./navigators/AppNavigator"
 import { useNavigationPersistence } from "./navigators/navigationUtilities"
 import { QueryProvider } from "./providers"
 import { LoadingScreen } from "./screens/LoadingScreen"
+import { certificatePinning } from "./services/certificatePinning"
 import { initPosthog } from "./services/posthog"
 import { initRevenueCat } from "./services/revenuecat"
 import { initSentry } from "./services/sentry"
@@ -39,6 +40,8 @@ import { useAuthStore, useSubscriptionStore } from "./stores"
 import { ThemeProvider } from "./theme/context"
 import { customFontsToLoad } from "./theme/typography"
 import { loadDateFnsLocale } from "./utils/formatDate"
+import { logger } from "./utils/Logger"
+import { securityCheck } from "./utils/securityCheck"
 import * as storage from "./utils/storage"
 
 let KeyboardProvider: React.ComponentType<any> = ({ children }: any) => <>{children}</>
@@ -46,7 +49,10 @@ if (Platform.OS !== "web") {
   try {
     KeyboardProvider = require("react-native-keyboard-controller").KeyboardProvider
   } catch (e) {
-    console.warn("Failed to load keyboard controller", e)
+    // This is expected on web, so we'll keep console.warn for visibility
+    if (__DEV__) {
+      console.warn("Failed to load keyboard controller", e)
+    }
   }
 }
 
@@ -56,10 +62,11 @@ export const NAVIGATION_PERSISTENCE_KEY = "NAVIGATION_STATE"
 const prefix = Linking.createURL("/")
 const config = {
   screens: {
-    Login: {
-      path: "",
-    },
+    Onboarding: "onboarding",
     Welcome: "welcome",
+    Login: "login",
+    Register: "register",
+    ForgotPassword: "forgot-password",
     Demo: {
       screens: {
         DemoShowroom: {
@@ -92,47 +99,78 @@ export function App() {
   useEffect(() => {
     const initialize = async () => {
       try {
-        console.log("App initialize started")
+        if (__DEV__) {
+          logger.debug("App initialize started")
+        }
+        
+        // Initialize security features
+        certificatePinning.initialize()
+        securityCheck.log()
+
         // Initialize i18n
         await initI18n()
-        console.log("i18n initialized")
+        if (__DEV__) {
+          logger.debug("i18n initialized")
+        }
         setIsI18nInitialized(true)
         await loadDateFnsLocale()
-        console.log("date-fns locale loaded")
+        if (__DEV__) {
+          logger.debug("date-fns locale loaded")
+        }
 
         // Initialize services
         initSentry()
         initPosthog()
         initRevenueCat()
-        console.log("services initialized")
+        if (__DEV__) {
+          logger.debug("services initialized")
+        }
 
         // Initialize Zustand stores
-        console.log("initializing auth store...")
+        if (__DEV__) {
+          logger.debug("initializing auth store...")
+        }
         await useAuthStore.getState().initialize()
-        console.log("auth store initialized")
+        if (__DEV__) {
+          logger.debug("auth store initialized")
+        }
 
-        console.log("initializing subscription store...")
+        if (__DEV__) {
+          logger.debug("initializing subscription store...")
+        }
         await useSubscriptionStore.getState().initialize()
-        console.log("subscription store initialized")
+        if (__DEV__) {
+          logger.debug("subscription store initialized")
+        }
 
         setIsStoresInitialized(true)
-        console.log("App initialize completed")
+        if (__DEV__) {
+          logger.debug("App initialize completed")
+        }
       } catch (e) {
-        console.error("App initialize failed", e)
+        logger.error("App initialize failed", {}, e as Error)
       }
     }
 
     initialize()
   }, [])
 
-  // Before we show the app, we have to wait for our state to be ready.
-  // Show a loading screen with a nice animation while initializing.
-  if (
+  const isLoading =
     !isNavigationStateRestored ||
     !isI18nInitialized ||
     !isStoresInitialized ||
     (!areFontsLoaded && !fontLoadError)
-  ) {
+
+  const linking = {
+    prefixes: [prefix],
+    config,
+  }
+
+  let content: JSX.Element
+
+  // Before we show the app, we have to wait for our state to be ready.
+  // Show a loading screen with a nice animation while initializing.
+  if (isLoading) {
     const status = {
       isNavigationStateRestored,
       isI18nInitialized,
@@ -140,7 +178,9 @@ export function App() {
       areFontsLoaded,
       fontLoadError,
     }
-    console.log("App loading state:", JSON.stringify(status, null, 2))
+    if (__DEV__) {
+      logger.debug("App loading state", status)
+    }
 
     // Determine loading message based on state
     const loadingMessage = "Loading"
@@ -155,35 +195,30 @@ export function App() {
       loadingStatus = "Restoring navigation..."
     }
 
-    return <LoadingScreen message={loadingMessage} status={loadingStatus} />
-  }
-
-  const linking = {
-    prefixes: [prefix],
-    config,
+    content = <LoadingScreen message={loadingMessage} status={loadingStatus} />
+  } else {
+    content = (
+      <AppNavigator
+        linking={linking}
+        initialState={initialNavigationState}
+        onStateChange={onNavigationStateChange}
+      />
+    )
   }
 
   // otherwise, we're ready to render the app
   return (
     <GestureHandlerRootView style={$gestureHandlerRoot}>
-      <SafeAreaProvider initialMetrics={initialWindowMetrics}>
+      <SafeAreaProvider initialMetrics={initialWindowMetrics} style={$safeAreaProvider}>
         <QueryProvider>
           {Platform.OS === "web" ? (
             <ThemeProvider>
-              <AppNavigator
-                linking={linking}
-                initialState={initialNavigationState}
-                onStateChange={onNavigationStateChange}
-              />
+              {content}
             </ThemeProvider>
           ) : (
             <KeyboardProvider>
               <ThemeProvider>
-                <AppNavigator
-                  linking={linking}
-                  initialState={initialNavigationState}
-                  onStateChange={onNavigationStateChange}
-                />
+                {content}
               </ThemeProvider>
             </KeyboardProvider>
           )}
@@ -200,5 +235,14 @@ const $gestureHandlerRoot: ViewStyle = {
     minHeight: "100vh" as unknown as number,
     height: "100vh" as unknown as number,
     overflow: "hidden" as unknown as "visible",
+  }),
+}
+
+const $safeAreaProvider: ViewStyle = {
+  flex: 1,
+  ...(Platform.OS === "web" && {
+    minHeight: "100vh" as unknown as number,
+    height: "100vh" as unknown as number,
+    width: "100%" as unknown as number,
   }),
 }

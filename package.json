@@ -15,8 +15,8 @@
     "web:build": "cd apps/app && yarn bundle:web",
     "web:preview": "cd apps/app && yarn serve:web",
     "web:deploy": "cd apps/app && yarn bundle:web",
-    "android": "expo run:android",
-    "ios": "expo run:ios"
+    "android": "cd apps/app && expo run:android",
+    "ios": "cd apps/app && expo run:ios"
   },
   "devDependencies": {
     "prettier": "^3.3.3",

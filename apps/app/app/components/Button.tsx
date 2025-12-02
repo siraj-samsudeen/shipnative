@@ -1,4 +1,4 @@
-import { ComponentType, ReactNode, useMemo } from "react"
+import { Children, ComponentType, ReactNode, useMemo } from "react"
 import { ActivityIndicator, StyleProp, View, ViewStyle } from "react-native"
 import { Gesture, GestureDetector } from "react-native-gesture-handler"
 import Animated, {
@@ -232,6 +232,40 @@ export function Button(props: ButtonProps) {
     opacity: interpolate(opacity.value, [0.9, 1], [0.85, 1]),
   }))
 
+  const renderLabel = useMemo(() => {
+    if (children !== null && children !== undefined) {
+      const childArray = Children.toArray(children)
+      const allTextChildren = childArray.every(
+        (child) => typeof child === "string" || typeof child === "number",
+      )
+
+      if (allTextChildren) {
+        return (
+          <Text
+            weight="semiBold"
+            {...TextProps}
+            style={[{ color: textColor }, TextProps?.style]}
+          >
+            {childArray.join("")}
+          </Text>
+        )
+      }
+
+      return children
+    }
+
+    return (
+      <Text
+        text={text}
+        tx={tx}
+        txOptions={txOptions}
+        weight="semiBold"
+        {...TextProps}
+        style={[{ color: textColor }, TextProps?.style]}
+      />
+    )
+  }, [TextProps, children, text, textColor, tx, txOptions])
+
   return (
     <GestureDetector gesture={composedGesture}>
       <Animated.View
@@ -250,16 +284,7 @@ export function Button(props: ButtonProps) {
               </View>
             )}
 
-            {children || (
-              <Text
-                text={text}
-                tx={tx}
-                txOptions={txOptions}
-                weight="semiBold"
-                style={{ color: textColor }}
-                {...TextProps}
-              />
-            )}
+            {renderLabel}
 
             {RightAccessory && (
               <View style={styles.rightAccessory}>

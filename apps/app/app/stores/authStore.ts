@@ -14,6 +14,7 @@ import { persist, createJSONStorage } from "zustand/middleware"
 
 import { supabase } from "../services/supabase"
 import type { Session, User } from "../types/auth"
+import { logger } from "../utils/Logger"
 import * as storage from "../utils/storage"
 
 interface AuthState {
@@ -22,6 +23,7 @@ interface AuthState {
   loading: boolean
   isAuthenticated: boolean
   hasCompletedOnboarding: boolean
+  onboardingStatusByUserId: Record<string, boolean>
 
   // Actions
   setSession: (session: Session | null) => void
@@ -36,14 +38,24 @@ interface AuthState {
 }
 
 const AUTH_STORAGE_KEY = "auth-storage"
+export const GUEST_USER_KEY = "guest"
 
-type PersistedAuthState = Pick<AuthState, "hasCompletedOnboarding">
+const getUserKey = (user?: User | null) => user?.id ?? GUEST_USER_KEY
+
+type PersistedAuthState = Pick<AuthState, "onboardingStatusByUserId">
 
 // Only persist non-sensitive onboarding progress; keep auth/session data in SecureStore via Supabase
 const sanitizePersistedAuthState = (
   state: Partial<AuthState> | null | undefined,
 ): PersistedAuthState => ({
-  hasCompletedOnboarding: !!state?.hasCompletedOnboarding,
+  onboardingStatusByUserId:
+    typeof state === "object" && state?.onboardingStatusByUserId && !Array.isArray(state.onboardingStatusByUserId)
+      ? {
+          ...state.onboardingStatusByUserId,
+          // Always consider guest onboarding complete so unauthenticated users skip onboarding
+          [GUEST_USER_KEY]: state.onboardingStatusByUserId[GUEST_USER_KEY] ?? true,
+        }
+      : { [GUEST_USER_KEY]: true },
 })
 
 // Custom storage adapter for Zustand to use MMKV
@@ -67,7 +79,8 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       loading: true,
       isAuthenticated: false,
-      hasCompletedOnboarding: false,
+      hasCompletedOnboarding: true,
+      onboardingStatusByUserId: { [GUEST_USER_KEY]: true },
 
       setSession: (session) => {
         set({
@@ -86,8 +99,15 @@ export const useAuthStore = create<AuthState>()(
       },
 
       setHasCompletedOnboarding: async (completed) => {
-        set({ hasCompletedOnboarding: completed })
         const { user } = get()
+        const userKey = getUserKey(user)
+        set((state) => ({
+          hasCompletedOnboarding: completed,
+          onboardingStatusByUserId: {
+            ...state.onboardingStatusByUserId,
+            [userKey]: completed,
+          },
+        }))
         if (user) {
           try {
             const { error } = await supabase
@@ -95,10 +115,10 @@ export const useAuthStore = create<AuthState>()(
               .upsert({ id: user.id, has_completed_onboarding: completed })
 
             if (error) {
-              console.error("Failed to sync onboarding status:", error)
+              logger.error("Failed to sync onboarding status", {}, error as Error)
             }
           } catch (error) {
-            console.error("Failed to sync onboarding status:", error)
+            logger.error("Failed to sync onboarding status", {}, error as Error)
           }
         }
       },
@@ -153,10 +173,12 @@ export const useAuthStore = create<AuthState>()(
 
       signOut: async () => {
         await supabase.auth.signOut()
+        const guestOnboarding = get().onboardingStatusByUserId[GUEST_USER_KEY] ?? false
         set({
           session: null,
           user: null,
           isAuthenticated: false,
+          hasCompletedOnboarding: guestOnboarding,
         })
       },
 
@@ -178,13 +200,15 @@ export const useAuthStore = create<AuthState>()(
         try {
           set({ loading: true })
 
-          // Get the current local onboarding state (persisted via MMKV)
-          const localOnboardingCompleted = get().hasCompletedOnboarding
+          const onboardingStatusByUserId = get().onboardingStatusByUserId
 
           // Get initial session
           const {
             data: { session },
           } = await supabase.auth.getSession()
+
+          const userKey = getUserKey(session?.user)
+          const localOnboardingCompleted = onboardingStatusByUserId[userKey] ?? false
 
           let hasCompletedOnboarding = localOnboardingCompleted
           if (session?.user) {
@@ -212,13 +236,19 @@ export const useAuthStore = create<AuthState>()(
             user: session?.user ?? null,
             isAuthenticated: !!session,
             hasCompletedOnboarding,
+            onboardingStatusByUserId: {
+              ...onboardingStatusByUserId,
+              [userKey]: hasCompletedOnboarding,
+            },
             loading: false,
           })
 
           // Listen for auth changes
           supabase.auth.onAuthStateChange(async (_event, session) => {
             // Preserve local onboarding state - don't reset it
-            const currentLocalOnboarding = get().hasCompletedOnboarding
+            const onboardingStatusByUserId = get().onboardingStatusByUserId
+            const userKey = getUserKey(session?.user)
+            const currentLocalOnboarding = onboardingStatusByUserId[userKey] ?? false
             let hasCompletedOnboarding = currentLocalOnboarding
 
             if (session?.user) {
@@ -245,11 +275,15 @@ export const useAuthStore = create<AuthState>()(
               user: session?.user ?? null,
               isAuthenticated: !!session,
               hasCompletedOnboarding,
+              onboardingStatusByUserId: {
+                ...onboardingStatusByUserId,
+                [userKey]: hasCompletedOnboarding,
+              },
               loading: false,
             })
           })
         } catch (error) {
-          console.error("Auth initialization failed:", error)
+          logger.error("Auth initialization failed", {}, error as Error)
           set({ loading: false })
         }
       },
@@ -257,11 +291,16 @@ export const useAuthStore = create<AuthState>()(
     {
       name: AUTH_STORAGE_KEY,
       storage: createJSONStorage(() => mmkvStorage),
-      version: 1,
+      version: 3,
       // Strip sensitive auth/session data from persisted storage
       partialize: (state) => sanitizePersistedAuthState(state) as unknown as AuthState,
       migrate: (persistedState) => {
         const sanitizedState = sanitizePersistedAuthState(persistedState as Partial<AuthState>)
+        const onboardingStatusByUserId = {
+          ...sanitizedState.onboardingStatusByUserId,
+          [GUEST_USER_KEY]: sanitizedState.onboardingStatusByUserId[GUEST_USER_KEY] ?? true,
+        }
+        sanitizedState.onboardingStatusByUserId = onboardingStatusByUserId
         try {
           // Overwrite any legacy persisted tokens with the sanitized payload
           storage.save(AUTH_STORAGE_KEY, sanitizedState)

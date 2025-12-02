@@ -27,6 +27,8 @@ You'll see console logs indicating mock mode:
   RevenueCat: MOCK
 ```
 
+> Web note: If the RevenueCat Web key is missing, the web paywall still renders using the mock service so you can exercise the flow without a live billing configuration.
+
 ### Production Setup
 
 #### Set Up RevenueCat (Mobile and Web)
@@ -42,7 +44,7 @@ You'll see console logs indicating mock mode:
    - Link your App Store/Play Store/Web products
 5. Get your API keys:
    - Go to Project Settings → API Keys
-   - Copy iOS, Android, and Web keys
+   - Copy the Public SDK keys: **iOS**, **Android**, and **Web** (web has its own Public SDK key)
 
 6. Add to `.env`:
 ```bash
@@ -97,6 +99,12 @@ import { PaywallScreen } from './screens/PaywallScreen'
 // and displays the appropriate UI
 <PaywallScreen />
 ```
+
+#### Web Paywall Notes
+
+- The web paywall uses RevenueCat Web Billing. Provide `EXPO_PUBLIC_REVENUECAT_WEB_KEY` to enable real checkout.
+- If the web key is missing in development, the paywall will fall back to the mock RevenueCat service so you can still test the flow.
+- Configure at least one Web Billing offering in the RevenueCat dashboard; otherwise the paywall will show a “No web offering found” message.
 
 ### Check Subscription Status
 

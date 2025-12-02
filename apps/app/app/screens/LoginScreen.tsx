@@ -17,7 +17,9 @@ import { validateEmail, validatePassword } from "@/utils/validation"
 export const LoginScreen = () => {
   const { theme } = useUnistyles()
   const navigation = useNavigation()
-  const signIn = useAuthStore((state) => state.signIn)
+  const { signIn } = useAuthStore((state) => ({
+    signIn: state.signIn,
+  }))
   const { signInWithGoogle, signInWithApple, loading: oauthLoading } = useAuth()
 
   const [email, setEmail] = useState("")
@@ -106,12 +108,21 @@ export const LoginScreen = () => {
     }
   }
 
+  const handleClose = () => {
+    if (navigation.canGoBack()) {
+      navigation.goBack()
+      return
+    }
+
+    navigation.navigate("Welcome" as never)
+  }
+
   return (
     <AuthScreenLayout
       title="Welcome Back"
       subtitle="Sign in to continue"
       showCloseButton
-      onClose={() => navigation.goBack()}
+      onClose={handleClose}
     >
       {/* Email Input */}
       <View style={styles.inputContainer}>

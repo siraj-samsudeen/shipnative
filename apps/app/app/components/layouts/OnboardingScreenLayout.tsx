@@ -81,18 +81,27 @@ export const OnboardingScreenLayout = ({
 }: OnboardingScreenLayoutProps) => {
   const { theme } = useUnistyles()
   const insets = useSafeAreaInsets()
-  const { width: windowWidth } = useWindowDimensions()
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions()
 
   const isLargeScreen = windowWidth > BREAKPOINT_LARGE
   const isWeb = Platform.OS === "web"
+  const webViewportStyle = isWeb
+    // Force full-viewport sizing on web where parent containers can collapse.
+    ? {
+        minHeight: windowHeight,
+        height: windowHeight,
+        width: "100%",
+        maxWidth: "100%",
+      }
+    : undefined
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, webViewportStyle]}>
       <LinearGradient
         colors={[theme.colors.gradientStart, theme.colors.gradientMiddle, theme.colors.gradientEnd]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={styles.gradient}
+        style={[styles.gradient, webViewportStyle]}
       >
         <View
           style={[
@@ -165,18 +174,25 @@ const styles = StyleSheet.create((theme) => ({
     flex: 1,
     ...(Platform.OS === "web" && {
       minHeight: "100vh" as unknown as number,
+      height: "100vh" as unknown as number,
+      width: "100%" as unknown as number,
     }),
   },
   gradient: {
     flex: 1,
     ...(Platform.OS === "web" && {
       minHeight: "100vh" as unknown as number,
+      height: "100vh" as unknown as number,
+      width: "100%" as unknown as number,
     }),
   },
   content: {
     flex: 1,
     justifyContent: "space-between",
     paddingHorizontal: theme.spacing.xl,
+    ...(Platform.OS === "web" && {
+      width: "100%" as unknown as number,
+    }),
   },
   contentCentered: {
     alignItems: "center",

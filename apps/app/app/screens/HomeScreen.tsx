@@ -283,6 +283,10 @@ const styles = StyleSheet.create((theme) => ({
   },
   scrollView: {
     flex: 1,
+    // Enable mouse wheel scrolling on web
+    ...(isWeb && {
+      overflowY: "auto" as unknown as "scroll",
+    }),
   },
   scrollContent: {
     paddingHorizontal: theme.spacing.lg,

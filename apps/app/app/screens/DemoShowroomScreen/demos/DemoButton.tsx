@@ -55,13 +55,13 @@ export const DemoButton: Demo = {
       name="demoButton:useCase.presets.name"
       description="demoButton:useCase.presets.description"
     >
-      <Button>Default - Laboris In Labore</Button>
+      <Button text="Default - Laboris In Labore" />
       <DemoDivider />
 
-      <Button variant="filled">Filled - Laboris Ex</Button>
+      <Button variant="filled" text="Filled - Laboris Ex" />
       <DemoDivider />
 
-      <Button variant="danger">Reversed - Ad Ipsum</Button>
+      <Button variant="danger" text="Reversed - Ad Ipsum" />
     </DemoUseCase>,
     <DemoUseCase
       name="demoButton:useCase.passingContent.name"

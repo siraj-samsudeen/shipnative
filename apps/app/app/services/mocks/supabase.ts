@@ -1850,6 +1850,63 @@ export const mockSupabaseHelpers = {
   },
 
   /**
+   * Delete a user and purge their data from mock storage
+   */
+  async deleteUser(userId: string) {
+    let removedUser = false
+
+    // Remove from user store
+    mockUsers.forEach((value, key) => {
+      if (value.user.id === userId) {
+        mockUsers.delete(key)
+        removedUser = true
+      }
+    })
+
+    if (removedUser) {
+      await persistUsers()
+    }
+
+    // Remove database records that belong to the user
+    let databaseChanged = false
+    mockDatabase.forEach((table) => {
+      let tableChanged = false
+      table.forEach((row, key) => {
+        if (row.id === userId || row.user_id === userId) {
+          table.delete(key)
+          tableChanged = true
+        }
+      })
+      if (tableChanged) {
+        databaseChanged = true
+      }
+    })
+
+    if (databaseChanged) {
+      await persistDatabase()
+    }
+
+    // Remove related files (best effort - matches by user id in metadata/path)
+    Array.from(mockFileStorage.entries()).forEach(([key, file]) => {
+      if (
+        file.user_id === userId ||
+        (typeof file.path === "string" && file.path.includes(userId))
+      ) {
+        mockFileStorage.delete(key)
+      }
+    })
+
+    // Clear active session if it belongs to the deleted user
+    if (currentSession?.user.id === userId) {
+      currentSession = null
+      await removeFromStorage(STORAGE_KEYS.SESSION)
+      notifyAuthStateChange("SIGNED_OUT", null)
+    }
+
+    return removedUser
+  },
+
+  /**
    * Simulate errors for testing error handling
    * @example
    * mockSupabaseHelpers.simulateError('auth', 'signIn', new Error('Network error'))

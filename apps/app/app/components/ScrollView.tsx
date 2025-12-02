@@ -46,7 +46,9 @@ export function ScrollView(props: AppScrollViewProps) {
   const webScrollStyle: StyleProp<ViewStyle> = isWeb
     ? ({
         overflowY: "auto" as unknown as "scroll",
-        height: "100%" as unknown as number,
+        flexGrow: 1,
+        flexShrink: 1,
+        minHeight: 0 as unknown as number,
       } as ViewStyle)
     : undefined
 

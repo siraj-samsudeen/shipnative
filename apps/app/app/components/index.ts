@@ -45,6 +45,7 @@ export * from "./AutoImage"
 
 // Modals
 export * from "./EditProfileModal"
+export * from "./DeleteAccountModal"
 
 // Business Components
 export * from "./PricingCard"

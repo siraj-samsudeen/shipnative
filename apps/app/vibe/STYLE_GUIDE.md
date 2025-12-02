@@ -192,6 +192,47 @@ const MyComponent = () => {
 }
 ```
 
+### Web Scrolling Pattern
+
+**CRITICAL**: All ScrollView components must include web scrolling support for proper mouse wheel scrolling.
+
+```typescript
+import { Platform } from 'react-native'
+
+// ✅ DO THIS - Always add overflowY for web scrolling
+const styles = StyleSheet.create((theme) => ({
+  scrollView: {
+    flex: 1,
+    // Enable mouse wheel scrolling on web
+    ...(Platform.OS === 'web' && {
+      overflowY: 'auto' as unknown as 'scroll',
+    }),
+  },
+}))
+
+// ❌ DON'T DO THIS - Missing web scrolling support
+const styles = StyleSheet.create((theme) => ({
+  scrollView: {
+    flex: 1, // This won't scroll on web!
+  },
+}))
+```
+
+**Why**: React Native's ScrollView on web requires explicit `overflowY: 'auto'` to enable mouse wheel scrolling. Without this, users cannot scroll with mouse wheel or trackpad on web.
+
+**Template Pattern**: Use this pattern for ALL ScrollView styles:
+```typescript
+scrollView: {
+  flex: 1,
+  // Enable mouse wheel scrolling on web
+  ...(Platform.OS === 'web' && {
+    overflowY: 'auto' as unknown as 'scroll',
+  }),
+},
+```
+
+**Alternative**: Use the `Container` component with `preset="scroll"` which includes this fix automatically.
+
 ### Variants
 
 ```typescript
