@@ -273,7 +273,7 @@ All services are configured via environment variables:
 ```bash
 # Supabase
 EXPO_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_your-key
 
 # PostHog
 EXPO_PUBLIC_POSTHOG_API_KEY=your-api-key

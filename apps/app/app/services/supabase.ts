@@ -26,15 +26,15 @@ const ExpoSecureStoreAdapter = {
 }
 
 export const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || ""
-export const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || ""
+export const supabaseKey = process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY || ""
 
 // Use mock Supabase if credentials are missing in development
-const useMock = __DEV__ && (!supabaseUrl || !supabaseAnonKey)
+const useMock = __DEV__ && (!supabaseUrl || !supabaseKey)
 export const isUsingMockSupabase = useMock
 
 export const supabase = useMock
   ? createMockSupabaseClient()
-  : createClient(supabaseUrl, supabaseAnonKey, {
+  : createClient(supabaseUrl, supabaseKey, {
       auth: {
         storage: ExpoSecureStoreAdapter as any,
         autoRefreshToken: true,
@@ -46,7 +46,9 @@ export const supabase = useMock
 if (useMock && __DEV__) {
   // Use logger for consistency, but this is dev-only so console is acceptable
   console.warn("⚠️  Supabase credentials not found - using mock authentication")
-  console.log("💡 Add EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY to .env")
+  console.log(
+    "💡 Add EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY to apps/app/.env"
+  )
 }
 
 // Only set up auto-refresh for real Supabase client

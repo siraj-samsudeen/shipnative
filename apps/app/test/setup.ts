@@ -51,6 +51,15 @@ jest.mock("../app/i18n/index.ts", () => ({
   },
 }))
 
+// Mock keyboard controller which isn't available in the Jest environment
+jest.mock("react-native-keyboard-controller", () => {
+  return {
+    KeyboardProvider: ({ children }: { children: unknown }) => children,
+    KeyboardAwareScrollView: ({ children }: { children: unknown }) => children,
+    useKeyboardHandler: () => {},
+  }
+})
+
 // Mock react-native-unistyles to avoid NitroModules errors in tests
 jest.mock("react-native-unistyles", () => {
   const mockTheme = {

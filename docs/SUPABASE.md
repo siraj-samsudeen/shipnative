@@ -35,14 +35,14 @@ You'll see console logs:
 
 1. Go to Project Settings → API
 2. Copy your Project URL
-3. Copy your `anon` public key
+3. Copy your **publishable** key (`sb_publishable_...`) from the API settings
 
 #### 3. Add to Environment
 
 Add to `.env`:
 ```bash
 EXPO_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
+EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_your-key-here
 ```
 
 #### 4. Set Up Database Schema
@@ -627,7 +627,7 @@ channel.unsubscribe()
 
 **Solution**:
 - Verify `.env` file exists
-- Check `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` are set
+- Check `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` are set
 - Restart Metro: `yarn app:start --clear`
 
 ### Authentication not persisting
@@ -656,7 +656,7 @@ channel.unsubscribe()
 **Solution**:
 - Add your domain to Supabase → Authentication → URL Configuration
 - Check API URL is correct
-- Verify anon key is correct
+- Verify publishable key is correct
 
 ---
 

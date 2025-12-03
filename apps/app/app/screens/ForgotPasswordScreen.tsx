@@ -3,8 +3,10 @@ import { View, TouchableOpacity } from "react-native"
 import { useNavigation } from "@react-navigation/native"
 import { StyleSheet } from "react-native-unistyles"
 
-import { Text, TextField, AuthScreenLayout } from "@/components"
-import { useAuthStore } from "@/stores"
+import { useAuthStore } from "@/stores/authStore"
+import { Text } from "@/components/Text"
+import { TextField } from "@/components/TextField"
+import { AuthScreenLayout } from "@/components/layouts/AuthScreenLayout"
 import { validateEmail } from "@/utils/validation"
 
 // =============================================================================

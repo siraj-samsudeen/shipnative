@@ -568,7 +568,7 @@ When ready to use real services:
 1. **Add API Keys** to `.env`:
 ```bash
 EXPO_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-EXPO_PUBLIC_SUPABASE_ANON_KEY=your-key
+EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_your-key
 EXPO_PUBLIC_POSTHOG_API_KEY=your-key
 EXPO_PUBLIC_SENTRY_DSN=your-dsn
 # etc.

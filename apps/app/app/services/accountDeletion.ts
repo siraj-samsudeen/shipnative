@@ -2,11 +2,11 @@ import { useAuthStore, useSubscriptionStore } from "@/stores"
 import { GUEST_USER_KEY } from "@/stores/authStore"
 import type { Session } from "@/types/auth"
 
-import { supabase, supabaseAnonKey, supabaseUrl, isUsingMockSupabase } from "./supabase"
+import { supabase, supabaseKey, supabaseUrl, isUsingMockSupabase } from "./supabase"
 import { mockSupabaseHelpers } from "./mocks/supabase"
 
 async function deleteSupabaseAccount(session: Session) {
-  if (!supabaseUrl || !supabaseAnonKey) {
+  if (!supabaseUrl || !supabaseKey) {
     throw new Error("Supabase is not configured for account deletion")
   }
 
@@ -27,7 +27,7 @@ async function deleteSupabaseAccount(session: Session) {
     const response = await fetch(`${supabaseUrl}/auth/v1/user`, {
       method: "DELETE",
       headers: {
-        apikey: supabaseAnonKey,
+        apikey: supabaseKey,
         Authorization: `Bearer ${session.access_token}`,
       },
     })

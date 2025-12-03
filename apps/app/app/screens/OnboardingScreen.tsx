@@ -4,9 +4,11 @@ import { Ionicons } from "@expo/vector-icons"
 import { StyleSheet, useUnistyles } from "react-native-unistyles"
 import { useNavigation } from "@react-navigation/native"
 
-import { Text, OnboardingScreenLayout } from "@/components"
 import type { AppStackScreenProps } from "@/navigators/navigationTypes"
-import { useAuthStore, useNotificationStore } from "@/stores"
+import { useAuthStore } from "@/stores/authStore"
+import { useNotificationStore } from "@/stores/notificationStore"
+import { Text } from "@/components/Text"
+import { OnboardingScreenLayout } from "@/components/layouts/OnboardingScreenLayout"
 
 // =============================================================================
 // TYPES

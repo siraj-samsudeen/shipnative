@@ -4,10 +4,14 @@ import { Ionicons } from "@expo/vector-icons"
 import { useNavigation } from "@react-navigation/native"
 import { StyleSheet, useUnistyles } from "react-native-unistyles"
 
-import { Text, TextField, Divider, Spinner, AuthScreenLayout } from "@/components"
 import { features } from "@/config/features"
 import { useAuth } from "@/hooks/useAuth"
-import { useAuthStore } from "@/stores"
+import { useAuthStore } from "@/stores/authStore"
+import { Divider } from "@/components/Divider"
+import { Spinner } from "@/components/Spinner"
+import { Text } from "@/components/Text"
+import { TextField } from "@/components/TextField"
+import { AuthScreenLayout } from "@/components/layouts/AuthScreenLayout"
 import {
   validateEmail,
   validatePassword,

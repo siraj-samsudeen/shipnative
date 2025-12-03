@@ -299,7 +299,7 @@ Create `.env.production`:
 ```bash
 # Supabase
 EXPO_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-EXPO_PUBLIC_SUPABASE_ANON_KEY=your-production-anon-key
+EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_your-production-key
 
 # RevenueCat (all platforms)
 EXPO_PUBLIC_REVENUECAT_IOS_KEY=your-ios-key
@@ -323,7 +323,7 @@ Store sensitive values as EAS secrets:
 
 ```bash
 # Add secrets to EAS
-eas secret:create --scope project --name SUPABASE_ANON_KEY --value "your-key"
+eas secret:create --scope project --name SUPABASE_PUBLISHABLE_KEY --value "sb_publishable_your-key"
 eas secret:create --scope project --name REVENUECAT_IOS_KEY --value "your-key"
 # ... add more secrets
 

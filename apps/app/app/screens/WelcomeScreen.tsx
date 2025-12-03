@@ -3,9 +3,11 @@ import { View, TouchableOpacity, Alert } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import { StyleSheet, useUnistyles } from "react-native-unistyles"
 
-import { Text, Divider, AuthScreenLayout } from "@/components"
 import { features } from "@/config/features"
 import { useAuth } from "@/hooks/useAuth"
+import { Divider } from "@/components/Divider"
+import { Text } from "@/components/Text"
+import { AuthScreenLayout } from "@/components/layouts/AuthScreenLayout"
 import type { AppStackScreenProps } from "@/navigators/navigationTypes"
 
 // =============================================================================

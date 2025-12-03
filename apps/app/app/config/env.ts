@@ -14,7 +14,7 @@ import { logger } from "../utils/Logger"
 interface EnvConfig {
   // Supabase
   supabaseUrl: string
-  supabaseAnonKey: string
+  supabasePublishableKey: string
 
   // RevenueCat
   revenueCatIosKey: string
@@ -37,7 +37,7 @@ interface EnvConfig {
  * Required environment variables
  * These must be present in production
  */
-const REQUIRED_IN_PRODUCTION: Array<keyof EnvConfig> = ["supabaseUrl", "supabaseAnonKey"]
+const REQUIRED_IN_PRODUCTION: Array<keyof EnvConfig> = ["supabaseUrl", "supabasePublishableKey"]
 
 /**
  * Get environment variable from expo config
@@ -57,7 +57,7 @@ function getEnvConfig(): EnvConfig {
   return {
     // Supabase
     supabaseUrl: getEnvVar("supabase_url") || "",
-    supabaseAnonKey: getEnvVar("supabase_anon_key") || "",
+    supabasePublishableKey: getEnvVar("supabase_publishable_key") || "",
 
     // RevenueCat
     revenueCatIosKey: getEnvVar("revenuecat_ios_key") || "",
@@ -162,7 +162,7 @@ export function isServiceConfigured(
 ): boolean {
   switch (service) {
     case "supabase":
-      return !!(env.supabaseUrl && env.supabaseAnonKey)
+      return !!(env.supabaseUrl && env.supabasePublishableKey)
     case "revenuecat":
       return !!(env.revenueCatIosKey || env.revenueCatAndroidKey || env.revenueCatWebKey)
     case "posthog":

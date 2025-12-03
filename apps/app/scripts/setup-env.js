@@ -19,7 +19,10 @@ const rl = readline.createInterface({
 
 const questions = [
   { key: "EXPO_PUBLIC_SUPABASE_URL", question: "Enter your Supabase URL: " },
-  { key: "EXPO_PUBLIC_SUPABASE_ANON_KEY", question: "Enter your Supabase Anon Key: " },
+  {
+    key: "EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
+    question: "Enter your Supabase publishable key (sb_publishable_...): ",
+  },
   {
     key: "EXPO_PUBLIC_GOOGLE_CLIENT_ID",
     question: "Enter your Google OAuth Client ID (optional, for social login): ",

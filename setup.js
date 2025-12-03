@@ -80,6 +80,8 @@ const validateBundleId = (bundleId) => /^[a-zA-Z0-9-.]+$/.test(bundleId)
 const validateScheme = (scheme) => /^[a-z0-9]+$/.test(scheme)
 const validateUrl = (url) => url.startsWith("https://")
 const validateNotEmpty = (value) => value.length > 0
+const validateSupabaseKey = (key) =>
+  /^sb_publishable_[A-Za-z0-9_-]+$/.test(key) || key.startsWith("ey") || key.length > 20
 
 // Utility helpers
 const repeatLine = (char = "━") => char.repeat(70)
@@ -138,7 +140,10 @@ const serviceLabels = {
 }
 
 const getServiceStatus = (services) => ({
-  supabase: Boolean(services.EXPO_PUBLIC_SUPABASE_URL || services.EXPO_PUBLIC_SUPABASE_ANON_KEY),
+  supabase: Boolean(
+    services.EXPO_PUBLIC_SUPABASE_URL ||
+      services.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+  ),
   google: Boolean(services.EXPO_PUBLIC_GOOGLE_CLIENT_ID || services.EXPO_PUBLIC_GOOGLE_CLIENT_SECRET),
   apple: Boolean(
     services.EXPO_PUBLIC_APPLE_SERVICES_ID ||
@@ -167,10 +172,15 @@ const formatServiceList = (status, target = true) =>
 // ========================================
 const configureMetadata = async (config, defaults = {}) => {
   printSection("📱 PROJECT METADATA", [
-    "Configure your app name, bundle identifier, and URL scheme.",
-    "Values shown in parentheses are pulled from existing config when available.",
+    "These values define how your app appears to users and app stores.",
+    "• App Display Name: short, friendly text under the icon and in store listings.",
+    "• Project Name (slug): developer-facing ID used in folders/URLs; lowercase with dashes.",
+    "• Bundle Identifier: reverse-domain ID required by Apple/Google (e.g., com.acme.shipnative).",
+    "• App Scheme: lowercase token for deep links and OAuth callbacks (e.g., shipnativeapp).",
+    "Values in parentheses come from existing config when available.",
   ])
 
+  console.log("\nℹ️  App Display Name shows on users' home screens. Keep it short and readable.")
   const defaultDisplayName = defaults.displayName || "My ShipNative App"
   config.displayName = await askQuestion(
     "What is your app's display name? (shown to users)",
@@ -178,6 +188,9 @@ const configureMetadata = async (config, defaults = {}) => {
     defaultDisplayName
   )
 
+  console.log(
+    "\nℹ️  Project Name is a URL-safe slug used in build folders and links. Lowercase, numbers, and dashes only."
+  )
   const derivedProjectName = config.displayName
     .toLowerCase()
     .replace(/\s+/g, "-")
@@ -189,6 +202,9 @@ const configureMetadata = async (config, defaults = {}) => {
     defaultProjectName
   )
 
+  console.log(
+    "\nℹ️  Bundle Identifier uniquely identifies your app in the stores. Use a domain you control (e.g., com.yourcompany.app)."
+  )
   const defaultBundleId = defaults.bundleId || `com.shipnative.${config.projectName.replace(/-/g, "")}`
   config.bundleId = await askQuestion(
     "What is your bundle identifier? (e.g., com.company.app)",
@@ -196,6 +212,9 @@ const configureMetadata = async (config, defaults = {}) => {
     defaultBundleId
   )
 
+  console.log(
+    "\nℹ️  App Scheme powers deep links and sign-in redirects. Keep it short, lowercase, and unique (e.g., shipnativeapp)."
+  )
   const defaultScheme = defaults.scheme || config.projectName.replace(/-/g, "")
   config.scheme = await askQuestion(
     "What is your app scheme? (for deep linking, e.g., myapp)",
@@ -209,6 +228,8 @@ const configureMetadata = async (config, defaults = {}) => {
 const configureSupabase = async (services, defaults = {}, options = {}) => {
   printSection("🔹 SUPABASE (Backend & Auth)", [
     "Supabase provides database, authentication, and real-time features.",
+    "Use your project URL and a publishable key (sb_publishable_...) that is safe to ship in mobile/desktop apps.",
+    "Secret/Service Role keys must stay on servers only.",
     "Create a project at: https://supabase.com/dashboard/projects",
   ])
 
@@ -216,15 +237,17 @@ const configureSupabase = async (services, defaults = {}, options = {}) => {
     options.skipConfirm || (await askYesNo("Do you want to set up Supabase now?", true))
   if (!shouldConfigure) return false
 
+  const defaultPublishableKey = defaults.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+
   services.EXPO_PUBLIC_SUPABASE_URL = await askQuestion(
     "Enter your Supabase Project URL",
     validateUrl,
     defaults.EXPO_PUBLIC_SUPABASE_URL
   )
-  services.EXPO_PUBLIC_SUPABASE_ANON_KEY = await askQuestion(
-    "Enter your Supabase Anon Key",
-    (key) => key.length > 20,
-    defaults.EXPO_PUBLIC_SUPABASE_ANON_KEY
+  services.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY = await askQuestion(
+    "Enter your Supabase publishable key (starts with sb_publishable_... and safe to embed)",
+    validateSupabaseKey,
+    defaultPublishableKey
   )
   return true
 }
@@ -433,6 +456,13 @@ async function setup() {
   const config = {}
   const services = { ...existingEnv }
 
+  // Migrate legacy anon key input to publishable key and drop the old variable name
+  if (services.EXPO_PUBLIC_SUPABASE_ANON_KEY && !services.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY) {
+    services.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY = services.EXPO_PUBLIC_SUPABASE_ANON_KEY
+  }
+  delete services.EXPO_PUBLIC_SUPABASE_ANON_KEY
+  const serviceDefaults = { ...services }
+
   const mode = await askChoice("Setup mode:", [
     {
       value: "wizard",
@@ -460,10 +490,10 @@ async function setup() {
 
   if (mode === "wizard") {
     metadataConfigured = await configureMetadata(config, metadataDefaults)
-    servicesConfigured = await configureServicesSequentially(services, existingEnv)
+    servicesConfigured = await configureServicesSequentially(services, serviceDefaults)
   } else if (mode === "service-menu") {
     console.log("\nOpening the service configurator. Use it to edit one service at a time.\n")
-    servicesConfigured = await runServiceMenu(services, existingEnv)
+    servicesConfigured = await runServiceMenu(services, serviceDefaults)
   } else if (mode === "metadata-only") {
     metadataConfigured = await configureMetadata(config, metadataDefaults)
   }
