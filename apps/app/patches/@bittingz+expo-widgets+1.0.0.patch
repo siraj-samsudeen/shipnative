@@ -1,0 +1,27 @@
+diff --git a/node_modules/@bittingz/expo-widgets/ios/ExpoWidgetsModule.swift b/node_modules/@bittingz/expo-widgets/ios/ExpoWidgetsModule.swift
+index 351475c..e9426f8 100644
+--- a/node_modules/@bittingz/expo-widgets/ios/ExpoWidgetsModule.swift
++++ b/node_modules/@bittingz/expo-widgets/ios/ExpoWidgetsModule.swift
+@@ -1,7 +1,8 @@
+ import ExpoModulesCore
+ import ActivityKit
+ import WidgetKit
++import OSLog
+ 
+ struct SetDataProps: Record {
+   @Field
+@@ -15,10 +16,10 @@ public class ExpoWidgetsModule: Module {
+         Name("ExpoWidgets")
+         
+         Function("setWidgetData") { (data: String) -> Void in   
+-            let logger = Logger()        
++            let logger = Logger(subsystem: "com.expo.widgets", category: "ExpoWidgets")        
+             // here we are using UserDefaults to send data to the widget
+             // you MUST use a suite name of the format group.{your project bundle id}.expowidgets
+             let widgetSuite = UserDefaults(suiteName: "group.expo.modules.widgets.example.expowidgets")
+             widgetSuite?.set(data, forKey: "MyData")
+             logger.info("Encoded data saved to suite group.expo.modules.widgets.example.expowidgets, key MyData")
+-            logger.info(data)
++            logger.info("\(data)")
+ 
+             // this is optional, but while your app is open and in focus
