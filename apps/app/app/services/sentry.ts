@@ -16,22 +16,22 @@ import type {
   ErrorLevel,
 } from "../types/errorTracking"
 import { mockSentry } from "./mocks/sentry"
+import { logger } from "../utils/Logger"
 
 // Sentry SDKs (platform-specific)
 let SentryRN: any = null // React Native
 
 // Load Sentry SDK based on platform
-// Note: Web SDK (@sentry/react) is currently disabled due to React 19 compatibility issues
-// See: https://github.com/getsentry/sentry-javascript/issues/...
-if (Platform.OS !== "web") {
-  try {
-    SentryRN = require("@sentry/react-native")
-  } catch (e) {
-    console.warn("Failed to load @sentry/react-native", e)
+// Note: @sentry/react-native works on all platforms including web (via React Native Web)
+// Note: Errors during SDK loading are logged in initialize() method, not at module load time
+try {
+  SentryRN = require("@sentry/react-native")
+} catch (e) {
+  // SDK loading failed - will be logged during initialization
+  // Using console here since logger might not be ready during module load
+  if (__DEV__) {
+    console.warn("Failed to load @sentry/react-native. Will use mock if DSN is missing.")
   }
-} else if (__DEV__) {
-  console.warn("⚠️  Sentry web SDK disabled - React 19 not yet supported")
-  console.log("💡 Error tracking on web will use mock implementation")
 }
 
 const dsn = process.env.EXPO_PUBLIC_SENTRY_DSN || ""
@@ -50,25 +50,22 @@ class SentryService implements ErrorTrackingService {
     const sentryDsn = config.dsn || dsn
 
     if (!sentryDsn) {
-      console.warn("Sentry DSN not provided")
+      logger.warn("Sentry DSN not provided")
       return
     }
 
-    // Web platform is not supported yet (React 19 compatibility)
-    if (Platform.OS === "web") {
-      if (__DEV__) {
-        console.warn("🐛 [Sentry] Web platform not supported - using mock implementation")
-      }
-      return
-    }
-
-    // Initialize Sentry for React Native (iOS/Android)
+    // Initialize Sentry for all platforms (iOS/Android/Web)
+    // Note: Sentry supports React 19 - see https://docs.sentry.io/platforms/javascript/guides/react/
+    // @sentry/react-native works on web via React Native Web, but for production web-only apps,
+    // consider using @sentry/react for better web-specific features
     if (!SentryRN) {
-      console.warn("Sentry React Native SDK not available")
+      logger.error("Sentry React Native SDK not available. Make sure @sentry/react-native is installed", {})
       return
     }
 
     try {
+      const isWeb = Platform.OS === "web"
+      
       SentryRN.init({
         dsn: sentryDsn,
         environment: config.environment || (__DEV__ ? "development" : "production"),
@@ -81,27 +78,29 @@ class SentryService implements ErrorTrackingService {
         // Performance monitoring (per Sentry best practices)
         enableAutoPerformanceTracing: config.enableAutoPerformanceTracing ?? true,
         enableAppStartTracking: config.enableAppStartTracking ?? true,
-        enableNativeFramesTracking: config.enableNativeFramesTracking ?? true,
-        enableStallTracking: config.enableStallTracking ?? true,
+        // Native-specific performance tracking (ignored on web by SDK)
+        enableNativeFramesTracking: isWeb ? false : (config.enableNativeFramesTracking ?? true),
+        enableStallTracking: isWeb ? false : (config.enableStallTracking ?? true),
 
         // Error attachments
         attachScreenshot: config.attachScreenshot ?? true,
         attachViewHierarchy: config.attachViewHierarchy ?? false, // Can be expensive
 
-        // Native configuration
-        enableNative: config.enableNative ?? true,
-        enableNativeCrashHandling: config.enableNativeCrashHandling ?? true,
-        enableNdk: config.enableNdk ?? true,
+        // Native configuration (ignored on web by SDK, but set conditionally for clarity)
+        enableNative: isWeb ? false : (config.enableNative ?? true),
+        enableNativeCrashHandling: isWeb ? false : (config.enableNativeCrashHandling ?? true),
+        enableNdk: isWeb ? false : (config.enableNdk ?? true),
       })
 
       this.Sentry = SentryRN
       this.initialized = true
 
       if (__DEV__) {
-        console.log("🐛 [Sentry] Initialized for mobile with performance monitoring")
+        const platform = Platform.OS === "web" ? "web" : "mobile"
+        logger.debug(`🐛 [Sentry] Initialized for ${platform} with performance monitoring`)
       }
     } catch (error) {
-      console.error("Failed to initialize Sentry:", error)
+      logger.error("Failed to initialize Sentry", {}, error as Error)
     }
   }
 
@@ -117,7 +116,7 @@ class SentryService implements ErrorTrackingService {
         user: context?.user,
       })
     } catch (err) {
-      console.error("Sentry captureException error:", err)
+      logger.error("Sentry captureException error", {}, err as Error)
       return undefined
     }
   }
@@ -134,7 +133,7 @@ class SentryService implements ErrorTrackingService {
         user: context?.user,
       })
     } catch (error) {
-      console.error("Sentry captureMessage error:", error)
+      logger.error("Sentry captureMessage error", {}, error as Error)
       return undefined
     }
   }
@@ -146,10 +145,10 @@ class SentryService implements ErrorTrackingService {
       this.Sentry.setUser(user)
 
       if (__DEV__ && user) {
-        console.log("🐛 [Sentry] Set user:", user.id || user.email)
+        logger.debug("🐛 [Sentry] Set user", { userId: user.id || user.email })
       }
     } catch (error) {
-      console.error("Sentry setUser error:", error)
+      logger.error("Sentry setUser error", {}, error as Error)
     }
   }
 
@@ -159,7 +158,7 @@ class SentryService implements ErrorTrackingService {
     try {
       this.Sentry.setContext(key, value)
     } catch (error) {
-      console.error("Sentry setContext error:", error)
+      logger.error("Sentry setContext error", {}, error as Error)
     }
   }
 
@@ -169,7 +168,7 @@ class SentryService implements ErrorTrackingService {
     try {
       this.Sentry.setTag(key, value)
     } catch (error) {
-      console.error("Sentry setTag error:", error)
+      logger.error("Sentry setTag error", {}, error as Error)
     }
   }
 
@@ -179,7 +178,7 @@ class SentryService implements ErrorTrackingService {
     try {
       this.Sentry.setTags(tags)
     } catch (error) {
-      console.error("Sentry setTags error:", error)
+      logger.error("Sentry setTags error", {}, error as Error)
     }
   }
 
@@ -189,7 +188,7 @@ class SentryService implements ErrorTrackingService {
     try {
       this.Sentry.setExtra(key, value)
     } catch (error) {
-      console.error("Sentry setExtra error:", error)
+      logger.error("Sentry setExtra error", {}, error as Error)
     }
   }
 
@@ -199,7 +198,7 @@ class SentryService implements ErrorTrackingService {
     try {
       this.Sentry.setExtras(extras)
     } catch (error) {
-      console.error("Sentry setExtras error:", error)
+      logger.error("Sentry setExtras error", {}, error as Error)
     }
   }
 
@@ -216,7 +215,7 @@ class SentryService implements ErrorTrackingService {
         timestamp: breadcrumb.timestamp,
       })
     } catch (error) {
-      console.error("Sentry addBreadcrumb error:", error)
+      logger.error("Sentry addBreadcrumb error", {}, error as Error)
     }
   }
 
@@ -226,7 +225,7 @@ class SentryService implements ErrorTrackingService {
     try {
       this.Sentry.withScope(callback)
     } catch (error) {
-      console.error("Sentry withScope error:", error)
+      logger.error("Sentry withScope error", {}, error as Error)
     }
   }
 
@@ -239,7 +238,7 @@ class SentryService implements ErrorTrackingService {
         op: op || "custom",
       })
     } catch (error) {
-      console.error("Sentry startTransaction error:", error)
+      logger.error("Sentry startTransaction error", {}, error as Error)
       return null
     }
   }
@@ -250,7 +249,7 @@ class SentryService implements ErrorTrackingService {
     try {
       return await this.Sentry.close(timeout)
     } catch (error) {
-      console.error("Sentry close error:", error)
+      logger.error("Sentry close error", {}, error as Error)
       return false
     }
   }
@@ -263,8 +262,8 @@ export const sentry: ErrorTrackingService = useMock ? mockSentry : new SentrySer
 export const initSentry = () => {
   if (useMock) {
     if (__DEV__) {
-      console.warn("⚠️  Sentry DSN not found - using mock error tracking")
-      console.log("💡 Add EXPO_PUBLIC_SENTRY_DSN to .env to use real Sentry")
+      logger.warn("⚠️  Sentry DSN not found - using mock error tracking")
+      logger.info("💡 Add EXPO_PUBLIC_SENTRY_DSN to .env to use real Sentry")
     }
     return
   }
@@ -274,8 +273,16 @@ export const initSentry = () => {
     environment: __DEV__ ? "development" : "production",
     enableInDevelopment: false,
   })
-}
+  
+  // Log mock mode status during initialization (when logger is ready)
+  if (useMock && __DEV__) {
+    logger.warn("⚠️  Sentry running in mock mode")
+    return
+  }
 
-if (useMock && __DEV__) {
-  console.warn("⚠️  Sentry running in mock mode")
+  // Note: @sentry/react-native automatically sets up global error handlers
+  // No need for manual setup - Sentry captures unhandled errors automatically
+  if (__DEV__) {
+    logger.debug("🐛 [Sentry] Initialized - automatic error capture enabled")
+  }
 }

@@ -11,6 +11,7 @@ import {
 import { Ionicons } from "@expo/vector-icons"
 import { StyleSheet, useUnistyles } from "react-native-unistyles"
 
+import { translate } from "@/i18n/translate"
 import { deleteAccount } from "@/services/accountDeletion"
 import { haptics } from "@/utils/haptics"
 
@@ -50,7 +51,7 @@ export const DeleteAccountModal: FC<DeleteAccountModalProps> = ({ visible, onClo
     const result = await deleteAccount()
 
     if (result.error) {
-      setError(result.error.message || "Unable to delete your account right now.")
+      setError(result.error.message || translate("deleteAccountModal:errorGeneric"))
       haptics.error()
       setLoading(false)
       return
@@ -83,8 +84,8 @@ export const DeleteAccountModal: FC<DeleteAccountModalProps> = ({ visible, onClo
                   <Ionicons name="warning-outline" size={20} color={theme.colors.error} />
                 </View>
                 <View style={styles.titleCopy}>
-                  <Text style={styles.title}>Delete Account</Text>
-                  <Text style={styles.subtitle}>This action cannot be undone.</Text>
+                  <Text style={styles.title} tx="deleteAccountModal:title" />
+                  <Text style={styles.subtitle} tx="deleteAccountModal:subtitle" />
                 </View>
               </View>
               <Pressable onPress={handleClose} style={styles.closeButton}>
@@ -99,27 +100,21 @@ export const DeleteAccountModal: FC<DeleteAccountModalProps> = ({ visible, onClo
             >
               <View style={styles.infoRow}>
                 <Ionicons name="trash-outline" size={18} color={theme.colors.error} />
-                <Text style={styles.infoText}>
-                  We will remove your profile data, preferences, and stored settings.
-                </Text>
+                <Text style={styles.infoText} tx="deleteAccountModal:infoProfile" />
               </View>
               <View style={styles.infoRow}>
                 <Ionicons name="shield-checkmark-outline" size={18} color={theme.colors.error} />
-                <Text style={styles.infoText}>
-                  Active subscriptions will be disconnected from your account.
-                </Text>
+                <Text style={styles.infoText} tx="deleteAccountModal:infoSubscriptions" />
               </View>
               <View style={styles.infoRow}>
                 <Ionicons name="log-out-outline" size={18} color={theme.colors.error} />
-                <Text style={styles.infoText}>You will be signed out on all devices.</Text>
+                <Text style={styles.infoText} tx="deleteAccountModal:infoSignOut" />
               </View>
 
               <View style={styles.confirmRow}>
                 <View style={styles.confirmCopy}>
-                  <Text style={styles.confirmLabel}>I understand this is permanent</Text>
-                  <Text style={styles.confirmHint}>
-                    You&apos;ll need to create a new account to return.
-                  </Text>
+                  <Text style={styles.confirmLabel} tx="deleteAccountModal:confirmLabel" />
+                  <Text style={styles.confirmHint} tx="deleteAccountModal:confirmHint" />
                 </View>
                 <Switch
                   value={confirmChecked}
@@ -137,14 +132,14 @@ export const DeleteAccountModal: FC<DeleteAccountModalProps> = ({ visible, onClo
 
             <View style={styles.actions}>
               <Button
-                text="Cancel"
+                tx="deleteAccountModal:cancelButton"
                 variant="ghost"
                 onPress={handleClose}
                 disabled={loading}
                 style={styles.cancelButton}
               />
               <Button
-                text="Delete my account"
+                tx="deleteAccountModal:deleteButton"
                 variant="danger"
                 onPress={handleDelete}
                 loading={loading}

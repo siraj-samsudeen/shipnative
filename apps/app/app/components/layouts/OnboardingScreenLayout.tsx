@@ -30,8 +30,12 @@
 import { ReactNode } from "react"
 import { View, Platform, useWindowDimensions } from "react-native"
 import { LinearGradient } from "expo-linear-gradient"
+import type { TOptions } from "i18next"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { StyleSheet, useUnistyles } from "react-native-unistyles"
+
+import { TxKeyPath } from "@/i18n"
+import { webDimension } from "@/types/webStyles"
 
 import { Text } from "../Text"
 
@@ -42,8 +46,16 @@ import { Text } from "../Text"
 export interface OnboardingScreenLayoutProps {
   /** Main heading text */
   title?: string
+  /** i18n translation key for title */
+  titleTx?: TxKeyPath
+  /** i18n translation options for title */
+  titleTxOptions?: TOptions
   /** Subtitle/description below the title */
   subtitle?: string
+  /** i18n translation key for subtitle */
+  subtitleTx?: TxKeyPath
+  /** i18n translation options for subtitle */
+  subtitleTxOptions?: TOptions
   /** Emoji/icon displayed in a circle above the title */
   headerIcon?: string
   /** Screen content (buttons, options, etc.) */
@@ -71,7 +83,11 @@ const BREAKPOINT_LARGE = 768
 
 export const OnboardingScreenLayout = ({
   title,
+  titleTx,
+  titleTxOptions,
   subtitle,
+  subtitleTx,
+  subtitleTxOptions,
   headerIcon,
   children,
   currentStep = 0,
@@ -90,8 +106,8 @@ export const OnboardingScreenLayout = ({
       {
         minHeight: windowHeight,
         height: windowHeight,
-        width: "100%",
-        maxWidth: "100%",
+        width: webDimension("100%"),
+        maxWidth: webDimension("100%"),
       }
     : undefined
 
@@ -125,17 +141,27 @@ export const OnboardingScreenLayout = ({
             )}
 
             {/* Title */}
-            {title && (
-              <Text size="4xl" weight="bold" style={styles.title}>
-                {title}
-              </Text>
+            {(title || titleTx) && (
+              <Text
+                size="4xl"
+                weight="bold"
+                style={styles.title}
+                text={title}
+                tx={titleTx}
+                txOptions={titleTxOptions}
+              />
             )}
 
             {/* Subtitle */}
-            {subtitle && (
-              <Text size="lg" color="secondary" style={styles.subtitle}>
-                {subtitle}
-              </Text>
+            {(subtitle || subtitleTx) && (
+              <Text
+                size="lg"
+                color="secondary"
+                style={styles.subtitle}
+                text={subtitle}
+                tx={subtitleTx}
+                txOptions={subtitleTxOptions}
+              />
             )}
 
             {/* Content */}
@@ -173,17 +199,17 @@ const styles = StyleSheet.create((theme) => ({
   container: {
     flex: 1,
     ...(Platform.OS === "web" && {
-      minHeight: "100vh" as unknown as number,
-      height: "100vh" as unknown as number,
-      width: "100%" as unknown as number,
+      minHeight: webDimension("100vh"),
+      height: webDimension("100vh"),
+      width: webDimension("100%"),
     }),
   },
   gradient: {
     flex: 1,
     ...(Platform.OS === "web" && {
-      minHeight: "100vh" as unknown as number,
-      height: "100vh" as unknown as number,
-      width: "100%" as unknown as number,
+      minHeight: webDimension("100vh"),
+      height: webDimension("100vh"),
+      width: webDimension("100%"),
     }),
   },
   content: {
@@ -191,7 +217,7 @@ const styles = StyleSheet.create((theme) => ({
     justifyContent: "space-between",
     paddingHorizontal: theme.spacing.xl,
     ...(Platform.OS === "web" && {
-      width: "100%" as unknown as number,
+      width: webDimension("100%"),
     }),
   },
   contentCentered: {
@@ -201,7 +227,7 @@ const styles = StyleSheet.create((theme) => ({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    width: "100%",
+    width: webDimension("100%"),
   },
   iconContainer: {
     alignItems: "center",
@@ -229,10 +255,10 @@ const styles = StyleSheet.create((theme) => ({
     paddingHorizontal: theme.spacing.md,
   },
   childrenContainer: {
-    width: "100%",
+    width: webDimension("100%"),
   },
   footer: {
-    width: "100%",
+    width: webDimension("100%"),
     marginBottom: theme.spacing.lg,
   },
   dotsContainer: {

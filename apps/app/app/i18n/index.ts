@@ -91,3 +91,16 @@ type RecursiveKeyOfHandleValue<
 export const translate = (key: TxKeyPath, options?: Record<string, unknown>): string => {
   return i18n.t(key, options)
 }
+
+/**
+ * Re-export language switcher utilities
+ */
+export {
+  changeLanguage,
+  getCurrentLanguage,
+  getPersistedLanguage,
+  initializeLanguage,
+  resetToDeviceLanguage,
+  SUPPORTED_LANGUAGES,
+  type SupportedLanguage,
+} from "./languageSwitcher"

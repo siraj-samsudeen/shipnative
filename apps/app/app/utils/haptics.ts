@@ -8,7 +8,9 @@
 
 import { Platform } from "react-native"
 import * as Haptics from "expo-haptics"
+
 import { checkHapticsSupport, checkHapticsSupportSync } from "./hapticsCapability"
+import { logger } from "./Logger"
 
 /**
  * Check if haptics are available on this platform
@@ -20,7 +22,7 @@ const isHapticsAvailable = Platform.OS === "ios" || Platform.OS === "android"
  * Internal function to safely trigger haptic feedback
  * Checks device capabilities before triggering
  */
-async function safeHapticTrigger(hapticFunction: () => Promise<void> | void): Promise<void> {
+async function _safeHapticTrigger(hapticFunction: () => Promise<void> | void): Promise<void> {
   if (!isHapticsAvailable) {
     return
   }
@@ -39,7 +41,7 @@ async function safeHapticTrigger(hapticFunction: () => Promise<void> | void): Pr
     // This prevents console errors on devices/simulators without haptics
     if (__DEV__) {
       // Only log in dev mode for debugging
-      console.debug("[Haptics] Haptic feedback failed:", error)
+      logger.error("[Haptics] Haptic feedback failed", {}, error as Error)
     }
   }
 }
@@ -60,9 +62,12 @@ function safeHapticTriggerSync(hapticFunction: () => Promise<void> | void): void
   }
 
   // Trigger haptic feedback asynchronously
-  hapticFunction().catch(() => {
-    // Silently fail
-  })
+  const result = hapticFunction()
+  if (result instanceof Promise) {
+    result.catch(() => {
+      // Silently fail
+    })
+  }
 }
 
 /**

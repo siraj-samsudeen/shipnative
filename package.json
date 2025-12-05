@@ -31,12 +31,12 @@
     "ios": "cd apps/app && expo run:ios"
   },
   "devDependencies": {
-    "prettier": "^3.3.3",
-    "turbo": "latest",
+    "boxen": "^8.0.1",
+    "chalk": "^5.3.0",
     "inquirer": "^9.2.15",
     "ora": "^7.0.1",
-    "chalk": "^5.3.0",
-    "boxen": "^8.0.1"
+    "prettier": "^3.3.3",
+    "turbo": "latest"
   },
   "packageManager": "yarn@4.9.1",
   "workspaces": [

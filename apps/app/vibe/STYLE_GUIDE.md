@@ -646,6 +646,114 @@ const UserCard = React.memo(({ user }: { user: User }) => {
 </Text>
 ```
 
+## Internationalization (i18n)
+
+**CRITICAL**: This app is fully multilingual. **NEVER hardcode text strings**. Always use i18n translation keys.
+
+### Translation Files
+
+All translations are in `/app/i18n/`:
+- `en.ts` - English (default, source of truth for types)
+- `ar.ts`, `es.ts`, `fr.ts`, `hi.ts`, `ja.ts`, `ko.ts` - Other languages
+
+### Using Translations
+
+```typescript
+// ✅ DO THIS - Use tx prop for text
+import { Text } from '@/components'
+
+<Text tx="common:ok" />
+<Text tx="loginScreen:emailFieldLabel" />
+<Text tx="subscriptionStatus:subscribedVia" txOptions={{ platform: "App Store" }} />
+
+// ✅ DO THIS - Use translate() function for dynamic text
+import { translate } from '@/i18n/translate'
+
+const message = translate("errors:invalidEmail")
+const status = translate("subscriptionStatus:subscribedVia", { platform: "App Store" })
+
+// ✅ DO THIS - Components with tx props
+<Button tx="common:cancel" onPress={handleCancel} />
+<TextField labelTx="loginScreen:emailFieldLabel" placeholderTx="loginScreen:emailFieldPlaceholder" />
+
+// ❌ DON'T DO THIS - Hardcoded text
+<Text>Cancel</Text>
+<Button text="Save" />
+<Text>Welcome, {name}!</Text>
+
+// ❌ DON'T DO THIS - Mixing hardcoded and translated
+<Text>{translate("welcome")}, {name}!</Text>  // Use txOptions instead
+
+// ✅ DO THIS instead - Use interpolation
+<Text tx="welcomeScreen:greeting" txOptions={{ name }} />
+```
+
+### Adding New Translations
+
+1. **Add to `en.ts` first** (this is the source of truth):
+```typescript
+// app/i18n/en.ts
+const en = {
+  myFeature: {
+    title: "My Feature",
+    description: "This is a feature",
+    button: "Get Started",
+  },
+}
+```
+
+2. **Add to all other language files** (`ar.ts`, `es.ts`, `fr.ts`, `hi.ts`, `ja.ts`, `ko.ts`):
+```typescript
+// app/i18n/es.ts
+const es: Translations = {
+  myFeature: {
+    title: "Mi Característica",
+    description: "Esta es una característica",
+    button: "Comenzar",
+  },
+}
+```
+
+3. **Use in components**:
+```typescript
+<Text tx="myFeature:title" />
+<Text tx="myFeature:description" />
+<Button tx="myFeature:button" />
+```
+
+### Component i18n Support
+
+All components support i18n via `tx` props:
+- `Text` - `tx`, `txOptions`
+- `Button` - `tx`, `txOptions`
+- `TextField` - `labelTx`, `placeholderTx`, `helperTx`
+- `Card` - `headingTx`, `contentTx`, `footerTx`
+- `Header` - `titleTx`, `leftTx`, `rightTx`
+- And more...
+
+### Language Switching
+
+```typescript
+import { changeLanguage, SUPPORTED_LANGUAGES } from '@/i18n'
+
+// Change language programmatically
+await changeLanguage('es')  // Spanish
+await changeLanguage('fr')  // French
+
+// Get current language
+import { getCurrentLanguage } from '@/i18n'
+const current = getCurrentLanguage()  // 'en', 'es', etc.
+```
+
+### Best Practices
+
+1. **Always use translation keys** - Never hardcode user-facing text
+2. **Add translations to all languages** - Don't leave translations empty
+3. **Use semantic keys** - `loginScreen:emailFieldLabel` not `text1`
+4. **Group related translations** - Keep related strings together
+5. **Use interpolation** - For dynamic values, use `txOptions`
+6. **Test in different languages** - Especially RTL (Arabic)
+
 ## Anti-Patterns to Avoid
 
 ```typescript
@@ -672,6 +780,10 @@ useEffect(() => {
 // ❌ DON'T DO THIS - Magic numbers
 <View style={{ padding: 16, marginTop: 24 }}>
 
+// ❌ DON'T DO THIS - Hardcoded text (CRITICAL)
+<Text>Welcome</Text>
+<Button text="Save" />
+
 // ✅ DO THIS instead - Use theme values
 const styles = StyleSheet.create((theme) => ({
   container: {
@@ -679,6 +791,10 @@ const styles = StyleSheet.create((theme) => ({
     marginTop: theme.spacing.lg,
   }
 }))
+
+// ✅ DO THIS instead - Use i18n
+<Text tx="welcomeScreen:title" />
+<Button tx="common:save" />
 ```
 
 ## Git Commit Messages
@@ -718,3 +834,5 @@ Before submitting code, ensure:
 - [ ] Theme values are used (no magic numbers)
 - [ ] No hardcoded colors (use theme.colors.*)
 - [ ] Consistent button styles used across screens
+- [ ] **All text uses i18n translation keys (no hardcoded strings)**
+- [ ] Translations added to all language files (en, ar, es, fr, hi, ja, ko)

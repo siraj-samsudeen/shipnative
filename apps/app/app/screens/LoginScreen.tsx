@@ -11,7 +11,8 @@ import { Text } from "@/components/Text"
 import { TextField } from "@/components/TextField"
 import { features } from "@/config/features"
 import { useAuth } from "@/hooks/useAuth"
-import { useAuthStore } from "@/stores/authStore"
+import { useAuthStore } from "@/stores/auth"
+import { formatAuthError } from "@/utils/formatAuthError"
 import { validateEmail, validatePassword } from "@/utils/validation"
 
 // =============================================================================
@@ -56,18 +57,12 @@ export const LoginScreen = () => {
     setLoading(false)
 
     if (signInError) {
-      const errorMessage = signInError.message.toLowerCase()
-      if (errorMessage.includes("email not confirmed") || errorMessage.includes("not confirmed")) {
-        // Email not confirmed - AppNavigator will automatically navigate to EmailVerification
-        // based on state change (needsEmailVerification = true)
+      const formattedError = formatAuthError(signInError)
+      // Empty string means email not confirmed - AppNavigator will handle navigation
+      if (formattedError === "") {
         setError("")
-        // Don't manually navigate - let AppNavigator handle it via state change
-      } else if (errorMessage.includes("invalid")) {
-        setError("Invalid email or password. Please try again.")
-      } else if (errorMessage.includes("email")) {
-        setError("Email not found. Please check your email or sign up.")
       } else {
-        setError(signInError.message)
+        setError(formattedError)
       }
     }
   }

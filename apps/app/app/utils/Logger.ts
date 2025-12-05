@@ -9,8 +9,8 @@
  * - Integration with analytics and crash reporting
  */
 
-import { trackEvent } from "./analytics"
-import { captureException, captureMessage } from "./crashReporting"
+// Lazy imports to avoid circular dependencies
+// These are imported only when needed, not at module load time
 
 /**
  * Log levels
@@ -104,10 +104,7 @@ function redactSensitiveString(str: string): string {
     /([a-zA-Z0-9._%+-]+)@([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g,
     (match, local, domain) => {
       // Show first char and last char of local, full domain
-      const maskedLocal =
-        local.length > 2
-          ? `${local[0]}***${local[local.length - 1]}`
-          : "***"
+      const maskedLocal = local.length > 2 ? `${local[0]}***${local[local.length - 1]}` : "***"
       return `${maskedLocal}@${domain}`
     },
   )
@@ -143,8 +140,7 @@ function redactSensitiveData(data: any): any {
       // For emails, mask but show domain
       if (/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(data)) {
         const [local, domain] = data.split("@")
-        const maskedLocal =
-          local.length > 2 ? `${local[0]}***${local[local.length - 1]}` : "***"
+        const maskedLocal = local.length > 2 ? `${local[0]}***${local[local.length - 1]}` : "***"
         return `${maskedLocal}@${domain}`
       }
       // For other sensitive values, fully redact
@@ -170,12 +166,9 @@ function redactSensitiveData(data: any): any {
       // Value is sensitive even though key isn't - redact it
       if (/^eyJ[A-Za-z0-9_-]*\.[A-Za-z0-9_-]*\.[A-Za-z0-9_-]*$/.test(value)) {
         redacted[key] = `${value.substring(0, 10)}...[REDACTED]`
-      } else if (
-        /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(value)
-      ) {
+      } else if (/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(value)) {
         const [local, domain] = value.split("@")
-        const maskedLocal =
-          local.length > 2 ? `${local[0]}***${local[local.length - 1]}` : "***"
+        const maskedLocal = local.length > 2 ? `${local[0]}***${local[local.length - 1]}` : "***"
         redacted[key] = `${maskedLocal}@${domain}`
       } else {
         redacted[key] = "[REDACTED]"
@@ -295,10 +288,19 @@ class Logger {
 
     // Only track warnings and errors to analytics
     if (level === LogLevel.WARN || level === LogLevel.ERROR) {
-      trackEvent(`log_${level.toLowerCase()}`, {
-        message,
-        ...metadata,
-      })
+      // Lazy import to avoid circular dependency
+      try {
+        const { trackEvent } = require("./analytics")
+        trackEvent(`log_${level.toLowerCase()}`, {
+          message,
+          ...metadata,
+        })
+      } catch (error) {
+        // Silently fail if analytics module is not available (e.g., during circular dependency resolution)
+        if (__DEV__) {
+          console.warn("Failed to log to analytics:", error)
+        }
+      }
     }
   }
 
@@ -315,16 +317,25 @@ class Logger {
 
     // Only report errors to crash reporting
     if (level === LogLevel.ERROR) {
-      if (error) {
-        captureException(error, {
-          tags: { level },
-          extra: { message, ...metadata },
-        })
-      } else {
-        captureMessage(message, {
-          level: "error",
-          extra: metadata,
-        })
+      // Lazy import to avoid circular dependency
+      try {
+        const { captureException, captureMessage } = require("./crashReporting")
+        if (error) {
+          captureException(error, {
+            tags: { level },
+            extra: { message, ...metadata },
+          })
+        } else {
+          captureMessage(message, {
+            level: "error",
+            extra: metadata,
+          })
+        }
+      } catch (err) {
+        // Silently fail if crash reporting module is not available (e.g., during circular dependency resolution)
+        if (__DEV__) {
+          console.warn("Failed to log to crash reporting:", err)
+        }
       }
     }
   }

@@ -1,5 +1,5 @@
 import { useAuthStore, useSubscriptionStore } from "@/stores"
-import { GUEST_USER_KEY } from "@/stores/authStore"
+import { GUEST_USER_KEY } from "@/stores/auth"
 import type { Session } from "@/types/auth"
 
 import { mockSupabaseHelpers } from "./mocks/supabase"

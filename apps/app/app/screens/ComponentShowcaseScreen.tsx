@@ -22,8 +22,10 @@ import {
   ListItem,
   EmptyState,
 } from "@/components"
+import { ANIMATION } from "@/config/constants"
 import type { MainTabScreenProps } from "@/navigators/navigationTypes"
 import { useAppTheme } from "@/theme"
+import { webDimension } from "@/types/webStyles"
 
 // =============================================================================
 // TYPES
@@ -59,7 +61,7 @@ export const ComponentShowcaseScreen: FC<ComponentShowcaseScreenProps> =
       ? {
           maxWidth: CONTENT_MAX_WIDTH,
           alignSelf: "center" as const,
-          width: "100%" as unknown as number,
+          width: webDimension("100%"),
         }
       : {}
 
@@ -257,13 +259,18 @@ export const ComponentShowcaseScreen: FC<ComponentShowcaseScreenProps> =
                 Tap for feedback
               </Text>
             </AnimatedCard>
-            <AnimatedCard entering="zoomIn" delay={100} onPress={() => {}}>
+            <AnimatedCard entering="zoomIn" delay={ANIMATION.STAGGER_DELAY} onPress={() => {}}>
               <Text weight="semiBold">Zoom In</Text>
               <Text size="sm" color="secondary">
                 Tap for feedback
               </Text>
             </AnimatedCard>
-            <AnimatedCard entering="slideInLeft" delay={200} tiltEffect onPress={() => {}}>
+            <AnimatedCard
+              entering="slideInLeft"
+              delay={ANIMATION.STAGGER_DELAY * 2}
+              tiltEffect
+              onPress={() => {}}
+            >
               <Text weight="semiBold">Slide In + Tilt</Text>
               <Text size="sm" color="secondary">
                 Drag for 3D tilt

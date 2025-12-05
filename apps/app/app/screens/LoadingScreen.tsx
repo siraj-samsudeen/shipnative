@@ -4,6 +4,8 @@ import { LinearGradient } from "expo-linear-gradient"
 import { StyleSheet, useUnistyles } from "react-native-unistyles"
 
 import { Text } from "@/components/Text"
+import { ANIMATION } from "@/config/constants"
+import { webDimension } from "@/types/webStyles"
 
 // =============================================================================
 // TYPES
@@ -48,7 +50,7 @@ export function LoadingScreen(props: LoadingScreenProps) {
       ? {
           minHeight: windowHeight,
           height: windowHeight,
-          width: "100%",
+          width: webDimension("100%"),
         }
       : undefined
 
@@ -64,13 +66,13 @@ export function LoadingScreen(props: LoadingScreenProps) {
           toValue: 1.2,
           duration: 1000,
           easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
+          useNativeDriver: Platform.OS !== "web", // Native driver not supported on web
         }),
         Animated.timing(pulseAnim, {
           toValue: 1,
           duration: 1000,
           easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
+          useNativeDriver: Platform.OS !== "web", // Native driver not supported on web
         }),
       ]),
     ).start()
@@ -81,7 +83,7 @@ export function LoadingScreen(props: LoadingScreenProps) {
         toValue: 1,
         duration: 2000,
         easing: Easing.linear,
-        useNativeDriver: true,
+        useNativeDriver: Platform.OS !== "web", // Native driver not supported on web
       }),
     ).start()
   }, [pulseAnim, rotateAnim])
@@ -147,8 +149,8 @@ export function LoadingScreen(props: LoadingScreenProps) {
           {/* Loading dots animation */}
           <View style={styles.dotsContainer}>
             <LoadingDot delay={0} />
-            <LoadingDot delay={200} />
-            <LoadingDot delay={400} />
+            <LoadingDot delay={ANIMATION.STAGGER_DELAY * 2} />
+            <LoadingDot delay={ANIMATION.STAGGER_DELAY * 4} />
           </View>
         </View>
       </LinearGradient>
@@ -172,13 +174,13 @@ function LoadingDot({ delay }: { delay: number }) {
             toValue: 1,
             duration: 600,
             easing: Easing.inOut(Easing.ease),
-            useNativeDriver: true,
+            useNativeDriver: Platform.OS !== "web", // Native driver not supported on web
           }),
           Animated.timing(opacity, {
             toValue: 0.3,
             duration: 600,
             easing: Easing.inOut(Easing.ease),
-            useNativeDriver: true,
+            useNativeDriver: Platform.OS !== "web", // Native driver not supported on web
           }),
         ]),
       ).start()

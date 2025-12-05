@@ -143,18 +143,9 @@ function validateEnvConfig(config: EnvConfig): {
 const env = getEnvConfig()
 const validation = validateEnvConfig(env)
 
-// Log validation results
-if (!validation.isValid) {
-  logger.error("Environment configuration is invalid", {
-    missing: validation.missing,
-  })
-}
-
-if (validation.warnings.length > 0 && __DEV__) {
-  logger.warn("Environment configuration warnings", {
-    warnings: validation.warnings,
-  })
-}
+// Store validation results for logging during app initialization
+// (logger might not be ready during module load)
+export const envValidation = validation
 
 // Export configuration
 export { env }
@@ -199,5 +190,23 @@ export function isServiceConfigured(
       return !!(env.appleServicesId && env.appleTeamId)
     default:
       return false
+  }
+}
+
+/**
+ * Log environment validation results
+ * Call this during app initialization (after logger is ready)
+ */
+export function logEnvValidation(): void {
+  if (!validation.isValid) {
+    logger.error("Environment configuration is invalid", {
+      missing: validation.missing,
+    })
+  }
+
+  if (validation.warnings.length > 0 && __DEV__) {
+    logger.warn("Environment configuration warnings", {
+      warnings: validation.warnings,
+    })
   }
 }

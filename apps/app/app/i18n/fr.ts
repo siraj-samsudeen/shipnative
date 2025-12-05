@@ -30,6 +30,58 @@ const fr: Translations = {
       button: "Essayons à nouveau",
     },
   },
+  deleteAccountModal: {
+    title: "Supprimer le compte",
+    subtitle: "Cette action est irréversible.",
+    infoProfile:
+      "Nous supprimerons les données de votre profil, vos préférences et vos paramètres enregistrés.",
+    infoSubscriptions: "Les abonnements actifs seront déconnectés de votre compte.",
+    infoSignOut: "Vous serez déconnecté sur tous les appareils.",
+    confirmLabel: "Je comprends que c'est permanent",
+    confirmHint: "Vous devrez créer un nouveau compte pour revenir.",
+    cancelButton: "Annuler",
+    deleteButton: "Supprimer mon compte",
+    errorGeneric: "Impossible de supprimer votre compte pour le moment.",
+  },
+  editProfileModal: {
+    title: "Modifier le profil",
+    firstNameLabel: "Prénom",
+    firstNamePlaceholder: "Entrez votre prénom",
+    lastNameLabel: "Nom de famille",
+    lastNamePlaceholder: "Entrez votre nom de famille",
+    cancelButton: "Annuler",
+    saveButton: "Enregistrer",
+    errorGeneric: "Échec de la mise à jour du profil",
+  },
+  pricingCard: {
+    mostPopular: "LE PLUS POPULAIRE",
+    processing: "Traitement en cours...",
+    subscribeNow: "S'abonner maintenant",
+  },
+  subscriptionStatus: {
+    freePlan: "Plan gratuit",
+    upgradeMessage: "Passez à Pro pour débloquer toutes les fonctionnalités",
+    proMember: "Membre Pro",
+    subscribedVia: "Abonné via {{platform}}",
+    renews: "Se renouvelle",
+    expires: "Expire",
+    on: "le",
+    manage: "Gérer",
+    platformAppStore: "App Store",
+    platformGooglePlay: "Google Play",
+    platformWebBilling: "Facturation web",
+    platformMock: "Simulation (Développement)",
+    platformUnknown: "Inconnu",
+  },
+  authScreenLayout: {
+    closeButton: "Fermer",
+    backButton: "Retour",
+  },
+  settings: {
+    language: "Langue",
+    languageAutoDetect:
+      "La langue est automatiquement détectée depuis les paramètres de votre appareil",
+  },
   // @demo remove-block-start
   errors: {
     invalidEmail: "Adresse e-mail invalide.",

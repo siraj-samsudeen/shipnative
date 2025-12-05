@@ -6,7 +6,7 @@ import { StyleSheet } from "react-native-unistyles"
 import { AuthScreenLayout } from "@/components/layouts/AuthScreenLayout"
 import { Text } from "@/components/Text"
 import { TextField } from "@/components/TextField"
-import { useAuthStore } from "@/stores/authStore"
+import { useAuthStore } from "@/stores/auth"
 import { validateEmail } from "@/utils/validation"
 
 // =============================================================================

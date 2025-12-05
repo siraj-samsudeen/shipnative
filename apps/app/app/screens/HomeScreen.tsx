@@ -12,8 +12,10 @@ import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { StyleSheet, useUnistyles } from "react-native-unistyles"
 
 import { Text, Avatar, Badge } from "@/components"
+import { ANIMATION } from "@/config/constants"
 import type { MainTabScreenProps } from "@/navigators/navigationTypes"
 import { useAuthStore, useNotificationStore } from "@/stores"
+import { webDimension } from "@/types/webStyles"
 import { haptics } from "@/utils/haptics"
 
 // =============================================================================
@@ -97,7 +99,7 @@ export const HomeScreen: FC<HomeScreenProps> = function HomeScreen(_props) {
     ? {
         maxWidth: CONTENT_MAX_WIDTH,
         alignSelf: "center" as const,
-        width: "100%" as unknown as number,
+        width: webDimension("100%"),
       }
     : {}
 
@@ -154,7 +156,7 @@ export const HomeScreen: FC<HomeScreenProps> = function HomeScreen(_props) {
           </Animated.View>
 
           {/* Featured Card */}
-          <PressableCard style={styles.featuredCard} delay={100}>
+          <PressableCard style={styles.featuredCard} delay={ANIMATION.STAGGER_DELAY}>
             <View style={styles.featuredContent}>
               <Badge text="Daily Challenge" variant="info" size="sm" />
               <View style={styles.titleRow}>
@@ -177,7 +179,7 @@ export const HomeScreen: FC<HomeScreenProps> = function HomeScreen(_props) {
 
           {/* Stats Row */}
           <View style={styles.statsRow}>
-            <PressableCard style={styles.statCard} delay={200}>
+            <PressableCard style={styles.statCard} delay={ANIMATION.STAGGER_DELAY * 2}>
               <Text size="2xl" weight="bold">
                 12
               </Text>
@@ -185,7 +187,7 @@ export const HomeScreen: FC<HomeScreenProps> = function HomeScreen(_props) {
                 Streak
               </Text>
             </PressableCard>
-            <PressableCard style={styles.statCard} delay={250}>
+            <PressableCard style={styles.statCard} delay={ANIMATION.STAGGER_DELAY * 2.5}>
               <Text size="2xl" weight="bold">
                 85%
               </Text>
@@ -193,7 +195,7 @@ export const HomeScreen: FC<HomeScreenProps> = function HomeScreen(_props) {
                 Completed
               </Text>
             </PressableCard>
-            <PressableCard style={styles.statCard} delay={300}>
+            <PressableCard style={styles.statCard} delay={ANIMATION.STAGGER_DELAY * 3}>
               <Text size="2xl" weight="bold">
                 4.8
               </Text>
@@ -204,13 +206,17 @@ export const HomeScreen: FC<HomeScreenProps> = function HomeScreen(_props) {
           </View>
 
           {/* Quick Actions */}
-          <Animated.View entering={FadeInDown.delay(350).springify()}>
+          <Animated.View entering={FadeInDown.delay(ANIMATION.STAGGER_DELAY * 3.5).springify()}>
             <Text size="xl" weight="bold" style={styles.sectionTitle}>
               Explore
             </Text>
           </Animated.View>
 
-          <PressableCard style={styles.actionCard} onPress={handleNavigateToComponents} delay={400}>
+          <PressableCard
+            style={styles.actionCard}
+            onPress={handleNavigateToComponents}
+            delay={ANIMATION.STAGGER_DELAY * 4}
+          >
             <View style={[styles.iconBox, { backgroundColor: theme.colors.palette.primary100 }]}>
               <Ionicons name="cube-outline" size={24} color={theme.colors.palette.primary600} />
             </View>
@@ -226,7 +232,7 @@ export const HomeScreen: FC<HomeScreenProps> = function HomeScreen(_props) {
           <PressableCard
             style={styles.actionCard}
             onPress={() => navigation.navigate("Profile")}
-            delay={450}
+            delay={ANIMATION.STAGGER_DELAY * 4.5}
           >
             <View style={[styles.iconBox, { backgroundColor: theme.colors.palette.secondary100 }]}>
               <Ionicons name="person-outline" size={24} color={theme.colors.palette.secondary600} />
@@ -243,7 +249,7 @@ export const HomeScreen: FC<HomeScreenProps> = function HomeScreen(_props) {
           <PressableCard
             style={styles.actionCard}
             onPress={() => navigation.navigate("Paywall")}
-            delay={500}
+            delay={ANIMATION.STAGGER_DELAY * 5}
           >
             <View style={[styles.iconBox, { backgroundColor: theme.colors.palette.accent100 }]}>
               <Ionicons name="star-outline" size={24} color={theme.colors.palette.accent600} />
@@ -271,14 +277,14 @@ const styles = StyleSheet.create((theme) => ({
     flex: 1,
     // Web needs explicit height
     ...(isWeb && {
-      minHeight: "100vh" as unknown as number,
+      minHeight: webDimension("100vh"),
     }),
   },
   gradient: {
     flex: 1,
     // Web needs explicit height
     ...(isWeb && {
-      minHeight: "100vh" as unknown as number,
+      minHeight: webDimension("100vh"),
     }),
   },
   scrollView: {

@@ -7,6 +7,8 @@
 
 import { Platform } from "react-native"
 
+import { logger } from "../../utils/Logger"
+
 // Check if we should use mock services
 export const USE_MOCK_SERVICES =
   __DEV__ &&
@@ -30,11 +32,17 @@ export const USE_MOCK_REVENUECAT =
 
 export const USE_MOCK_SENTRY = __DEV__ && !process.env.EXPO_PUBLIC_SENTRY_DSN
 
-// Log mock service status
-if (__DEV__) {
-  console.log("🔧 Mock Services Status:")
-  console.log("  Supabase:", USE_MOCK_SUPABASE ? "MOCK" : "REAL")
-  console.log("  PostHog:", USE_MOCK_POSTHOG ? "MOCK" : "REAL")
-  console.log("  RevenueCat:", USE_MOCK_REVENUECAT ? "MOCK" : "REAL", `(${Platform.OS})`)
-  console.log("  Sentry:", USE_MOCK_SENTRY ? "MOCK" : "REAL")
+/**
+ * Log mock service status
+ * Call this during app initialization (after logger is ready)
+ */
+export function logMockServicesStatus(): void {
+  if (__DEV__) {
+    logger.info("🔧 Mock Services Status", {
+      Supabase: USE_MOCK_SUPABASE ? "MOCK" : "REAL",
+      PostHog: USE_MOCK_POSTHOG ? "MOCK" : "REAL",
+      RevenueCat: `${USE_MOCK_REVENUECAT ? "MOCK" : "REAL"} (${Platform.OS})`,
+      Sentry: USE_MOCK_SENTRY ? "MOCK" : "REAL",
+    })
+  }
 }

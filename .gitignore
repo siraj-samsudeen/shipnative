@@ -122,3 +122,7 @@ pnpm-lock.yaml
 *.key
 *.crt
 .secrets/
+
+# Setup script artifacts
+.setup-backups/
+.setup-summary.json

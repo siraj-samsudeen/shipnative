@@ -6,6 +6,9 @@
  * rate limiting should also be implemented.
  */
 
+import { RATE_LIMIT } from "@/config/constants"
+
+import { logger } from "./Logger"
 import * as storageUtils from "./storage"
 import { storage } from "./storage"
 
@@ -21,8 +24,8 @@ interface RateLimitConfig {
 }
 
 const DEFAULT_CONFIG: RateLimitConfig = {
-  maxAttempts: 5,
-  windowMs: 15 * 60 * 1000, // 15 minutes
+  maxAttempts: RATE_LIMIT.MAX_ATTEMPTS_AUTH,
+  windowMs: RATE_LIMIT.WINDOW_AUTH_MS,
   keyPrefix: "rate_limit",
 }
 
@@ -75,7 +78,13 @@ class RateLimiter {
       return true
     } catch (error) {
       // On error, allow the request (fail open) but log the error
-      console.warn("[RateLimiter] Error checking rate limit, allowing request", error)
+      if (__DEV__) {
+        logger.error(
+          "[RateLimiter] Error checking rate limit, allowing request",
+          {},
+          error as Error,
+        )
+      }
       return true
     }
   }
@@ -130,7 +139,9 @@ class RateLimiter {
       const key = this.getStorageKey(identifier)
       storageUtils.remove(key)
     } catch (error) {
-      console.warn("[RateLimiter] Error resetting rate limit", error)
+      if (__DEV__) {
+        logger.error("[RateLimiter] Error resetting rate limit", {}, error as Error)
+      }
     }
   }
 
@@ -147,15 +158,17 @@ class RateLimiter {
         }
       })
     } catch (error) {
-      console.warn("[RateLimiter] Error clearing rate limits", error)
+      if (__DEV__) {
+        logger.error("[RateLimiter] Error clearing rate limits", {}, error as Error)
+      }
     }
   }
 }
 
 // Pre-configured rate limiters for common use cases
 export const authRateLimiter = new RateLimiter({
-  maxAttempts: 5,
-  windowMs: 15 * 60 * 1000, // 15 minutes
+  maxAttempts: RATE_LIMIT.MAX_ATTEMPTS_AUTH,
+  windowMs: RATE_LIMIT.WINDOW_AUTH_MS,
   keyPrefix: "rate_limit_auth",
 })
 
@@ -169,22 +182,20 @@ if (__DEV__) {
     await authRateLimiter.clearAll()
     await passwordResetRateLimiter.clearAll()
     await signUpRateLimiter.clearAll()
-    console.log("✅ All rate limits cleared")
+    logger.info("✅ All rate limits cleared")
   }
-  console.log(
-    "💡 Dev tip: Use global.clearRateLimits() in console to clear all rate limits",
-  )
+  logger.info("💡 Dev tip: Use global.clearRateLimits() in console to clear all rate limits")
 }
 
 export const passwordResetRateLimiter = new RateLimiter({
-  maxAttempts: 3,
-  windowMs: 60 * 60 * 1000, // 1 hour
+  maxAttempts: RATE_LIMIT.MAX_ATTEMPTS_PASSWORD_RESET,
+  windowMs: RATE_LIMIT.WINDOW_PASSWORD_RESET_MS,
   keyPrefix: "rate_limit_password_reset",
 })
 
 export const signUpRateLimiter = new RateLimiter({
-  maxAttempts: 3,
-  windowMs: 60 * 60 * 1000, // 1 hour
+  maxAttempts: RATE_LIMIT.MAX_ATTEMPTS_SIGNUP,
+  windowMs: RATE_LIMIT.WINDOW_SIGNUP_MS,
   keyPrefix: "rate_limit_signup",
 })
 

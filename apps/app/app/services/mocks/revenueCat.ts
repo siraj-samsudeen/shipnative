@@ -79,17 +79,17 @@ let mockCustomerInfo: CustomerInfo = createFreeCustomerInfo()
 // Restore persisted mock state on module load
 function restoreMockState() {
   try {
-    const persisted = storage.load(MOCK_STATE_KEY)
+    const persisted = storage.load(MOCK_STATE_KEY) as
+      | { isPro?: boolean; customerInfo?: CustomerInfo }
+      | null
+      | undefined
     if (persisted && typeof persisted === "object") {
       mockIsPro = persisted.isPro === true
       if (persisted.customerInfo) {
-        mockCustomerInfo = persisted.customerInfo as CustomerInfo
+        mockCustomerInfo = persisted.customerInfo
       }
       if (__DEV__) {
-        console.log(
-          `${getLogPrefix()} Restored persisted state:`,
-          mockIsPro ? "PRO" : "FREE",
-        )
+        console.log(`${getLogPrefix()} Restored persisted state:`, mockIsPro ? "PRO" : "FREE")
       }
     }
   } catch (e) {
@@ -403,7 +403,7 @@ class MockRevenueCat {
     // Clear persisted state
     try {
       storage.remove(MOCK_STATE_KEY)
-    } catch (e) {
+    } catch {
       // Ignore errors
     }
 

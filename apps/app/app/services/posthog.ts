@@ -16,12 +16,14 @@ import type {
   GroupProperties,
 } from "../types/analytics"
 import { MockPostHog } from "./mocks/posthog"
+import { logger } from "../utils/Logger"
 
 // PostHog SDKs (platform-specific)
 let PostHogRN: any = null // React Native
 let PostHogJS: any = null // Web
 
 // Load appropriate SDK based on platform
+// Note: Errors during SDK loading are logged in initialize() method, not at module load time
 if (Platform.OS === "web") {
   try {
     // posthog-js can be imported in different ways depending on the build
@@ -41,8 +43,10 @@ if (Platform.OS === "web") {
       PostHogJS = posthogModule
     }
   } catch (e) {
+    // SDK loading failed - will be logged during initialization
+    // Using console here since logger might not be ready during module load
     if (__DEV__) {
-      console.warn("Failed to load posthog-js. Make sure posthog-js is installed:", e)
+      console.warn("Failed to load posthog-js. Will use mock if API key is missing.")
     }
   }
 } else {
@@ -50,7 +54,11 @@ if (Platform.OS === "web") {
     const module = require("posthog-react-native")
     PostHogRN = module.default || module.PostHog
   } catch (e) {
-    console.warn("Failed to load posthog-react-native", e)
+    // SDK loading failed - will be logged during initialization
+    // Using console here since logger might not be ready during module load
+    if (__DEV__) {
+      console.warn("Failed to load posthog-react-native. Will use mock if API key is missing.")
+    }
   }
 }
 
@@ -72,7 +80,17 @@ class PostHogService implements AnalyticsService {
     const apiHost = config?.host || host
 
     if (!key) {
-      console.warn("PostHog API key not provided")
+      logger.warn("PostHog API key not provided")
+      return
+    }
+
+    // Log SDK loading errors during initialization (when logger is ready)
+    if (Platform.OS === "web" && !PostHogJS) {
+      logger.error("PostHog web SDK not available. Make sure posthog-js is installed", {})
+      return
+    }
+    if (Platform.OS !== "web" && !PostHogRN) {
+      logger.error("PostHog React Native SDK not available. Make sure posthog-react-native is installed", {})
       return
     }
 
@@ -90,7 +108,7 @@ class PostHogService implements AnalyticsService {
               this.client = posthog
               this.initialized = true
               if (__DEV__) {
-                console.log("📊 [PostHog] Initialized for web")
+                logger.debug("📊 [PostHog] Initialized for web")
               }
             },
           })
@@ -100,22 +118,21 @@ class PostHogService implements AnalyticsService {
             this.client = PostHogJS
             this.initialized = true
             if (__DEV__) {
-              console.log("📊 [PostHog] Initialized for web")
+              logger.debug("📊 [PostHog] Initialized for web")
             }
           }
         } else {
           // PostHogJS loaded but init method not found
           // This might happen if the module structure is different
-          console.error(
-            "PostHogJS.init is not a function. PostHogJS structure:",
-            Object.keys(PostHogJS || {}),
-          )
+          logger.error("PostHogJS.init is not a function. PostHogJS structure", {
+            keys: Object.keys(PostHogJS || {}),
+          })
           // Try to use PostHogJS directly as the client if it has capture method
           if (PostHogJS && typeof PostHogJS.capture === "function") {
             this.client = PostHogJS
             this.initialized = true
             if (__DEV__) {
-              console.warn("📊 [PostHog] Using PostHogJS directly (init method not found)")
+              logger.warn("📊 [PostHog] Using PostHogJS directly (init method not found)")
             }
           }
         }
@@ -124,11 +141,11 @@ class PostHogService implements AnalyticsService {
         this.client = new PostHogRN(key, { host: apiHost })
         this.initialized = true
         if (__DEV__) {
-          console.log("📊 [PostHog] Initialized for mobile")
+          logger.debug("📊 [PostHog] Initialized for mobile")
         }
       }
     } catch (error) {
-      console.error("Failed to initialize PostHog:", error)
+      logger.error("Failed to initialize PostHog", {}, error as Error)
     }
   }
 
@@ -143,10 +160,10 @@ class PostHogService implements AnalyticsService {
       }
 
       if (__DEV__) {
-        console.log(`📊 [PostHog] Event: ${event}`, properties || {})
+        logger.debug(`📊 [PostHog] Event: ${event}`, properties || {})
       }
     } catch (error) {
-      console.error("PostHog track error:", error)
+      logger.error("PostHog track error", {}, error as Error)
     }
   }
 
@@ -164,10 +181,10 @@ class PostHogService implements AnalyticsService {
       }
 
       if (__DEV__) {
-        console.log(`📊 [PostHog] Screen: ${name}`, properties || {})
+        logger.debug(`📊 [PostHog] Screen: ${name}`, properties || {})
       }
     } catch (error) {
-      console.error("PostHog screen error:", error)
+      logger.error("PostHog screen error", {}, error as Error)
     }
   }
 
@@ -178,10 +195,10 @@ class PostHogService implements AnalyticsService {
       this.client.identify(userId, properties)
 
       if (__DEV__) {
-        console.log(`📊 [PostHog] Identify: ${userId}`, properties || {})
+        logger.debug(`📊 [PostHog] Identify: ${userId}`, properties || {})
       }
     } catch (error) {
-      console.error("PostHog identify error:", error)
+      logger.error("PostHog identify error", {}, error as Error)
     }
   }
 
@@ -192,10 +209,10 @@ class PostHogService implements AnalyticsService {
       this.client.reset()
 
       if (__DEV__) {
-        console.log("📊 [PostHog] Reset user")
+        logger.debug("📊 [PostHog] Reset user")
       }
     } catch (error) {
-      console.error("PostHog reset error:", error)
+      logger.error("PostHog reset error", {}, error as Error)
     }
   }
 
@@ -207,10 +224,10 @@ class PostHogService implements AnalyticsService {
       this.client.setPersonProperties(properties)
 
       if (__DEV__) {
-        console.log("📊 [PostHog] Set user properties:", properties)
+        logger.debug("📊 [PostHog] Set user properties", properties)
       }
     } catch (error) {
-      console.error("PostHog setUserProperties error:", error)
+      logger.error("PostHog setUserProperties error", {}, error as Error)
     }
   }
 
@@ -221,10 +238,10 @@ class PostHogService implements AnalyticsService {
       this.client.group(type, id, properties)
 
       if (__DEV__) {
-        console.log(`📊 [PostHog] Group: ${type}:${id}`, properties || {})
+        logger.debug(`📊 [PostHog] Group: ${type}:${id}`, properties || {})
       }
     } catch (error) {
-      console.error("PostHog group error:", error)
+      logger.error("PostHog group error", {}, error as Error)
     }
   }
 
@@ -234,7 +251,7 @@ class PostHogService implements AnalyticsService {
     try {
       return this.client.isFeatureEnabled(flag) ?? false
     } catch (error) {
-      console.error("PostHog isFeatureEnabled error:", error)
+      logger.error("PostHog isFeatureEnabled error", {}, error as Error)
       return false
     }
   }
@@ -245,7 +262,7 @@ class PostHogService implements AnalyticsService {
     try {
       return this.client.getFeatureFlag(flag)
     } catch (error) {
-      console.error("PostHog getFeatureFlag error:", error)
+      logger.error("PostHog getFeatureFlag error", {}, error as Error)
       return undefined
     }
   }
@@ -256,7 +273,7 @@ class PostHogService implements AnalyticsService {
     try {
       this.client.onFeatureFlags(callback)
     } catch (error) {
-      console.error("PostHog onFeatureFlags error:", error)
+      logger.error("PostHog onFeatureFlags error", {}, error as Error)
     }
   }
 
@@ -267,10 +284,10 @@ class PostHogService implements AnalyticsService {
       this.client.optIn()
 
       if (__DEV__) {
-        console.log("📊 [PostHog] Opted in to tracking")
+        logger.debug("📊 [PostHog] Opted in to tracking")
       }
     } catch (error) {
-      console.error("PostHog optIn error:", error)
+      logger.error("PostHog optIn error", {}, error as Error)
     }
   }
 
@@ -281,10 +298,10 @@ class PostHogService implements AnalyticsService {
       this.client.optOut()
 
       if (__DEV__) {
-        console.log("📊 [PostHog] Opted out of tracking")
+        logger.debug("📊 [PostHog] Opted out of tracking")
       }
     } catch (error) {
-      console.error("PostHog optOut error:", error)
+      logger.error("PostHog optOut error", {}, error as Error)
     }
   }
 
@@ -295,10 +312,10 @@ class PostHogService implements AnalyticsService {
       await this.client.flush?.()
 
       if (__DEV__) {
-        console.log("📊 [PostHog] Flushed events")
+        logger.debug("📊 [PostHog] Flushed events")
       }
     } catch (error) {
-      console.error("PostHog flush error:", error)
+      logger.error("PostHog flush error", {}, error as Error)
     }
   }
 
@@ -310,10 +327,10 @@ class PostHogService implements AnalyticsService {
       this.initialized = false
 
       if (__DEV__) {
-        console.log("📊 [PostHog] Shutdown")
+        logger.debug("📊 [PostHog] Shutdown")
       }
     } catch (error) {
-      console.error("PostHog shutdown error:", error)
+      logger.error("PostHog shutdown error", {}, error as Error)
     }
   }
 }
@@ -327,15 +344,16 @@ export const posthog: AnalyticsService = useMock
 export const initPosthog = async () => {
   if (useMock) {
     if (__DEV__) {
-      console.warn("⚠️  PostHog API key not found - using mock analytics")
-      console.log("💡 Add EXPO_PUBLIC_POSTHOG_API_KEY to .env to use real PostHog")
+      logger.warn("⚠️  PostHog API key not found - using mock analytics")
+      logger.info("💡 Add EXPO_PUBLIC_POSTHOG_API_KEY to .env to use real PostHog")
     }
     return
   }
 
   await posthog.initialize({ apiKey, host })
-}
-
-if (useMock && __DEV__) {
-  console.warn("⚠️  PostHog running in mock mode")
+  
+  // Log mock mode status during initialization (when logger is ready)
+  if (useMock && __DEV__) {
+    logger.warn("⚠️  PostHog running in mock mode")
+  }
 }

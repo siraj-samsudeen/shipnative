@@ -1,6 +1,6 @@
 /**
  * Haptics Capability Checker
- * 
+ *
  * Checks if the device supports haptic feedback before triggering haptics.
  * This prevents errors on devices/simulators that don't support haptics.
  */
@@ -106,5 +106,4 @@ export function resetHapticsCapabilityCache(): void {
   hapticsSupported = null
   capabilityCheckPromise = null
 }
-
 

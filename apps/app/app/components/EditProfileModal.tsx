@@ -3,6 +3,7 @@ import { Modal, View, Pressable, KeyboardAvoidingView, Platform, ScrollView } fr
 import { Ionicons } from "@expo/vector-icons"
 import { StyleSheet, useUnistyles } from "react-native-unistyles"
 
+import { translate } from "@/i18n/translate"
 import { supabase } from "@/services/supabase"
 import { useAuthStore } from "@/stores"
 import { haptics } from "@/utils/haptics"
@@ -83,7 +84,7 @@ export const EditProfileModal: FC<EditProfileModalProps> = ({ visible, onClose }
       onClose()
     } catch (err) {
       console.error("Profile update error:", err)
-      setError(err instanceof Error ? err.message : "Failed to update profile")
+      setError(err instanceof Error ? err.message : translate("editProfileModal:errorGeneric"))
       haptics.error()
     } finally {
       setLoading(false)
@@ -113,7 +114,7 @@ export const EditProfileModal: FC<EditProfileModalProps> = ({ visible, onClose }
           <View style={styles.modal}>
             {/* Header */}
             <View style={styles.header}>
-              <Text style={styles.title}>Edit Profile</Text>
+              <Text style={styles.title} tx="editProfileModal:title" />
               <Pressable onPress={handleClose} style={styles.closeButton}>
                 <Ionicons name="close" size={24} color={theme.colors.foreground} />
               </Pressable>
@@ -127,8 +128,8 @@ export const EditProfileModal: FC<EditProfileModalProps> = ({ visible, onClose }
               keyboardShouldPersistTaps="handled"
             >
               <TextField
-                label="First Name"
-                placeholder="Enter your first name"
+                labelTx="editProfileModal:firstNameLabel"
+                placeholderTx="editProfileModal:firstNamePlaceholder"
                 value={firstName}
                 onChangeText={setFirstName}
                 autoCapitalize="words"
@@ -137,8 +138,8 @@ export const EditProfileModal: FC<EditProfileModalProps> = ({ visible, onClose }
               />
 
               <TextField
-                label="Last Name"
-                placeholder="Enter your last name"
+                labelTx="editProfileModal:lastNameLabel"
+                placeholderTx="editProfileModal:lastNamePlaceholder"
                 value={lastName}
                 onChangeText={setLastName}
                 autoCapitalize="words"
@@ -153,14 +154,14 @@ export const EditProfileModal: FC<EditProfileModalProps> = ({ visible, onClose }
             {/* Actions */}
             <View style={styles.actions}>
               <Button
-                text="Cancel"
+                tx="editProfileModal:cancelButton"
                 variant="outlined"
                 onPress={handleClose}
                 disabled={loading}
                 style={styles.cancelButton}
               />
               <Button
-                text="Save"
+                tx="editProfileModal:saveButton"
                 variant="filled"
                 onPress={handleSave}
                 loading={loading}

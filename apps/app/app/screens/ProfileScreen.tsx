@@ -11,10 +11,21 @@ import Animated, {
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { StyleSheet, useUnistyles } from "react-native-unistyles"
 
-import { Avatar, Button, DeleteAccountModal, Text, EditProfileModal } from "@/components"
+import {
+  Avatar,
+  Button,
+  DeleteAccountModal,
+  Text,
+  EditProfileModal,
+  LanguageSelector,
+} from "@/components"
+import { ANIMATION } from "@/config/constants"
+import { features } from "@/config/features"
 import { useAuthStore, useNotificationStore, useSubscriptionStore } from "@/stores"
 import { useAppTheme } from "@/theme/context"
+import { webDimension } from "@/types/webStyles"
 import { haptics } from "@/utils/haptics"
+import { testErrors } from "@/utils/testError"
 
 // =============================================================================
 // CONSTANTS
@@ -44,13 +55,14 @@ export const ProfileScreen: FC = () => {
 
   const [editModalVisible, setEditModalVisible] = useState(false)
   const [deleteModalVisible, setDeleteModalVisible] = useState(false)
+  const [languageModalVisible, setLanguageModalVisible] = useState(false)
 
   const isLargeScreen = windowWidth > 768
   const contentStyle = isLargeScreen
     ? {
         maxWidth: CONTENT_MAX_WIDTH,
         alignSelf: "center" as const,
-        width: "100%" as unknown as number,
+        width: webDimension("100%"),
       }
     : {}
 
@@ -157,7 +169,10 @@ export const ProfileScreen: FC = () => {
           </Animated.View>
 
           {/* Profile Card */}
-          <Animated.View entering={FadeInDown.delay(100).springify()} style={styles.profileCard}>
+          <Animated.View
+            entering={FadeInDown.delay(ANIMATION.STAGGER_DELAY).springify()}
+            style={styles.profileCard}
+          >
             <Avatar fallback={userInitials} size="xl" />
             <View style={styles.profileInfo}>
               <Text style={styles.profileName}>{userName}</Text>
@@ -176,10 +191,13 @@ export const ProfileScreen: FC = () => {
           </Animated.View>
 
           {/* Settings Section */}
-          <Animated.View entering={FadeInDown.delay(200).springify()}>
+          <Animated.View entering={FadeInDown.delay(ANIMATION.STAGGER_DELAY * 2).springify()}>
             <Text style={styles.sectionTitle}>Settings</Text>
           </Animated.View>
-          <Animated.View entering={FadeInDown.delay(250).springify()} style={styles.menuGroup}>
+          <Animated.View
+            entering={FadeInDown.delay(ANIMATION.STAGGER_DELAY * 2.5).springify()}
+            style={styles.menuGroup}
+          >
             <MenuItem
               icon="person-outline"
               title="Personal Information"
@@ -213,22 +231,88 @@ export const ProfileScreen: FC = () => {
                 />
               }
             />
+            <View style={styles.divider} />
+            <MenuItem
+              icon="language-outline"
+              title="Language"
+              subtitle="Change app language"
+              onPress={() => setLanguageModalVisible(true)}
+            />
           </Animated.View>
 
           {/* Support Section */}
-          <Animated.View entering={FadeInDown.delay(300).springify()}>
+          <Animated.View entering={FadeInDown.delay(ANIMATION.STAGGER_DELAY * 3).springify()}>
             <Text style={styles.sectionTitle}>Support</Text>
           </Animated.View>
-          <Animated.View entering={FadeInDown.delay(350).springify()} style={styles.menuGroup}>
+          <Animated.View
+            entering={FadeInDown.delay(ANIMATION.STAGGER_DELAY * 3.5).springify()}
+            style={styles.menuGroup}
+          >
             <MenuItem icon="help-circle-outline" title="Help Center" />
             <View style={styles.divider} />
             <MenuItem icon="shield-checkmark-outline" title="Privacy Policy" />
           </Animated.View>
 
-          <Animated.View entering={FadeInDown.delay(400).springify()}>
+          {/* Development Section - Only visible in dev mode */}
+          {features.enableDebugLogging && (
+            <>
+              <Animated.View entering={FadeInDown.delay(ANIMATION.STAGGER_DELAY * 3.8).springify()}>
+                <Text style={styles.sectionTitle}>Development</Text>
+              </Animated.View>
+              <Animated.View
+                entering={FadeInDown.delay(ANIMATION.STAGGER_DELAY * 4).springify()}
+                style={styles.menuGroup}
+              >
+                <MenuItem
+                  icon="bug-outline"
+                  title="Test Sentry Error"
+                  subtitle="Send a test error to Sentry"
+                  onPress={() => {
+                    haptics.buttonPress()
+                    testErrors.testSimpleError()
+                  }}
+                />
+                <View style={styles.divider} />
+                <MenuItem
+                  icon="warning-outline"
+                  title="Test Warning"
+                  subtitle="Send a test warning message"
+                  onPress={() => {
+                    haptics.buttonPress()
+                    testErrors.testWarningMessage()
+                  }}
+                />
+                <View style={styles.divider} />
+                <MenuItem
+                  icon="information-circle-outline"
+                  title="Test Info Message"
+                  subtitle="Send a test info message"
+                  onPress={() => {
+                    haptics.buttonPress()
+                    testErrors.testInfoMessage()
+                  }}
+                />
+                <View style={styles.divider} />
+                <MenuItem
+                  icon="code-outline"
+                  title="Test Error with Context"
+                  subtitle="Send error with additional context"
+                  onPress={() => {
+                    haptics.buttonPress()
+                    testErrors.testErrorWithContext()
+                  }}
+                />
+              </Animated.View>
+            </>
+          )}
+
+          <Animated.View entering={FadeInDown.delay(ANIMATION.STAGGER_DELAY * 4).springify()}>
             <Text style={styles.sectionTitle}>Account</Text>
           </Animated.View>
-          <Animated.View entering={FadeInDown.delay(450).springify()} style={styles.dangerCard}>
+          <Animated.View
+            entering={FadeInDown.delay(ANIMATION.STAGGER_DELAY * 4.5).springify()}
+            style={styles.dangerCard}
+          >
             <View style={styles.dangerHeader}>
               <View style={styles.dangerCopy}>
                 <Text style={styles.dangerTitle}>Delete Account</Text>
@@ -253,9 +337,7 @@ export const ProfileScreen: FC = () => {
                 <View style={styles.dangerIcon}>
                   <Ionicons name="receipt-outline" size={16} color={theme.colors.error} />
                 </View>
-                <Text style={styles.dangerBulletText}>
-                  Disconnects active subscriptions in RevenueCat
-                </Text>
+                <Text style={styles.dangerBulletText}>Ends your active subscription</Text>
               </View>
               <View style={styles.dangerBullet}>
                 <View style={styles.dangerIcon}>
@@ -276,7 +358,7 @@ export const ProfileScreen: FC = () => {
             />
           </Animated.View>
 
-          <Animated.View entering={FadeInDown.delay(520).springify()}>
+          <Animated.View entering={FadeInDown.delay(ANIMATION.STAGGER_DELAY * 5.2).springify()}>
             <Text style={styles.versionText}>Version 1.0.0 (Build 12)</Text>
           </Animated.View>
         </ScrollView>
@@ -288,6 +370,10 @@ export const ProfileScreen: FC = () => {
         visible={deleteModalVisible}
         onClose={() => setDeleteModalVisible(false)}
       />
+      <LanguageSelector
+        visible={languageModalVisible}
+        onClose={() => setLanguageModalVisible(false)}
+      />
     </View>
   )
 }
@@ -298,14 +384,14 @@ const styles = StyleSheet.create((theme) => ({
     backgroundColor: theme.colors.background,
     // Web needs explicit height
     ...(isWeb && {
-      minHeight: "100vh" as unknown as number,
+      minHeight: webDimension("100vh"),
     }),
   },
   gradient: {
     flex: 1,
     // Web needs explicit height
     ...(isWeb && {
-      minHeight: "100vh" as unknown as number,
+      minHeight: webDimension("100vh"),
     }),
   },
   scrollView: {

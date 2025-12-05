@@ -7,8 +7,9 @@ import { StyleSheet, useUnistyles } from "react-native-unistyles"
 import { AuthScreenLayout } from "@/components/layouts/AuthScreenLayout"
 import { Spinner } from "@/components/Spinner"
 import { Text } from "@/components/Text"
-import { supabase } from "@/services/supabase"
-import { useAuthStore } from "@/stores/authStore"
+import { TIMING } from "@/config/constants"
+import { useEmailVerificationPolling } from "@/hooks/useEmailVerificationPolling"
+import { useAuthStore } from "@/stores/auth"
 
 // =============================================================================
 // COMPONENT
@@ -25,12 +26,18 @@ export const EmailVerificationScreen = () => {
   const [resending, setResending] = useState(false)
   const [resendSuccess, setResendSuccess] = useState(false)
   const [resendError, setResendError] = useState("")
-  const [checkingStatus, setCheckingStatus] = useState(false)
   const [countdown, setCountdown] = useState(0)
 
   // Track when resend was last called to pause polling briefly
   const resendTimestampRef = useRef<number>(0)
-  const POLLING_PAUSE_AFTER_RESEND = 5000 // Pause polling for 5 seconds after resend
+
+  // Use polling hook
+  const { checkingStatus } = useEmailVerificationPolling({
+    isEmailConfirmed,
+    user,
+    initialize,
+    resendTimestampRef,
+  })
 
   const email = user?.email || ""
 
@@ -53,86 +60,11 @@ export const EmailVerificationScreen = () => {
     if (countdown > 0) {
       const timer = setTimeout(() => {
         setCountdown(countdown - 1)
-      }, 1000)
+      }, TIMING.SECOND_MS)
       return () => clearTimeout(timer)
     }
     return undefined
   }, [countdown])
-
-  // Poll for email confirmation status every 3 seconds
-  useEffect(() => {
-    if (isEmailConfirmed) {
-      // Email confirmed - reinitialize to update auth state
-      initialize()
-      return
-    }
-
-    // Don't start polling if we don't have a user
-    if (!user?.id) {
-      return
-    }
-
-    const interval = setInterval(async () => {
-      // Pause polling briefly after resend to avoid conflicts
-      const timeSinceResend = Date.now() - resendTimestampRef.current
-      if (timeSinceResend < POLLING_PAUSE_AFTER_RESEND) {
-        return
-      }
-
-      setCheckingStatus(true)
-      try {
-        // Store current user before polling to preserve it on error
-        const currentUser = useAuthStore.getState().user
-
-        // Refresh user data to get latest email confirmation status
-        // This is important when email is confirmed from another device/browser
-        try {
-          const {
-            data: { user: refreshedUser },
-            error: getUserError,
-          } = await supabase.auth.getUser()
-
-          if (refreshedUser) {
-            // Update user in store if email was confirmed
-            useAuthStore.getState().setUser(refreshedUser)
-          } else if (getUserError && currentUser) {
-            // If getUser fails but we have a current user, preserve it
-            // Don't update the store - keep existing user state
-            return
-          }
-        } catch {
-          // If getUser throws, preserve existing user and skip this poll cycle
-          if (currentUser) {
-            return
-          }
-        }
-
-        // Only call initialize if we still have a user
-        const userBeforeInitialize = useAuthStore.getState().user
-        if (userBeforeInitialize) {
-          await initialize()
-
-          // After initialize, verify user still exists - if not, restore it
-          const userAfterInitialize = useAuthStore.getState().user
-          if (!userAfterInitialize && userBeforeInitialize) {
-            // User was cleared during initialize - restore it
-            useAuthStore.getState().setUser(userBeforeInitialize)
-          }
-        }
-      } catch {
-        // On any error, preserve the existing user
-        const existingUser = useAuthStore.getState().user
-        if (!existingUser && user) {
-          // User was lost - restore it
-          useAuthStore.getState().setUser(user)
-        }
-      } finally {
-        setCheckingStatus(false)
-      }
-    }, 3000)
-
-    return () => clearInterval(interval)
-  }, [isEmailConfirmed, initialize, user?.id, user])
 
   const handleResendEmail = async () => {
     if (countdown > 0 || !email) return
@@ -151,14 +83,16 @@ export const EmailVerificationScreen = () => {
         setResendError(error.message || "Failed to resend email. Please try again.")
       } else {
         setResendSuccess(true)
-        // Start 60 second countdown
-        setCountdown(60)
-        // Clear success message after 5 seconds
-        setTimeout(() => setResendSuccess(false), 5000)
+        // Start countdown
+        setCountdown(TIMING.COUNTDOWN_RESEND_EMAIL)
+        // Clear success message after duration
+        setTimeout(() => setResendSuccess(false), TIMING.SUCCESS_MESSAGE_DURATION)
       }
     } catch (err) {
       // Handle any unexpected errors
-      setResendError(err instanceof Error ? err.message : "An unexpected error occurred. Please try again.")
+      setResendError(
+        err instanceof Error ? err.message : "An unexpected error occurred. Please try again.",
+      )
     } finally {
       setResending(false)
     }
@@ -257,12 +191,11 @@ export const EmailVerificationScreen = () => {
             <Spinner size="sm" color="white" />
           ) : countdown > 0 ? (
             <>
-              <Ionicons
-                name="time-outline"
-                size={20}
-                color={theme.colors.foreground}
-              />
-              <Text weight="semiBold" style={[styles.primaryButtonText, styles.primaryButtonTextDisabled]}>
+              <Ionicons name="time-outline" size={20} color={theme.colors.foreground} />
+              <Text
+                weight="semiBold"
+                style={[styles.primaryButtonText, styles.primaryButtonTextDisabled]}
+              >
                 Resend in {countdown}s
               </Text>
             </>

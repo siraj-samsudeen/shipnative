@@ -4,7 +4,7 @@
  * Memoized selectors for derived auth state
  */
 
-import { useAuthStore } from "../authStore"
+import { useAuthStore } from "../auth"
 
 /**
  * Check if user is authenticated

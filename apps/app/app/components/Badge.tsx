@@ -1,5 +1,8 @@
 import { View } from "react-native"
+import type { TOptions } from "i18next"
 import { StyleSheet } from "react-native-unistyles"
+
+import { TxKeyPath } from "@/i18n"
 
 import { Text } from "./Text"
 
@@ -15,6 +18,14 @@ export interface BadgeProps {
    * Badge text
    */
   text?: string
+  /**
+   * i18n translation key for badge text
+   */
+  tx?: TxKeyPath
+  /**
+   * i18n translation options
+   */
+  txOptions?: TOptions
   /**
    * Badge variant/color
    */
@@ -53,7 +64,7 @@ export interface BadgeProps {
  * <Badge text="Large" size="lg" />
  */
 export function Badge(props: BadgeProps) {
-  const { text, variant = "default", size = "md", dot = false } = props
+  const { text, tx, txOptions, variant = "default", size = "md", dot = false } = props
 
   // Apply variants - map "default" to undefined for Unistyles
   const variantForStyles = variant === "default" ? undefined : variant
@@ -65,7 +76,7 @@ export function Badge(props: BadgeProps) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.text}>{text}</Text>
+      <Text style={styles.text} text={text} tx={tx} txOptions={txOptions} />
     </View>
   )
 }

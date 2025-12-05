@@ -6,10 +6,11 @@
  */
 
 import { useState, useEffect, useCallback } from "react"
+
 import { fetchWidgetData, clearWidgetCache, getWidgetConfig } from "../services/widgets"
 import { logger } from "../utils/Logger"
 
-export interface UseWidgetDataOptions<T = any> {
+export interface UseWidgetDataOptions {
   table: string
   select?: string
   filters?: Record<string, any>
@@ -21,7 +22,7 @@ export interface UseWidgetDataOptions<T = any> {
   enabled?: boolean
 }
 
-export interface UseWidgetDataReturn<T = any> {
+export interface UseWidgetDataReturn<T> {
   data: T | null
   loading: boolean
   error: Error | null
@@ -59,9 +60,7 @@ export interface UseWidgetDataReturn<T = any> {
  * }
  * ```
  */
-export function useWidgetData<T = any>(
-  options: UseWidgetDataOptions<T>,
-): UseWidgetDataReturn<T> {
+export function useWidgetData<T = any>(options: UseWidgetDataOptions): UseWidgetDataReturn<T> {
   const {
     table,
     select,
@@ -113,7 +112,7 @@ export function useWidgetData<T = any>(
     } finally {
       setLoading(false)
     }
-  }, [table, select, JSON.stringify(filters), limit, JSON.stringify(orderBy), requireAuth, cacheKey, enabled])
+  }, [table, select, filters, limit, orderBy, requireAuth, cacheKey, enabled])
 
   // Initial fetch
   useEffect(() => {

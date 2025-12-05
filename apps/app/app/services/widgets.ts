@@ -6,10 +6,11 @@
  * caching, and error handling.
  */
 
+import { Platform } from "react-native"
+import * as SecureStore from "expo-secure-store"
+
 import { supabase, supabaseUrl, supabaseKey, isUsingMockSupabase } from "./supabase"
 import { logger } from "../utils/Logger"
-import * as SecureStore from "expo-secure-store"
-import { Platform } from "react-native"
 
 /**
  * Widget data cache interface
@@ -46,7 +47,7 @@ const lastUpdateTimestamps = new Map<string, number>()
  * Get Supabase session token for widget authentication
  * Widgets need access to the session token stored by the main app
  */
-async function getWidgetSessionToken(): Promise<string | null> {
+async function _getWidgetSessionToken(): Promise<string | null> {
   try {
     if (Platform.OS === "ios") {
       // iOS uses App Group for sharing data between app and widget
@@ -100,8 +101,9 @@ function setCachedData<T>(key: string, data: T): void {
   // Enforce max cache size
   if (widgetCache.size >= WIDGET_CONFIG.maxCacheSize) {
     // Remove oldest entry
-    const oldestKey = Array.from(widgetCache.entries())
-      .sort((a, b) => a[1].timestamp - b[1].timestamp)[0]?.[0]
+    const oldestKey = Array.from(widgetCache.entries()).sort(
+      (a, b) => a[1].timestamp - b[1].timestamp,
+    )[0]?.[0]
     if (oldestKey) {
       widgetCache.delete(oldestKey)
     }
@@ -133,7 +135,7 @@ export async function fetchWidgetData<T = any>(options: {
     filters = {},
     limit = 10,
     orderBy,
-    requireAuth = false,
+    requireAuth: _requireAuth = false,
     cacheKey,
   } = options
 

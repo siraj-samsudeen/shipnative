@@ -28,6 +28,65 @@ const en = {
       button: "Let's try this again",
     },
   },
+  deleteAccountModal: {
+    title: "Delete Account",
+    subtitle: "This action cannot be undone.",
+    infoProfile: "We will remove your profile data, preferences, and stored settings.",
+    infoSubscriptions: "Active subscriptions will be disconnected from your account.",
+    infoSignOut: "You will be signed out on all devices.",
+    confirmLabel: "I understand this is permanent",
+    confirmHint: "You'll need to create a new account to return.",
+    cancelButton: "Cancel",
+    deleteButton: "Delete my account",
+    errorGeneric: "Unable to delete your account right now.",
+  },
+  editProfileModal: {
+    title: "Edit Profile",
+    firstNameLabel: "First Name",
+    firstNamePlaceholder: "Enter your first name",
+    lastNameLabel: "Last Name",
+    lastNamePlaceholder: "Enter your last name",
+    cancelButton: "Cancel",
+    saveButton: "Save",
+    errorGeneric: "Failed to update profile",
+  },
+  pricingCard: {
+    mostPopular: "MOST POPULAR",
+    processing: "Processing...",
+    subscribeNow: "Subscribe Now",
+  },
+  subscriptionStatus: {
+    freePlan: "Free Plan",
+    upgradeMessage: "Upgrade to Pro to unlock all features",
+    proMember: "Pro Member",
+    subscribedVia: "Subscribed via {{platform}}",
+    renews: "Renews",
+    expires: "Expires",
+    on: "on",
+    manage: "Manage",
+    platformAppStore: "App Store",
+    platformGooglePlay: "Google Play",
+    platformWebBilling: "Web Billing",
+    platformMock: "Mock (Development)",
+    platformUnknown: "Unknown",
+  },
+  badge: {
+    // Badge text is typically dynamic, but we can add common ones if needed
+  },
+  tabs: {
+    // Tab titles are typically dynamic, passed as props
+  },
+  authScreenLayout: {
+    closeButton: "Close",
+    backButton: "Go back",
+  },
+  onboardingScreenLayout: {
+    // Title and subtitle are typically passed as props
+  },
+  settings: {
+    language: "Language",
+    languageAutoDetect: "Language is automatically detected from your device settings",
+  },
   // @demo remove-block-start
   errors: {
     invalidEmail: "Invalid email address.",

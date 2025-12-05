@@ -8,6 +8,7 @@
 
 import { Platform } from "react-native"
 
+import { logger } from "../utils/Logger"
 import { mockRevenueCat } from "./mocks/revenueCat"
 import { isDevelopment } from "../config/env"
 import type { PricingPackage, SubscriptionService, SubscriptionInfo } from "../types/subscription"
@@ -37,16 +38,16 @@ let isWebConfigured = false
 if (Platform.OS !== "web" && !useMock) {
   try {
     MobilePurchases = require("react-native-purchases").default
-  } catch (e) {
-    console.warn("Failed to load react-native-purchases", e)
+  } catch {
+    // Failed to load react-native-purchases - will use mock
   }
 }
 
 if (Platform.OS === "web" && !useMock) {
   try {
     WebPurchases = require("@revenuecat/purchases-js")
-  } catch (e) {
-    console.warn("Failed to load @revenuecat/purchases-js", e)
+  } catch {
+    // Failed to load @revenuecat/purchases-js - will use mock
   }
 }
 
@@ -102,7 +103,7 @@ const revenueCatMobile: SubscriptionService = {
     // Prevent double configuration (e.g., on hot reload)
     if (isMobileConfigured) {
       if (__DEV__) {
-        console.log("[RevenueCat] Already configured, skipping...")
+        logger.debug("[RevenueCat] Already configured, skipping...")
       }
       return
     }
@@ -151,7 +152,7 @@ const revenueCatMobile: SubscriptionService = {
             try {
               // Use console.log instead of console.error to avoid Sentry interception
               // and show a clear, actionable message
-              console.log(
+              logger.info(
                 "\n📦 [RevenueCat] Setup Required\n" +
                   "─────────────────────────────────────────────\n" +
                   "To enable subscriptions, configure products in your RevenueCat dashboard:\n" +
@@ -165,7 +166,7 @@ const revenueCatMobile: SubscriptionService = {
                   "   You can safely ignore them if you're not using subscriptions yet.\n" +
                   "─────────────────────────────────────────────\n",
               )
-            } catch (e) {
+            } catch {
               // Silently fail if logging causes issues
             }
           }
@@ -178,15 +179,15 @@ const revenueCatMobile: SubscriptionService = {
         try {
           if (logLevel === MobilePurchases.LOG_LEVEL.ERROR) {
             // Only log unexpected errors
-            console.error(`[RevenueCat] ${message}`)
+            logger.error(`[RevenueCat] ${message}`)
           } else if (logLevel === MobilePurchases.LOG_LEVEL.WARN) {
-            console.warn(`[RevenueCat] ${message}`)
+            logger.warn(`[RevenueCat] ${message}`)
           } else if (logLevel === MobilePurchases.LOG_LEVEL.DEBUG && __DEV__) {
-            console.log(`[RevenueCat] ${message}`)
+            logger.debug(`[RevenueCat] ${message}`)
           } else if (logLevel === MobilePurchases.LOG_LEVEL.INFO) {
-            console.log(`[RevenueCat] ${message}`)
+            logger.info(`[RevenueCat] ${message}`)
           }
-        } catch (e) {
+        } catch {
           // Silently fail if logging causes issues
           // This prevents infinite loops or stack traces
         }
@@ -203,11 +204,11 @@ const revenueCatMobile: SubscriptionService = {
           errorMessage.includes("already set") ||
           errorMessage.includes("already configured") ||
           errorMessage.includes("Purchases instance already set")
-        
+
         if (isAlreadyConfigured) {
           isMobileConfigured = true
           if (__DEV__) {
-            console.log("[RevenueCat] Already configured (hot reload detected)")
+            logger.debug("[RevenueCat] Already configured (hot reload detected)")
           }
         } else {
           throw error
@@ -302,14 +303,14 @@ const revenueCatMobile: SubscriptionService = {
         error?.code === "1"
       ) {
         if (__DEV__) {
-          console.log(
+          logger.info(
             "ℹ️ [RevenueCat] No products configured yet. This is normal if you haven't set up products in the RevenueCat dashboard.",
           )
         }
         return []
       }
       // Log other errors
-      console.error("Error fetching packages:", error)
+      logger.error("Error fetching packages", {}, error as Error)
       return []
     }
   },
@@ -382,7 +383,7 @@ const revenueCatWeb: SubscriptionService = {
     // Prevent double configuration
     if (isWebConfigured) {
       if (__DEV__) {
-        console.log("[RevenueCat Web] Already configured, skipping...")
+        logger.debug("[RevenueCat Web] Already configured, skipping...")
       }
       return
     }
@@ -391,7 +392,7 @@ const revenueCatWeb: SubscriptionService = {
     // Mark as configured to prevent double initialization
     isWebConfigured = true
     if (__DEV__) {
-      console.log("🌐 [RevenueCat Web] Ready for configuration")
+      logger.info("🌐 [RevenueCat Web] Ready for configuration")
     }
   },
 
@@ -402,7 +403,7 @@ const revenueCatWeb: SubscriptionService = {
     }
 
     if (!WebPurchases || !webApiKey) {
-      console.warn("RevenueCat Web SDK not available")
+      logger.warn("RevenueCat Web SDK not available")
       return { subscriptionInfo: toSubscriptionInfo(null, "revenuecat-web") }
     }
 
@@ -414,7 +415,7 @@ const revenueCatWeb: SubscriptionService = {
       })
 
       if (__DEV__) {
-        console.log("🌐 [RevenueCat Web] Logged in:", userId)
+        logger.info("🌐 [RevenueCat Web] Logged in", { userId })
       }
 
       const customerInfo = await webPurchasesInstance.getCustomerInfo()
@@ -434,7 +435,7 @@ const revenueCatWeb: SubscriptionService = {
     webPurchasesInstance = null
 
     if (__DEV__) {
-      console.log("🌐 [RevenueCat Web] Logged out")
+      logger.info("🌐 [RevenueCat Web] Logged out")
     }
 
     return { subscriptionInfo: toSubscriptionInfo(null, "revenuecat-web") }
@@ -454,7 +455,7 @@ const revenueCatWeb: SubscriptionService = {
       const customerInfo = await webPurchasesInstance.getCustomerInfo()
       return toSubscriptionInfo(customerInfo, "revenuecat-web")
     } catch (error) {
-      console.error("Failed to get web customer info:", error)
+      logger.error("Failed to get web customer info", {}, error as Error)
       return toSubscriptionInfo(null, "revenuecat-web")
     }
   },
@@ -467,7 +468,7 @@ const revenueCatWeb: SubscriptionService = {
       }
 
       if (!webPurchasesInstance) {
-        console.warn("RevenueCat Web not initialized - call logIn first")
+        logger.warn("RevenueCat Web not initialized - call logIn first")
         return []
       }
 
@@ -496,14 +497,14 @@ const revenueCatWeb: SubscriptionService = {
         error?.code === "1"
       ) {
         if (__DEV__) {
-          console.log(
+          logger.info(
             "ℹ️ [RevenueCat Web] No products configured yet. This is normal if you haven't set up products in the RevenueCat dashboard.",
           )
         }
         return []
       }
       // Log other errors
-      console.error("Error fetching web packages:", error)
+      logger.error("Error fetching web packages", {}, error as Error)
       return []
     }
   },
@@ -523,12 +524,12 @@ const revenueCatWeb: SubscriptionService = {
       const { customerInfo } = await webPurchasesInstance.purchase({ rcPackage: pkg.platformData })
 
       if (__DEV__) {
-        console.log("🌐 [RevenueCat Web] Purchase successful")
+        logger.info("🌐 [RevenueCat Web] Purchase successful")
       }
 
       return { subscriptionInfo: toSubscriptionInfo(customerInfo, "revenuecat-web") }
     } catch (error: any) {
-      console.error("Web purchase failed:", error)
+      logger.error("Web purchase failed", {}, error as Error)
       return {
         subscriptionInfo: await revenueCatWeb.getSubscriptionInfo(),
         error,
@@ -583,10 +584,10 @@ export const initRevenueCat = async () => {
 
   if (__DEV__) {
     if (useMock) {
-      console.warn("⚠️  RevenueCat running in mock mode")
-      console.log("💡 Add EXPO_PUBLIC_REVENUECAT_*_KEY to .env")
+      logger.warn("⚠️  RevenueCat running in mock mode")
+      logger.info("💡 Add EXPO_PUBLIC_REVENUECAT_*_KEY to .env")
     } else {
-      console.log("💰 RevenueCat initialized for", Platform.OS)
+      logger.info("💰 RevenueCat initialized", { platform: Platform.OS })
     }
   }
 }

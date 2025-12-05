@@ -7,7 +7,7 @@ import { StyleSheet, useUnistyles } from "react-native-unistyles"
 import { OnboardingScreenLayout } from "@/components/layouts/OnboardingScreenLayout"
 import { Text } from "@/components/Text"
 import type { AppStackScreenProps } from "@/navigators/navigationTypes"
-import { useAuthStore } from "@/stores/authStore"
+import { useAuthStore } from "@/stores/auth"
 import { useNotificationStore } from "@/stores/notificationStore"
 
 // =============================================================================

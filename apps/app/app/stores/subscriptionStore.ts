@@ -3,7 +3,7 @@ import { CustomerInfo, PurchasesPackage } from "react-native-purchases"
 import { create } from "zustand"
 import { persist, createJSONStorage } from "zustand/middleware"
 
-import { useAuthStore } from "./authStore"
+import { useAuthStore } from "./auth"
 import { revenueCat } from "../services/revenuecat"
 import type {
   SubscriptionPlatform,
@@ -223,7 +223,7 @@ export const useSubscriptionStore = create<SubscriptionState>()(
                   isPro: false,
                 })
               }
-            } catch (error) {
+            } catch {
               // If getting info fails, just set empty state
               // This can happen if RevenueCat isn't fully initialized yet
               if (platform === "revenuecat-web") {

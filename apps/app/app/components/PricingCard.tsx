@@ -1,6 +1,8 @@
-import { type FC } from "react"
-import { Platform, View, Pressable } from "react-native"
+import { FC } from "react"
+import { Platform, Pressable, View } from "react-native"
 import { StyleSheet } from "react-native-unistyles"
+
+import { translate } from "@/i18n/translate"
 
 import { Text } from "./Text"
 
@@ -31,7 +33,7 @@ export const PricingCard: FC<PricingCardProps> = ({
     <View style={[styles.container, isPopular && styles.popularContainer]}>
       {isPopular && (
         <View style={styles.popularBadge}>
-          <Text style={styles.popularBadgeText}>MOST POPULAR</Text>
+          <Text style={styles.popularBadgeText} tx="pricingCard:mostPopular" />
         </View>
       )}
 
@@ -67,7 +69,7 @@ export const PricingCard: FC<PricingCardProps> = ({
         disabled={disabled || loading}
       >
         <Text style={[styles.buttonText, isPopular && styles.popularButtonText]}>
-          {loading ? "Processing..." : "Subscribe Now"}
+          {loading ? translate("pricingCard:processing") : translate("pricingCard:subscribeNow")}
         </Text>
       </Pressable>
     </View>

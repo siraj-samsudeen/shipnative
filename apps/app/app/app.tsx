@@ -27,11 +27,13 @@ import * as Linking from "expo-linking"
 import { GestureHandlerRootView } from "react-native-gesture-handler"
 import { initialWindowMetrics, SafeAreaProvider } from "react-native-safe-area-context"
 
-import { initI18n } from "./i18n"
+import { logEnvValidation } from "./config/env"
+import { initI18n, initializeLanguage } from "./i18n"
 import { AppNavigator } from "./navigators/AppNavigator"
 import { useNavigationPersistence } from "./navigators/navigationUtilities"
 import { QueryProvider } from "./providers"
 import { LoadingScreen } from "./screens/LoadingScreen"
+import { logMockServicesStatus } from "./services/mocks"
 import { certificatePinning } from "./services/certificatePinning"
 import { initPosthog } from "./services/posthog"
 import { initRevenueCat } from "./services/revenuecat"
@@ -39,7 +41,7 @@ import { initSentry } from "./services/sentry"
 import { useAuthStore, useSubscriptionStore } from "./stores"
 import { ThemeProvider } from "./theme/context"
 import { customFontsToLoad } from "./theme/typography"
-import { loadDateFnsLocale } from "./utils/formatDate"
+import { webDimension } from "./types/webStyles"
 import { logger } from "./utils/Logger"
 import { securityCheck } from "./utils/securityCheck"
 import * as storage from "./utils/storage"
@@ -103,6 +105,10 @@ export function App() {
           logger.debug("App initialize started")
         }
 
+        // Log environment validation and mock services status (after logger is ready)
+        logEnvValidation()
+        logMockServicesStatus()
+
         // Initialize security features
         certificatePinning.initialize()
         securityCheck.log()
@@ -112,11 +118,12 @@ export function App() {
         if (__DEV__) {
           logger.debug("i18n initialized")
         }
-        setIsI18nInitialized(true)
-        await loadDateFnsLocale()
+        // Initialize language from persisted preference or device locale
+        await initializeLanguage()
         if (__DEV__) {
-          logger.debug("date-fns locale loaded")
+          logger.debug("language initialized")
         }
+        setIsI18nInitialized(true)
 
         // Initialize services
         initSentry()
@@ -165,9 +172,12 @@ export function App() {
         if (__DEV__) {
           logger.debug("initializing subscription store...")
         }
-        useSubscriptionStore.getState().initialize().catch((error) => {
-          logger.error("Subscription initialization failed", {}, error as Error)
-        })
+        useSubscriptionStore
+          .getState()
+          .initialize()
+          .catch((error) => {
+            logger.error("Subscription initialization failed", {}, error as Error)
+          })
 
         // Don't wait for subscription store - it can load in background
         // The app can render with cached/default subscription values
@@ -256,17 +266,17 @@ const $gestureHandlerRoot: ViewStyle = {
   flex: 1,
   // Web needs explicit height for proper scrolling
   ...(Platform.OS === "web" && {
-    minHeight: "100vh" as unknown as number,
-    height: "100vh" as unknown as number,
-    overflow: "hidden" as unknown as "visible",
+    minHeight: webDimension("100vh"),
+    height: webDimension("100vh"),
+    overflow: "hidden",
   }),
 }
 
 const $safeAreaProvider: ViewStyle = {
   flex: 1,
   ...(Platform.OS === "web" && {
-    minHeight: "100vh" as unknown as number,
-    height: "100vh" as unknown as number,
-    width: "100%" as unknown as number,
+    minHeight: webDimension("100vh"),
+    height: webDimension("100vh"),
+    width: webDimension("100%"),
   }),
 }

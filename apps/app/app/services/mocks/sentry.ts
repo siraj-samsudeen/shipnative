@@ -13,6 +13,7 @@ import type {
   Breadcrumb,
   ErrorLevel,
 } from "../../types/errorTracking"
+import { logger } from "../../utils/Logger"
 
 interface MockError {
   type: "exception" | "message"
@@ -33,8 +34,10 @@ class MockSentry implements ErrorTrackingService {
 
   initialize(config: ErrorTrackingConfig): void {
     if (__DEV__) {
-      console.log("🐛 [MockSentry] Initialized with mock error tracking")
-      console.log("🐛 [MockSentry] Environment:", config.environment || "development")
+      logger.debug("🐛 [MockSentry] Initialized with mock error tracking")
+      logger.debug("🐛 [MockSentry] Environment", {
+        environment: config.environment || "development",
+      })
     }
   }
 
@@ -50,16 +53,21 @@ class MockSentry implements ErrorTrackingService {
     this.errors.push(mockError)
 
     if (__DEV__) {
-      console.error("🐛 [MockSentry] Exception:", error.message)
-      console.error("🐛 [MockSentry] Stack:", error.stack)
+      logger.error("🐛 [MockSentry] Exception", { message: error.message }, error)
+      if (error.stack) {
+        logger.debug("🐛 [MockSentry] Stack", { stack: error.stack })
+      }
       if (context?.tags) {
-        console.log("🐛 [MockSentry] Tags:", context.tags)
+        logger.debug("🐛 [MockSentry] Tags", context.tags)
       }
       if (context?.extra) {
-        console.log("🐛 [MockSentry] Extra:", context.extra)
+        logger.debug("🐛 [MockSentry] Extra", context.extra)
       }
       if (this.breadcrumbs.length > 0) {
-        console.log("🐛 [MockSentry] Breadcrumbs:", this.breadcrumbs)
+        logger.debug("🐛 [MockSentry] Breadcrumbs", {
+          count: this.breadcrumbs.length,
+          breadcrumbs: this.breadcrumbs,
+        })
       }
     }
 
@@ -78,16 +86,20 @@ class MockSentry implements ErrorTrackingService {
     this.errors.push(mockError)
 
     const logLevel = level || "info"
-    const logMethod =
-      logLevel === "error" ? console.error : logLevel === "warning" ? console.warn : console.log
 
     if (__DEV__) {
-      logMethod(`🐛 [MockSentry] Message [${logLevel}]:`, message)
+      if (logLevel === "error") {
+        logger.error(`🐛 [MockSentry] Message [${logLevel}]`, { message })
+      } else if (logLevel === "warning") {
+        logger.warn(`🐛 [MockSentry] Message [${logLevel}]`, { message })
+      } else {
+        logger.debug(`🐛 [MockSentry] Message [${logLevel}]`, { message })
+      }
       if (context?.tags) {
-        console.log("🐛 [MockSentry] Tags:", context.tags)
+        logger.debug("🐛 [MockSentry] Tags", context.tags)
       }
       if (context?.extra) {
-        console.log("🐛 [MockSentry] Extra:", context.extra)
+        logger.debug("🐛 [MockSentry] Extra", context.extra)
       }
     }
 
@@ -99,16 +111,16 @@ class MockSentry implements ErrorTrackingService {
 
     if (__DEV__) {
       if (user) {
-        console.log("🐛 [MockSentry] Set user:", user.id || user.email || "unknown")
+        logger.debug("🐛 [MockSentry] Set user", { userId: user.id || user.email || "unknown" })
       } else {
-        console.log("🐛 [MockSentry] Cleared user")
+        logger.debug("🐛 [MockSentry] Cleared user")
       }
     }
   }
 
   setContext(key: string, value: any): void {
     if (__DEV__) {
-      console.log(`🐛 [MockSentry] Set context "${key}":`, value)
+      logger.debug(`🐛 [MockSentry] Set context "${key}"`, { [key]: value })
     }
   }
 
@@ -116,7 +128,7 @@ class MockSentry implements ErrorTrackingService {
     this.tags[key] = value
 
     if (__DEV__) {
-      console.log(`🐛 [MockSentry] Set tag "${key}":`, value)
+      logger.debug(`🐛 [MockSentry] Set tag "${key}"`, { [key]: value })
     }
   }
 
@@ -124,7 +136,7 @@ class MockSentry implements ErrorTrackingService {
     this.tags = { ...this.tags, ...tags }
 
     if (__DEV__) {
-      console.log("🐛 [MockSentry] Set tags:", tags)
+      logger.debug("🐛 [MockSentry] Set tags", tags)
     }
   }
 
@@ -132,7 +144,7 @@ class MockSentry implements ErrorTrackingService {
     this.extras[key] = value
 
     if (__DEV__) {
-      console.log(`🐛 [MockSentry] Set extra "${key}":`, value)
+      logger.debug(`🐛 [MockSentry] Set extra "${key}"`, { [key]: value })
     }
   }
 
@@ -140,7 +152,7 @@ class MockSentry implements ErrorTrackingService {
     this.extras = { ...this.extras, ...extras }
 
     if (__DEV__) {
-      console.log("🐛 [MockSentry] Set extras:", extras)
+      logger.debug("🐛 [MockSentry] Set extras", extras)
     }
   }
 
@@ -153,10 +165,9 @@ class MockSentry implements ErrorTrackingService {
     }
 
     if (__DEV__) {
-      console.log(
-        `🐛 [MockSentry] Breadcrumb [${breadcrumb.type || "default"}]:`,
-        breadcrumb.message || breadcrumb.category,
-      )
+      logger.debug(`🐛 [MockSentry] Breadcrumb [${breadcrumb.type || "default"}]`, {
+        message: breadcrumb.message || breadcrumb.category,
+      })
     }
   }
 
@@ -177,7 +188,7 @@ class MockSentry implements ErrorTrackingService {
 
   startTransaction(name: string, op?: string): any {
     if (__DEV__) {
-      console.log(`🐛 [MockSentry] Start transaction "${name}" [${op || "custom"}]`)
+      logger.debug(`🐛 [MockSentry] Start transaction "${name}"`, { op: op || "custom" })
     }
 
     // Return a mock transaction
@@ -187,12 +198,12 @@ class MockSentry implements ErrorTrackingService {
       startTime: Date.now(),
       finish: () => {
         if (__DEV__) {
-          console.log(`🐛 [MockSentry] Finish transaction "${name}"`)
+          logger.debug(`🐛 [MockSentry] Finish transaction "${name}"`)
         }
       },
       setStatus: (status: string) => {
         if (__DEV__) {
-          console.log(`🐛 [MockSentry] Transaction "${name}" status:`, status)
+          logger.debug(`🐛 [MockSentry] Transaction "${name}" status`, { status })
         }
       },
     }
@@ -200,7 +211,7 @@ class MockSentry implements ErrorTrackingService {
 
   async close(timeout?: number): Promise<boolean> {
     if (__DEV__) {
-      console.log(`🐛 [MockSentry] Close (timeout: ${timeout || "none"})`)
+      logger.debug(`🐛 [MockSentry] Close`, { timeout: timeout || "none" })
     }
     return true
   }
@@ -221,7 +232,7 @@ class MockSentry implements ErrorTrackingService {
     this.errors = []
 
     if (__DEV__) {
-      console.log("🐛 [MockSentry] Cleared error history")
+      logger.debug("🐛 [MockSentry] Cleared error history")
     }
   }
 
@@ -239,7 +250,7 @@ class MockSentry implements ErrorTrackingService {
     this.breadcrumbs = []
 
     if (__DEV__) {
-      console.log("🐛 [MockSentry] Cleared breadcrumbs")
+      logger.debug("🐛 [MockSentry] Cleared breadcrumbs")
     }
   }
 

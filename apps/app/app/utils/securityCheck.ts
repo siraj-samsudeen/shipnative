@@ -107,7 +107,3 @@ export const securityCheck = {
   log: logSecurityChecks,
 }
 
-
-
-
-

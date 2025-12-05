@@ -1,4 +1,4 @@
-import { useAuthStore } from "../app/stores/authStore"
+import { useAuthStore } from "../app/stores/auth"
 import { useSubscriptionStore } from "../app/stores/subscriptionStore"
 
 // Mock MMKV
@@ -51,21 +51,29 @@ describe("Mock Flows", () => {
   })
 
   test("Authentication Flow (MockSupabase)", async () => {
-    const { signIn, signUp, signOut } = useAuthStore.getState()
+    const { signIn, signUp, signOut, verifyEmail } = useAuthStore.getState()
 
-    // Sign Up
+    // Sign Up (email confirmation required in mock mode)
     const signUpResult = await signUp("test@example.com", "password")
     expect(signUpResult.error).toBeUndefined()
-    expect(useAuthStore.getState().isAuthenticated).toBe(true)
     expect(useAuthStore.getState().user).not.toBeNull()
     expect(useAuthStore.getState().user?.email).toBe("test@example.com")
+    // User is not authenticated until email is confirmed
+    expect(useAuthStore.getState().isAuthenticated).toBe(false)
+    expect(useAuthStore.getState().isEmailConfirmed).toBe(false)
+
+    // Verify Email (mock should accept any code)
+    const verifyResult = await verifyEmail("123456")
+    expect(verifyResult.error).toBeUndefined()
+    expect(useAuthStore.getState().isEmailConfirmed).toBe(true)
+    expect(useAuthStore.getState().isAuthenticated).toBe(true)
 
     // Sign Out
     await signOut()
     expect(useAuthStore.getState().isAuthenticated).toBe(false)
     expect(useAuthStore.getState().user).toBeNull()
 
-    // Sign In
+    // Sign In (now that email is confirmed)
     const signInResult = await signIn("test@example.com", "password")
     expect(signInResult.error).toBeUndefined()
     expect(useAuthStore.getState().isAuthenticated).toBe(true)

@@ -13,6 +13,7 @@ import type {
   ScreenProperties,
   GroupProperties,
 } from "../../types/analytics"
+import { logger } from "../../utils/Logger"
 
 interface MockEvent {
   type: "event" | "screen" | "identify"
@@ -53,7 +54,7 @@ class MockPostHog implements AnalyticsService {
     this.host = config.host || this.host
 
     if (__DEV__) {
-      console.log("📊 [MockPostHog] Initialized")
+      logger.debug("📊 [MockPostHog] Initialized")
     }
   }
 
@@ -74,7 +75,7 @@ class MockPostHog implements AnalyticsService {
     this.events.push(mockEvent)
 
     if (__DEV__) {
-      console.log(`📊 [MockPostHog] Event: ${event}`, properties || {})
+      logger.debug(`📊 [MockPostHog] Event: ${event}`, properties || {})
     }
   }
 
@@ -95,7 +96,7 @@ class MockPostHog implements AnalyticsService {
     this.events.push(mockEvent)
 
     if (__DEV__) {
-      console.log(`📊 [MockPostHog] Screen: ${name}`, properties || {})
+      logger.debug(`📊 [MockPostHog] Screen: ${name}`, properties || {})
     }
   }
 
@@ -115,7 +116,7 @@ class MockPostHog implements AnalyticsService {
     this.events.push(mockEvent)
 
     if (__DEV__) {
-      console.log(`📊 [MockPostHog] Identify: ${userId}`, properties || {})
+      logger.debug(`📊 [MockPostHog] Identify: ${userId}`, properties || {})
     }
   }
 
@@ -124,7 +125,7 @@ class MockPostHog implements AnalyticsService {
     this.userProperties = {}
 
     if (__DEV__) {
-      console.log("📊 [MockPostHog] Reset user")
+      logger.debug("📊 [MockPostHog] Reset user")
     }
   }
 
@@ -132,7 +133,7 @@ class MockPostHog implements AnalyticsService {
     this.userProperties = { ...this.userProperties, ...properties }
 
     if (__DEV__) {
-      console.log("📊 [MockPostHog] Set user properties:", properties)
+      logger.debug("📊 [MockPostHog] Set user properties", properties)
     }
   }
 
@@ -140,7 +141,7 @@ class MockPostHog implements AnalyticsService {
     if (!this.enabled) return
 
     if (__DEV__) {
-      console.log(`📊 [MockPostHog] Group: ${type}:${id}`, properties || {})
+      logger.debug(`📊 [MockPostHog] Group: ${type}:${id}`, properties || {})
     }
   }
 
@@ -148,7 +149,7 @@ class MockPostHog implements AnalyticsService {
     const enabled = this.featureFlags[flag] === true
 
     if (__DEV__) {
-      console.log(`📊 [MockPostHog] Feature flag "${flag}":`, enabled)
+      logger.debug(`📊 [MockPostHog] Feature flag "${flag}"`, { enabled })
     }
 
     return enabled
@@ -158,7 +159,7 @@ class MockPostHog implements AnalyticsService {
     const value = this.featureFlags[flag]
 
     if (__DEV__) {
-      console.log(`📊 [MockPostHog] Get feature flag "${flag}":`, value)
+      logger.debug(`📊 [MockPostHog] Get feature flag "${flag}"`, { value })
     }
 
     return value
@@ -169,7 +170,7 @@ class MockPostHog implements AnalyticsService {
     callback(this.featureFlags)
 
     if (__DEV__) {
-      console.log("📊 [MockPostHog] Feature flags callback registered")
+      logger.debug("📊 [MockPostHog] Feature flags callback registered")
     }
   }
 
@@ -177,7 +178,7 @@ class MockPostHog implements AnalyticsService {
     this.enabled = true
 
     if (__DEV__) {
-      console.log("📊 [MockPostHog] Opted in to tracking")
+      logger.debug("📊 [MockPostHog] Opted in to tracking")
     }
   }
 
@@ -185,19 +186,19 @@ class MockPostHog implements AnalyticsService {
     this.enabled = false
 
     if (__DEV__) {
-      console.log("📊 [MockPostHog] Opted out of tracking")
+      logger.debug("📊 [MockPostHog] Opted out of tracking")
     }
   }
 
   async flush(): Promise<void> {
     if (__DEV__) {
-      console.log("📊 [MockPostHog] Flush (no-op)")
+      logger.debug("📊 [MockPostHog] Flush (no-op)")
     }
   }
 
   async shutdown(): Promise<void> {
     if (__DEV__) {
-      console.log("📊 [MockPostHog] Shutdown")
+      logger.debug("📊 [MockPostHog] Shutdown")
     }
   }
 
@@ -210,7 +211,7 @@ class MockPostHog implements AnalyticsService {
     this.featureFlags[flag] = value
 
     if (__DEV__) {
-      console.log(`📊 [MockPostHog] Set feature flag "${flag}":`, value)
+      logger.debug(`📊 [MockPostHog] Set feature flag "${flag}"`, { value })
     }
   }
 
@@ -228,7 +229,7 @@ class MockPostHog implements AnalyticsService {
     this.events = []
 
     if (__DEV__) {
-      console.log("📊 [MockPostHog] Cleared event history")
+      logger.debug("📊 [MockPostHog] Cleared event history")
     }
   }
 

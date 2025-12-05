@@ -18,6 +18,12 @@ Production-ready React Native (Expo) starter kit with auth, subscriptions, analy
 ### Analytics (PostHog)
 - Event tracking, feature flags, A/B testing
 
+### Widgets (iOS & Android)
+- Native home screen widgets with Supabase integration
+- Feature flag controlled (enable via EXPO_PUBLIC_ENABLE_WIDGETS=true)
+- Easy styling with theme support
+- Secure data fetching with session management
+
 ### UI/UX
 - Unified design system via Unistyles 3.0 (theme-aware colors, typography, spacing)
 - Screen layout templates for consistency (AuthScreenLayout, OnboardingScreenLayout)
@@ -25,6 +31,7 @@ Production-ready React Native (Expo) starter kit with auth, subscriptions, analy
 - 3-step onboarding (Intro → Goal → Notifications)
 - Component showcase for UI testing
 - Dark mode (automatic via Unistyles adaptiveThemes), accessible components, smooth animations
+- **Full multilingual support** (7 languages: en, ar, es, fr, hi, ja, ko) with automatic device language detection
 
 ## Screens
 - Onboarding (3 steps), Login, Register, Forgot Password
@@ -36,6 +43,7 @@ Production-ready React Native (Expo) starter kit with auth, subscriptions, analy
 - React Native (Expo SDK 54)
 - **Unistyles 3.0** (theme-aware styling)
 - Zustand (state) + React Query (data fetching)
+- **i18next + react-i18next** (multilingual support, 7 languages)
 - TypeScript strict mode
 - React Navigation
 
@@ -47,7 +55,7 @@ Production-ready React Native (Expo) starter kit with auth, subscriptions, analy
     /layouts     # Screen layout templates (AuthScreenLayout, OnboardingScreenLayout)
   /config        # Env, features, constants
   /hooks         # Custom hooks, React Query hooks
-  /services      # Supabase, RevenueCat, PostHog, Sentry
+  /services      # Supabase, RevenueCat, PostHog, Sentry, Widgets
     /api         # API client with interceptors
   /stores        # Zustand stores
     /middleware  # Logger, error handler
@@ -55,6 +63,9 @@ Production-ready React Native (Expo) starter kit with auth, subscriptions, analy
   /utils         # Helpers
   /theme         # Unistyles config (unistyles.ts), design tokens
   /vibe          # AI context docs
+  /widgets       # Native widget implementations
+    /ios         # iOS SwiftUI widgets
+    /android     # Android Kotlin widgets
 ```
 
 ## Key Patterns
@@ -154,6 +165,22 @@ const styles = StyleSheet.create((theme) => ({
 <View style={{ backgroundColor: '#E0F2FE', padding: 16 }}>
 ```
 
+### Internationalization Guidelines
+```typescript
+// ✅ DO: Always use translation keys
+import { Text, Button } from '@/components'
+
+<Text tx="common:ok" />
+<Button tx="common:save" />
+<Text tx="welcomeScreen:title" txOptions={{ name: userName }} />
+
+// ❌ DON'T: Hardcode text strings
+<Text>Welcome</Text>
+<Button text="Save" />
+```
+
+**CRITICAL**: Never hardcode user-facing text. Always add translations to `/app/i18n/en.ts` first, then to all other language files. See `vibe/STYLE_GUIDE.md` for full i18n guidelines.
+
 ### Adding a New Feature
 1. Determine state needs (Zustand vs local)
 2. Create API hooks with React Query if needed
@@ -171,5 +198,6 @@ const styles = StyleSheet.create((theme) => ({
 - Test in mock mode first (no API keys needed)
 - Use dev dashboard to test different states
 - **Always use screen templates** (`vibe/SCREEN_TEMPLATES.md`)
+- **Always use i18n translation keys** - Never hardcode text (see `vibe/STYLE_GUIDE.md`)
 - Follow `vibe/STYLE_GUIDE.md` for code conventions
 - See `vibe/TECH_STACK.md` for architectural decisions

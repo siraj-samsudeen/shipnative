@@ -8,6 +8,8 @@
  * - Integration with crash reporting
  */
 
+import { TIMING } from "@/config/constants"
+
 import { captureException, captureMessage } from "./crashReporting"
 import { logger } from "./Logger"
 
@@ -176,7 +178,7 @@ function getRecoveryStrategy(error: AppError): RecoveryStrategy {
     return {
       canRecover: true,
       shouldRetry: true,
-      retryDelay: 1000,
+      retryDelay: TIMING.RETRY_DELAY_NETWORK,
       maxRetries: 3,
     }
   }
@@ -186,7 +188,7 @@ function getRecoveryStrategy(error: AppError): RecoveryStrategy {
     return {
       canRecover: true,
       shouldRetry: true,
-      retryDelay: 2000,
+      retryDelay: TIMING.RETRY_DELAY_SERVER,
       maxRetries: 2,
     }
   }
@@ -344,7 +346,7 @@ export async function handleAsync<T>(
 export async function retryWithBackoff<T>(
   operation: () => Promise<T>,
   maxRetries: number = 3,
-  initialDelay: number = 1000,
+  initialDelay: number = TIMING.RETRY_DELAY_NETWORK,
   context?: Record<string, any>,
 ): Promise<{ data?: T; error?: AppError }> {
   let lastError: AppError | undefined

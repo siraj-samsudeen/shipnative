@@ -50,8 +50,6 @@ export const PaywallScreen = () => {
   const isWeb = Platform.OS === "web"
   const isMock = isRevenueCatMock
   const isMockMode = isMock || !Purchases || !Paywalls
-  const webPackages = packages as PricingPackage[]
-  const isMockWebBilling = isWeb && isMock
   const [isPresenting, setIsPresenting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [hasAutoPresented, setHasAutoPresented] = useState(false)
@@ -65,7 +63,11 @@ export const PaywallScreen = () => {
     if (navigation.canGoBack()) {
       navigation.goBack()
     } else {
-      navigation.replace("Main")
+      // Reset navigation stack to Main screen
+      navigation.reset({
+        index: 0,
+        routes: [{ name: "Main" }],
+      })
     }
   }, [navigation])
 
@@ -186,6 +188,7 @@ export const PaywallScreen = () => {
       }, 500)
       return () => clearTimeout(timer)
     }
+    return undefined
   }, [isPro, isFromOnboarding, navigateToMain])
 
   // Handle manual paywall presentation (for retry or if auto-present failed)
@@ -253,9 +256,7 @@ export const PaywallScreen = () => {
                         <Text style={styles.packageDescription}>{pricingPkg.description}</Text>
                       ) : null}
                       <Button
-                        text={
-                          subscriptionLoading || isPresenting ? "Processing..." : "Select plan"
-                        }
+                        text={subscriptionLoading || isPresenting ? "Processing..." : "Select plan"}
                         onPress={() => handlePackagePurchase(pricingPkg)}
                         variant="filled"
                         loading={subscriptionLoading || isPresenting}

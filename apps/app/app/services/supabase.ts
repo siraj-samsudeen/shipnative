@@ -3,6 +3,7 @@ import * as SecureStore from "expo-secure-store"
 import { createClient } from "@supabase/supabase-js"
 import "react-native-url-polyfill/auto"
 
+import { logger } from "../utils/Logger"
 import { createMockSupabaseClient } from "./mocks/supabase"
 import { webSecureStorage } from "../utils/webStorageEncryption"
 
@@ -95,9 +96,8 @@ export const supabase = useMock
     })
 
 if (useMock && __DEV__) {
-  // Use logger for consistency, but this is dev-only so console is acceptable
-  console.warn("⚠️  Supabase credentials not found - using mock authentication")
-  console.log(
+  logger.warn("⚠️  Supabase credentials not found - using mock authentication")
+  logger.info(
     "💡 Add EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY to apps/app/.env",
   )
 }

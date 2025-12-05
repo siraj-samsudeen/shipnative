@@ -69,19 +69,38 @@ export const captureException = (
   context?: {
     tags?: Record<string, string>
     extra?: Record<string, any>
+    level?: "fatal" | "error" | "warning" | "info" | "debug"
+    fingerprint?: string[]
+    user?: {
+      id?: string
+      email?: string
+      username?: string
+      [key: string]: any
+    }
   },
 ) => {
+  // Always log in dev for debugging
   if (__DEV__) {
     console.error("Exception captured:", error)
     if (context) {
       console.log("Context:", context)
     }
-  } else {
-    // In production, send to crash reporting service
-    // Sentry.captureException(error, {
-    //   tags: context?.tags,
-    //   extra: context?.extra,
-    // })
+  }
+
+  // Always send to Sentry (both dev and production)
+  // Lazy import to avoid circular dependency with Logger
+  try {
+    const { sentry } = require("../services/sentry")
+    sentry.captureException(error, {
+      tags: context?.tags,
+      extra: context?.extra,
+      level: context?.level,
+      fingerprint: context?.fingerprint,
+      user: context?.user,
+    })
+  } catch (err) {
+    // Fallback to console if sentry service is not available
+    console.error("Failed to capture exception:", err)
   }
 }
 
@@ -94,19 +113,35 @@ export const captureMessage = (
     level?: "fatal" | "error" | "warning" | "info" | "debug"
     tags?: Record<string, string>
     extra?: Record<string, any>
+    fingerprint?: string[]
+    user?: {
+      id?: string
+      email?: string
+      username?: string
+      [key: string]: any
+    }
   },
 ) => {
+  // Always log in dev for debugging
   if (__DEV__) {
     console.log(`Message captured [${context?.level || "info"}]:`, message)
     if (context) {
       console.log("Context:", context)
     }
-  } else {
-    // In production, send to crash reporting service
-    // Sentry.captureMessage(message, {
-    //   level: context?.level || 'info',
-    //   tags: context?.tags,
-    //   extra: context?.extra,
-    // })
+  }
+
+  // Always send to Sentry (both dev and production)
+  // Lazy import to avoid circular dependency with Logger
+  try {
+    const { sentry } = require("../services/sentry")
+    sentry.captureMessage(message, context?.level || "info", {
+      tags: context?.tags,
+      extra: context?.extra,
+      fingerprint: context?.fingerprint,
+      user: context?.user,
+    })
+  } catch (err) {
+    // Fallback to console if sentry service is not available
+    console.log(`Failed to capture message: ${message}`, err)
   }
 }

@@ -13,3 +13,4 @@
     android:widgetCategory="home_screen"
     android:targetCellWidth="2"
     android:targetCellHeight="2" />
+

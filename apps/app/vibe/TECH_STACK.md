@@ -41,6 +41,62 @@ const { data, isLoading, error } = useQuery({
 - **Context API** - Use Zustand instead for global state
 - **useEffect for data fetching** - Use React Query instead
 
+## Internationalization (i18n)
+
+### i18next + react-i18next ✅
+- **Use for**: All user-facing text, labels, messages, buttons
+- **Why**: Industry standard, type-safe translation keys, RTL support, automatic device language detection
+- **Pattern**: Always use `tx` props or `translate()` function, never hardcode text
+
+```typescript
+// ✅ DO THIS - Use translation keys
+import { Text } from '@/components'
+import { translate } from '@/i18n/translate'
+
+<Text tx="common:ok" />
+<Text tx="loginScreen:emailFieldLabel" />
+<Button tx="common:save" />
+
+// For dynamic text
+const message = translate("errors:invalidEmail")
+const status = translate("subscriptionStatus:subscribedVia", { platform: "App Store" })
+
+// ❌ DON'T DO THIS - Hardcoded text
+<Text>Cancel</Text>
+<Button text="Save" />
+```
+
+### Supported Languages
+- English (en) - Default
+- Arabic (ar) - RTL support
+- Spanish (es)
+- French (fr)
+- Hindi (hi)
+- Japanese (ja)
+- Korean (ko)
+
+### Language Files
+All translations in `/app/i18n/`:
+- `en.ts` - Source of truth (defines Types)
+- `ar.ts`, `es.ts`, `fr.ts`, `hi.ts`, `ja.ts`, `ko.ts` - Other languages
+
+### Language Switching
+```typescript
+import { changeLanguage, SUPPORTED_LANGUAGES } from '@/i18n'
+
+// Change language programmatically
+await changeLanguage('es')
+
+// Get current language
+import { getCurrentLanguage } from '@/i18n'
+const lang = getCurrentLanguage()
+```
+
+### Automatic Detection
+- App automatically detects device language on startup
+- Falls back to English if device language not supported
+- User preference is persisted and restored
+
 ## Styling
 
 ### React Native Unistyles 3.0 ✅
@@ -221,6 +277,24 @@ import { posthog } from '@/services/posthog'
 posthog.capture('button_clicked', {
   button_name: 'subscribe',
   screen: 'paywall'
+})
+```
+
+### Expo Widgets (@bittingz/expo-widgets)
+- **Why**: Native iOS and Android home screen widgets with Supabase integration
+- **Pattern**: Feature flag controlled, widgets in `/app/widgets/`
+- **Enable**: Set `EXPO_PUBLIC_ENABLE_WIDGETS=true` in `.env`
+- **Documentation**: See `/docs/WIDGETS.md` and `/app/widgets/README.md`
+
+```typescript
+// ✅ DO THIS - Fetch widget data
+import { useWidgetData } from '@/hooks/useWidgetData'
+
+const { data, loading, error } = useWidgetData({
+  table: 'profiles',
+  select: 'id, first_name',
+  limit: 1,
+  requireAuth: true,
 })
 ```
 

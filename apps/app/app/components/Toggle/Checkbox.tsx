@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback } from "react"
-import { Image, ImageStyle, Animated, StyleProp, View, ViewStyle } from "react-native"
+import { Image, ImageStyle, Animated, Platform, StyleProp, View, ViewStyle } from "react-native"
 
 import { useAppTheme } from "@/theme/context"
 import { $styles } from "@/theme/styles"
@@ -55,7 +55,7 @@ function CheckboxInput(props: CheckboxInputProps) {
     Animated.timing(opacity.current, {
       toValue: on ? 1 : 0,
       duration: 300,
-      useNativeDriver: true,
+      useNativeDriver: Platform.OS !== "web", // Native driver not supported on web
     }).start()
   }, [on])
 

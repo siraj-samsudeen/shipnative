@@ -11,7 +11,8 @@ import { Text } from "@/components/Text"
 import { TextField } from "@/components/TextField"
 import { features } from "@/config/features"
 import { useAuth } from "@/hooks/useAuth"
-import { useAuthStore } from "@/stores/authStore"
+import { useAuthStore } from "@/stores/auth"
+import { formatAuthError } from "@/utils/formatAuthError"
 import {
   validateEmail,
   validatePassword,
@@ -70,22 +71,12 @@ export const RegisterScreen = () => {
     setLoading(false)
 
     if (signUpError) {
-      const errorMessage = signUpError.message.toLowerCase()
-      if (errorMessage.includes("network") || errorMessage.includes("fetch") || errorMessage.includes("request failed")) {
-        setError("Network error. Please check your internet connection and try again.")
-      } else if (errorMessage.includes("already registered")) {
-        setError("This email is already registered. Please sign in instead.")
-      } else if (errorMessage.includes("email")) {
-        setError("Please enter a valid email address.")
-      } else if (errorMessage.includes("password")) {
-        setError("Password does not meet requirements. Please try again.")
-      } else {
-        setError(signUpError.message || "Sign up failed. Please try again.")
-      }
+      const formattedError = formatAuthError(signUpError)
+      setError(formattedError)
     } else {
       // Signup successful
       const isEmailConfirmed = useAuthStore.getState().isEmailConfirmed
-      
+
       if (!isEmailConfirmed) {
         // Email confirmation required - navigate to verification screen
         // AppNavigator will handle this automatically, but we can navigate explicitly

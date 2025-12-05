@@ -61,25 +61,11 @@ const AppStack = () => {
     })
   }
 
-  if (loading) {
-    return <Spinner fullScreen />
-  }
-
-  // Determine initial route
-  let initialRouteName: keyof AppStackParamList = "Welcome"
-  if (user) {
-    if (needsEmailVerification) {
-      initialRouteName = "EmailVerification"
-    } else if (isAuthenticated) {
-      initialRouteName = hasCompletedOnboarding ? "Main" : "Onboarding"
-    }
-  }
-
   // Handle navigation when state changes (e.g., login with unverified email)
+  // MUST be called before any early returns to comply with React Hooks rules
   useEffect(() => {
     // Only navigate if state actually changed (not on initial render)
     const wasNeedingVerification = prevNeedsEmailVerificationRef.current
-    const wasAuthenticated = prevIsAuthenticatedRef.current
 
     // If we transitioned to needing email verification, navigate to that screen
     if (needsEmailVerification && !wasNeedingVerification && navigationRef.isReady()) {
@@ -93,6 +79,20 @@ const AppStack = () => {
     prevNeedsEmailVerificationRef.current = needsEmailVerification
     prevIsAuthenticatedRef.current = isAuthenticated
   }, [needsEmailVerification, isAuthenticated])
+
+  if (loading) {
+    return <Spinner fullScreen />
+  }
+
+  // Determine initial route
+  let initialRouteName: keyof AppStackParamList = "Welcome"
+  if (user) {
+    if (needsEmailVerification) {
+      initialRouteName = "EmailVerification"
+    } else if (isAuthenticated) {
+      initialRouteName = hasCompletedOnboarding ? "Main" : "Onboarding"
+    }
+  }
 
   return (
     <Stack.Navigator

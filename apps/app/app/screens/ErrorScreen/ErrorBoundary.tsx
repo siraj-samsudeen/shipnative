@@ -1,4 +1,5 @@
-import { Component, ErrorInfo, ReactNode } from "react"
+import { ReactNode } from "react"
+import * as Sentry from "@sentry/react-native"
 
 import { ErrorDetails } from "./ErrorDetails"
 
@@ -7,69 +8,45 @@ interface Props {
   catchErrors: "always" | "dev" | "prod" | "never"
 }
 
-interface State {
-  error: Error | null
-  errorInfo: ErrorInfo | null
-}
-
 /**
- * This component handles whenever the user encounters a JS error in the
- * app. It follows the "error boundary" pattern in React. We're using a
- * class component because according to the documentation, only class
- * components can be error boundaries.
- * @see [React Error Boundaries]{@link https://react.dev/reference/react/Component#catching-rendering-errors-with-an-error-boundary}
- * @param {Props} props - The props for the `ErrorBoundary` component.
- * @returns {JSX.Element} The rendered `ErrorBoundary` component.
+ * ErrorBoundary component using Sentry's built-in ErrorBoundary
+ * with custom fallback UI (ErrorDetails component).
+ * 
+ * Sentry.ErrorBoundary automatically captures errors to Sentry,
+ * so we don't need to manually call captureException.
+ * 
+ * @see [Sentry ErrorBoundary]{@link https://docs.sentry.io/platforms/react-native/features/react-error-boundary/}
  */
-export class ErrorBoundary extends Component<Props, State> {
-  state = { error: null, errorInfo: null }
-
-  // If an error in a child is encountered, this will run
-  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    // Only set errors if enabled
-    if (!this.isEnabled()) {
-      return
-    }
-    // Catch errors in any components below and re-render with error message
-    this.setState({
-      error,
-      errorInfo,
-    })
-
-    // You can also log error messages to an error reporting service here
-    // This is a great place to put BugSnag, Sentry, crashlytics, etc:
-    // reportCrash(error)
-  }
-
-  // Reset the error back to null
-  resetError = () => {
-    this.setState({ error: null, errorInfo: null })
-  }
-
-  // To avoid unnecessary re-renders
-  shouldComponentUpdate(nextProps: Readonly<Props>, nextState: Readonly<State>): boolean {
-    return nextState.error !== this.state.error
-  }
-
+export function ErrorBoundary({ children, catchErrors }: Props) {
   // Only enable if we're catching errors in the right environment
-  isEnabled(): boolean {
-    return (
-      this.props.catchErrors === "always" ||
-      (this.props.catchErrors === "dev" && __DEV__) ||
-      (this.props.catchErrors === "prod" && !__DEV__)
-    )
+  const isEnabled =
+    catchErrors === "always" ||
+    (catchErrors === "dev" && __DEV__) ||
+    (catchErrors === "prod" && !__DEV__)
+
+  if (!isEnabled || catchErrors === "never") {
+    return <>{children}</>
   }
 
-  // Render an error UI if there's an error; otherwise, render children
-  render() {
-    return this.isEnabled() && this.state.error ? (
-      <ErrorDetails
-        onReset={this.resetError}
-        error={this.state.error}
-        errorInfo={this.state.errorInfo}
-      />
-    ) : (
-      this.props.children
-    )
-  }
+  return (
+    <Sentry.ErrorBoundary
+      fallback={({ error, resetError }) => (
+        <ErrorDetails
+          error={error}
+          errorInfo={null}
+          onReset={resetError}
+        />
+      )}
+      beforeCapture={(scope, error, errorInfo) => {
+        // Add custom tags for error boundary errors
+        scope.setTag("errorBoundary", "true")
+        scope.setTag("errorType", "react_component_error")
+        if (errorInfo?.componentStack) {
+          scope.setExtra("componentStack", errorInfo.componentStack)
+        }
+      }}
+    >
+      {children}
+    </Sentry.ErrorBoundary>
+  )
 }

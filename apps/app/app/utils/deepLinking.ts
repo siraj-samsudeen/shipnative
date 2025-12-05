@@ -210,15 +210,17 @@ export const DeepLinkRoutes = {
  * Handle deep link from notification
  * Returns parsed link for app to handle navigation
  */
-export function handleNotificationDeepLink(response: Notifications.NotificationResponse): {
+export async function handleNotificationDeepLink(
+  response: Notifications.NotificationResponse,
+): Promise<{
   screen: string
   params?: Record<string, string>
-} | null {
+} | null> {
   const data = response.notification.request.content.data
 
   if (data?.deepLink) {
     // If notification has full deep link URL
-    return handleDeepLink(data.deepLink as string)
+    return await handleDeepLink(data.deepLink as string)
   } else if (data?.screen) {
     // If notification has screen and params
     return {

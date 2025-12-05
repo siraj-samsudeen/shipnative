@@ -1,6 +1,8 @@
-import { type FC } from "react"
-import { View, Pressable, Linking, Platform } from "react-native"
+import { FC } from "react"
+import { Linking, Platform, Pressable, View } from "react-native"
 import { StyleSheet } from "react-native-unistyles"
+
+import { translate } from "@/i18n/translate"
 
 import { Text } from "./Text"
 
@@ -37,13 +39,15 @@ export const SubscriptionStatus: FC<SubscriptionStatusProps> = ({
   const getPlatformName = () => {
     switch (platform) {
       case "revenuecat":
-        return Platform.OS === "ios" ? "App Store" : "Google Play"
+        return Platform.OS === "ios"
+          ? translate("subscriptionStatus:platformAppStore")
+          : translate("subscriptionStatus:platformGooglePlay")
       case "revenuecat-web":
-        return "Web Billing"
+        return translate("subscriptionStatus:platformWebBilling")
       case "mock":
-        return "Mock (Development)"
+        return translate("subscriptionStatus:platformMock")
       default:
-        return "Unknown"
+        return translate("subscriptionStatus:platformUnknown")
     }
   }
 
@@ -71,8 +75,8 @@ export const SubscriptionStatus: FC<SubscriptionStatusProps> = ({
           <Text style={styles.icon}>🆓</Text>
         </View>
         <View style={styles.content}>
-          <Text style={styles.title}>Free Plan</Text>
-          <Text style={styles.description}>Upgrade to Pro to unlock all features</Text>
+          <Text style={styles.title} tx="subscriptionStatus:freePlan" />
+          <Text style={styles.description} tx="subscriptionStatus:upgradeMessage" />
         </View>
       </View>
     )
@@ -84,11 +88,18 @@ export const SubscriptionStatus: FC<SubscriptionStatusProps> = ({
         <Text style={styles.icon}>✨</Text>
       </View>
       <View style={styles.content}>
-        <Text style={[styles.title, styles.proTitle]}>Pro Member</Text>
-        <Text style={styles.description}>Subscribed via {getPlatformName()}</Text>
+        <Text style={[styles.title, styles.proTitle]} tx="subscriptionStatus:proMember" />
+        <Text
+          style={styles.description}
+          tx="subscriptionStatus:subscribedVia"
+          txOptions={{ platform: getPlatformName() }}
+        />
         {expirationDate && (
           <Text style={styles.expirationText}>
-            {willRenew ? "Renews" : "Expires"} on {formatDate(expirationDate)}
+            {willRenew
+              ? translate("subscriptionStatus:renews")
+              : translate("subscriptionStatus:expires")}{" "}
+            {translate("subscriptionStatus:on")} {formatDate(expirationDate)}
           </Text>
         )}
       </View>
@@ -98,7 +109,7 @@ export const SubscriptionStatus: FC<SubscriptionStatusProps> = ({
           style={({ pressed }) => [styles.manageButton, pressed && styles.manageButtonPressed]}
           onPress={handleManageSubscription}
         >
-          <Text style={styles.manageButtonText}>Manage</Text>
+          <Text style={styles.manageButtonText} tx="subscriptionStatus:manage" />
         </Pressable>
       )}
     </View>

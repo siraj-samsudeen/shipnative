@@ -38,8 +38,12 @@ import {
 } from "react-native"
 import { LinearGradient } from "expo-linear-gradient"
 import { Ionicons } from "@expo/vector-icons"
+import type { TOptions } from "i18next"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { StyleSheet, useUnistyles } from "react-native-unistyles"
+
+import { TxKeyPath } from "@/i18n"
+import { translate } from "@/i18n/translate"
 
 import { ScrollView } from "../ScrollView"
 import { Text } from "../Text"
@@ -51,8 +55,16 @@ import { Text } from "../Text"
 export interface AuthScreenLayoutProps {
   /** Main heading text */
   title?: string
+  /** i18n translation key for title */
+  titleTx?: TxKeyPath
+  /** i18n translation options for title */
+  titleTxOptions?: TOptions
   /** Subtitle/description below the title */
   subtitle?: string
+  /** i18n translation key for subtitle */
+  subtitleTx?: TxKeyPath
+  /** i18n translation options for subtitle */
+  subtitleTxOptions?: TOptions
   /** Screen content (form fields, buttons, etc.) */
   children: ReactNode
   /** Show close/back button in top right */
@@ -86,7 +98,11 @@ const BREAKPOINT_TABLET = 768
 
 export const AuthScreenLayout = ({
   title,
+  titleTx,
+  titleTxOptions,
   subtitle,
+  subtitleTx,
+  subtitleTxOptions,
   children,
   showCloseButton = false,
   onClose,
@@ -168,7 +184,7 @@ export const AuthScreenLayout = ({
                   onPress={onClose}
                   activeOpacity={0.7}
                   accessibilityRole="button"
-                  accessibilityLabel="Close"
+                  accessibilityLabel={translate("authScreenLayout:closeButton")}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
                   <View style={styles.closeButtonCircle}>
@@ -184,7 +200,7 @@ export const AuthScreenLayout = ({
                   onPress={onBack}
                   activeOpacity={0.7}
                   accessibilityRole="button"
-                  accessibilityLabel="Go back"
+                  accessibilityLabel={translate("authScreenLayout:backButton")}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
                   <View style={styles.backButtonCircle}>
@@ -201,17 +217,26 @@ export const AuthScreenLayout = ({
               )}
 
               {/* Title */}
-              {title && (
-                <Text size="3xl" weight="bold" style={styles.title}>
-                  {title}
-                </Text>
+              {(title || titleTx) && (
+                <Text
+                  size="3xl"
+                  weight="bold"
+                  style={styles.title}
+                  text={title}
+                  tx={titleTx}
+                  txOptions={titleTxOptions}
+                />
               )}
 
               {/* Subtitle */}
-              {subtitle && (
-                <Text color="secondary" style={styles.subtitle}>
-                  {subtitle}
-                </Text>
+              {(subtitle || subtitleTx) && (
+                <Text
+                  color="secondary"
+                  style={styles.subtitle}
+                  text={subtitle}
+                  tx={subtitleTx}
+                  txOptions={subtitleTxOptions}
+                />
               )}
 
               {/* Content */}

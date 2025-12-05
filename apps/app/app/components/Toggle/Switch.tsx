@@ -62,7 +62,7 @@ function SwitchInput(props: SwitchInputProps) {
     Animated.timing(animate.current, {
       toValue: on ? 1 : 0,
       duration: 300,
-      useNativeDriver: true, // Enable native driver for smoother animations
+      useNativeDriver: Platform.OS !== "web", // Native driver not supported on web
     }).start()
   }, [on])
 
@@ -70,7 +70,7 @@ function SwitchInput(props: SwitchInputProps) {
     Animated.timing(opacity.current, {
       toValue: on ? 1 : 0,
       duration: 300,
-      useNativeDriver: true,
+      useNativeDriver: Platform.OS !== "web", // Native driver not supported on web
     }).start()
   }, [on])
 

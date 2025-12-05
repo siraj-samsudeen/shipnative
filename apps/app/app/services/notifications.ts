@@ -1,4 +1,7 @@
 import Constants from "expo-constants"
+import { Platform } from "react-native"
+
+import { logger } from "../utils/Logger"
 
 // Lazy import to avoid native module errors at module load time
 let Notifications: typeof import("expo-notifications") | null = null
@@ -17,7 +20,7 @@ const getNotifications = (): typeof import("expo-notifications") | null => {
     return Notifications
   } catch (error) {
     if (__DEV__) {
-      console.warn("📬 [Notifications] Failed to import expo-notifications:", error)
+      logger.error("📬 [Notifications] Failed to import expo-notifications", {}, error as Error)
     }
     return null
   }
@@ -56,7 +59,7 @@ const isNativeModuleAvailable = (): boolean => {
     return false
   } catch (error) {
     if (__DEV__) {
-      console.warn("📬 [Notifications] Native module check failed:", error)
+      logger.error("📬 [Notifications] Native module check failed", {}, error as Error)
     }
     nativeModuleAvailable = false
     return false
@@ -91,7 +94,7 @@ const setupNotificationHandler = (): void => {
     }
   } catch (error) {
     if (__DEV__) {
-      console.warn("📬 [Notifications] Failed to set notification handler:", error)
+      logger.error("📬 [Notifications] Failed to set notification handler", {}, error as Error)
     }
   }
 }
@@ -105,7 +108,7 @@ const shouldUseMock = (): boolean => {
   // Explicit opt-in to mock mode via env for developers who want to bypass native prompts
   if (forceMockNotifications) {
     if (__DEV__) {
-      console.log("📬 [Notifications] Mock mode forced via EXPO_PUBLIC_USE_MOCK_NOTIFICATIONS")
+      logger.debug("📬 [Notifications] Mock mode forced via EXPO_PUBLIC_USE_MOCK_NOTIFICATIONS")
     }
     return true
   }
@@ -113,7 +116,7 @@ const shouldUseMock = (): boolean => {
   // If native module is not available, use mock
   if (!isNativeModuleAvailable()) {
     if (__DEV__) {
-      console.log("📬 [Notifications] Native module not available - using mock mode")
+      logger.debug("📬 [Notifications] Native module not available - using mock mode")
     }
     return true
   }
@@ -130,13 +133,17 @@ export async function requestPermission(): Promise<{
   status: "granted" | "denied" | "undetermined"
 }> {
   if (useMockNotifications || !isNativeModuleAvailable()) {
-    console.log("📬 [MockNotifications] Permission automatically granted")
+    if (__DEV__) {
+      logger.debug("📬 [MockNotifications] Permission automatically granted")
+    }
     return { status: "granted" }
   }
 
   const NotificationsModule = getNotifications()
   if (!NotificationsModule) {
-    console.log("📬 [MockNotifications] Permission automatically granted (module unavailable)")
+    if (__DEV__) {
+      logger.debug("📬 [MockNotifications] Permission automatically granted (module unavailable)")
+    }
     return { status: "granted" }
   }
 
@@ -151,25 +158,44 @@ export async function requestPermission(): Promise<{
 
     return { status: finalStatus as "granted" | "denied" | "undetermined" }
   } catch (error) {
-    console.warn("📬 [Notifications] Error requesting permission, using mock:", error)
+    logger.error("📬 [Notifications] Error requesting permission, using mock", {}, error as Error)
     return { status: "granted" } // Fallback to granted in mock mode
   }
 }
 
 /**
  * Register for push notifications and get Expo push token
+ * 
+ * Note: On web, expo-notifications push tokens are not supported.
+ * Web push notifications would require implementing the Web Push API (Service Workers).
+ * This function returns null on web to avoid the warning about push token listeners.
  */
 export async function registerForPushNotifications(): Promise<string | null> {
+  // Expo push tokens don't work on web - would need Web Push API implementation
+  // Skip to avoid warning: "Listening to push token changes is not yet fully supported on web"
+  if (Platform.OS === "web") {
+    if (__DEV__) {
+      logger.debug(
+        "📬 [Notifications] Expo push tokens not supported on web (would need Web Push API), returning null",
+      )
+    }
+    return null
+  }
+
   if (useMockNotifications || !isNativeModuleAvailable()) {
     const mockToken = "ExponentPushToken[MOCK-" + Math.random().toString(36).substr(2, 9) + "]"
-    console.log("📬 [MockNotifications] Generated mock push token:", mockToken)
+    if (__DEV__) {
+      logger.debug("📬 [MockNotifications] Generated mock push token", { token: mockToken })
+    }
     return mockToken
   }
 
   // Verify permissions
   const { status } = await requestPermission()
   if (status !== "granted") {
-    console.log("📬 [Notifications] Permission not granted, cannot get push token")
+    if (__DEV__) {
+      logger.debug("📬 [Notifications] Permission not granted, cannot get push token")
+    }
     return null
   }
 
@@ -183,7 +209,7 @@ export async function registerForPushNotifications(): Promise<string | null> {
   try {
     const projectId = Constants.expoConfig?.extra?.eas?.projectId
     if (!projectId) {
-      console.warn("📬 [Notifications] No EAS project ID found")
+      logger.warn("📬 [Notifications] No EAS project ID found")
       return null
     }
 
@@ -191,10 +217,12 @@ export async function registerForPushNotifications(): Promise<string | null> {
       projectId,
     })
 
-    console.log("📬 [Notifications] Push token:", token.data)
+    if (__DEV__) {
+      logger.debug("📬 [Notifications] Push token", { token: token.data })
+    }
     return token.data
   } catch (error) {
-    console.warn("📬 [Notifications] Error getting push token, using mock:", error)
+    logger.error("📬 [Notifications] Error getting push token, using mock", {}, error as Error)
     // Fallback to mock token if native module fails
     const mockToken = "ExponentPushToken[MOCK-" + Math.random().toString(36).substr(2, 9) + "]"
     return mockToken
@@ -217,16 +245,20 @@ export interface LocalNotificationInput {
 export async function scheduleNotification(input: LocalNotificationInput): Promise<string> {
   if (useMockNotifications || !isNativeModuleAvailable()) {
     const mockId = "mock-notification-" + Date.now()
-    console.log("📬 [MockNotifications] Scheduled notification:", {
-      id: mockId,
-      ...input,
-    })
+    if (__DEV__) {
+      logger.debug("📬 [MockNotifications] Scheduled notification", {
+        id: mockId,
+        ...input,
+      })
+    }
 
     // Simulate notification after delay
     if (input.trigger && "seconds" in input.trigger) {
       setTimeout(
         () => {
-          console.log("📬 [MockNotifications] Notification would appear:", input.title)
+          if (__DEV__) {
+            logger.debug("📬 [MockNotifications] Notification would appear", { title: input.title })
+          }
         },
         (input.trigger.seconds || 0) * 1000,
       )
@@ -255,10 +287,12 @@ export async function scheduleNotification(input: LocalNotificationInput): Promi
       trigger: input.trigger || null,
     })
 
-    console.log("📬 [Notifications] Scheduled notification:", id)
+    if (__DEV__) {
+      logger.debug("📬 [Notifications] Scheduled notification", { id })
+    }
     return id
   } catch (error) {
-    console.warn("📬 [Notifications] Error scheduling notification, using mock:", error)
+    logger.error("📬 [Notifications] Error scheduling notification, using mock", {}, error as Error)
     // Fallback to mock
     const mockId = "mock-notification-" + Date.now()
     return mockId
@@ -270,7 +304,9 @@ export async function scheduleNotification(input: LocalNotificationInput): Promi
  */
 export async function cancelNotification(notificationId: string): Promise<void> {
   if (useMockNotifications || !isNativeModuleAvailable()) {
-    console.log("📬 [MockNotifications] Cancelled notification:", notificationId)
+    if (__DEV__) {
+      logger.debug("📬 [MockNotifications] Cancelled notification", { notificationId })
+    }
     return
   }
 
@@ -282,7 +318,7 @@ export async function cancelNotification(notificationId: string): Promise<void> 
   try {
     await NotificationsModule.cancelScheduledNotificationAsync(notificationId)
   } catch (error) {
-    console.warn("📬 [Notifications] Error cancelling notification:", error)
+    logger.error("📬 [Notifications] Error cancelling notification", {}, error as Error)
   }
 }
 
@@ -291,7 +327,9 @@ export async function cancelNotification(notificationId: string): Promise<void> 
  */
 export async function cancelAllNotifications(): Promise<void> {
   if (useMockNotifications || !isNativeModuleAvailable()) {
-    console.log("📬 [MockNotifications] Cancelled all notifications")
+    if (__DEV__) {
+      logger.debug("📬 [MockNotifications] Cancelled all notifications")
+    }
     return
   }
 
@@ -303,7 +341,7 @@ export async function cancelAllNotifications(): Promise<void> {
   try {
     await NotificationsModule.cancelAllScheduledNotificationsAsync()
   } catch (error) {
-    console.warn("📬 [Notifications] Error cancelling all notifications:", error)
+    logger.error("📬 [Notifications] Error cancelling all notifications", {}, error as Error)
   }
 }
 
@@ -312,7 +350,9 @@ export async function cancelAllNotifications(): Promise<void> {
  */
 export async function setBadgeCount(count: number): Promise<void> {
   if (useMockNotifications || !isNativeModuleAvailable()) {
-    console.log("📬 [MockNotifications] Set badge count:", count)
+    if (__DEV__) {
+      logger.debug("📬 [MockNotifications] Set badge count", { count })
+    }
     return
   }
 
@@ -324,7 +364,7 @@ export async function setBadgeCount(count: number): Promise<void> {
   try {
     await NotificationsModule.setBadgeCountAsync(count)
   } catch (error) {
-    console.warn("📬 [Notifications] Error setting badge count:", error)
+    logger.error("📬 [Notifications] Error setting badge count", {}, error as Error)
   }
 }
 
@@ -335,7 +375,9 @@ export async function getScheduledNotifications(): Promise<
   import("expo-notifications").NotificationRequest[]
 > {
   if (useMockNotifications || !isNativeModuleAvailable()) {
-    console.log("📬 [MockNotifications] No scheduled notifications (mock mode)")
+    if (__DEV__) {
+      logger.debug("📬 [MockNotifications] No scheduled notifications (mock mode)")
+    }
     return []
   }
 
@@ -347,7 +389,7 @@ export async function getScheduledNotifications(): Promise<
   try {
     return await NotificationsModule.getAllScheduledNotificationsAsync()
   } catch (error) {
-    console.warn("📬 [Notifications] Error getting scheduled notifications:", error)
+    logger.error("📬 [Notifications] Error getting scheduled notifications", {}, error as Error)
     return []
   }
 }
@@ -359,17 +401,27 @@ export function addNotificationReceivedListener(
   listener: (notification: import("expo-notifications").Notification) => void,
 ): import("expo-notifications").Subscription {
   if (useMockNotifications || !isNativeModuleAvailable()) {
-    console.log("📬 [MockNotifications] Registered received listener")
+    if (__DEV__) {
+      logger.debug("📬 [MockNotifications] Registered received listener")
+    }
     // Return mock subscription
     return {
-      remove: () => console.log("📬 [MockNotifications] Removed received listener"),
+      remove: () => {
+        if (__DEV__) {
+          logger.debug("📬 [MockNotifications] Removed received listener")
+        }
+      },
     } as import("expo-notifications").Subscription
   }
 
   const NotificationsModule = getNotifications()
   if (!NotificationsModule) {
     return {
-      remove: () => console.log("📬 [MockNotifications] Removed received listener"),
+      remove: () => {
+        if (__DEV__) {
+          logger.debug("📬 [MockNotifications] Removed received listener")
+        }
+      },
     } as import("expo-notifications").Subscription
   }
 
@@ -377,9 +429,17 @@ export function addNotificationReceivedListener(
     setupNotificationHandler() // Ensure handler is set up before adding listeners
     return NotificationsModule.addNotificationReceivedListener(listener)
   } catch (error) {
-    console.warn("📬 [Notifications] Error adding received listener, using mock:", error)
+    logger.error(
+      "📬 [Notifications] Error adding received listener, using mock",
+      {},
+      error as Error,
+    )
     return {
-      remove: () => console.log("📬 [MockNotifications] Removed received listener"),
+      remove: () => {
+        if (__DEV__) {
+          logger.debug("📬 [MockNotifications] Removed received listener")
+        }
+      },
     } as import("expo-notifications").Subscription
   }
 }
@@ -391,17 +451,27 @@ export function addNotificationResponseReceivedListener(
   listener: (response: import("expo-notifications").NotificationResponse) => void,
 ): import("expo-notifications").Subscription {
   if (useMockNotifications || !isNativeModuleAvailable()) {
-    console.log("📬 [MockNotifications] Registered response listener")
+    if (__DEV__) {
+      logger.debug("📬 [MockNotifications] Registered response listener")
+    }
     // Return mock subscription
     return {
-      remove: () => console.log("📬 [MockNotifications] Removed response listener"),
+      remove: () => {
+        if (__DEV__) {
+          logger.debug("📬 [MockNotifications] Removed response listener")
+        }
+      },
     } as import("expo-notifications").Subscription
   }
 
   const NotificationsModule = getNotifications()
   if (!NotificationsModule) {
     return {
-      remove: () => console.log("📬 [MockNotifications] Removed response listener"),
+      remove: () => {
+        if (__DEV__) {
+          logger.debug("📬 [MockNotifications] Removed response listener")
+        }
+      },
     } as import("expo-notifications").Subscription
   }
 
@@ -409,9 +479,17 @@ export function addNotificationResponseReceivedListener(
     setupNotificationHandler() // Ensure handler is set up before adding listeners
     return NotificationsModule.addNotificationResponseReceivedListener(listener)
   } catch (error) {
-    console.warn("📬 [Notifications] Error adding response listener, using mock:", error)
+    logger.error(
+      "📬 [Notifications] Error adding response listener, using mock",
+      {},
+      error as Error,
+    )
     return {
-      remove: () => console.log("📬 [MockNotifications] Removed response listener"),
+      remove: () => {
+        if (__DEV__) {
+          logger.debug("📬 [MockNotifications] Removed response listener")
+        }
+      },
     } as import("expo-notifications").Subscription
   }
 }
@@ -423,7 +501,9 @@ export async function getLastNotificationResponse(): Promise<
   import("expo-notifications").NotificationResponse | null
 > {
   if (useMockNotifications || !isNativeModuleAvailable()) {
-    console.log("📬 [MockNotifications] No last notification response (mock mode)")
+    if (__DEV__) {
+      logger.debug("📬 [MockNotifications] No last notification response (mock mode)")
+    }
     return null
   }
 
@@ -435,7 +515,7 @@ export async function getLastNotificationResponse(): Promise<
   try {
     return await NotificationsModule.getLastNotificationResponseAsync()
   } catch (error) {
-    console.warn("📬 [Notifications] Error getting last notification response:", error)
+    logger.error("📬 [Notifications] Error getting last notification response", {}, error as Error)
     return null
   }
 }

@@ -1,8 +1,10 @@
 import { useState, useEffect, ReactNode } from "react"
 import { View, Pressable, ViewStyle, LayoutChangeEvent } from "react-native"
+import type { TOptions } from "i18next"
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated"
 import { StyleSheet } from "react-native-unistyles"
 
+import { TxKeyPath } from "@/i18n"
 import { haptics } from "@/utils/haptics"
 
 import { Text } from "./Text"
@@ -13,7 +15,15 @@ import { Text } from "./Text"
 
 export interface Tab {
   key: string
-  title: string
+  title?: string
+  /**
+   * i18n translation key for tab title
+   */
+  tx?: TxKeyPath
+  /**
+   * i18n translation options
+   */
+  txOptions?: TOptions
   icon?: ReactNode
   badge?: number
 }
@@ -160,9 +170,10 @@ export function Tabs(props: TabsProps) {
               <Text
                 weight={isActive ? "semiBold" : "medium"}
                 style={[styles.tabText, isActive ? styles.tabTextActive : styles.tabTextInactive]}
-              >
-                {tab.title}
-              </Text>
+                text={tab.title}
+                tx={tab.tx}
+                txOptions={tab.txOptions}
+              />
               {tab.badge !== undefined && tab.badge > 0 && (
                 <View style={styles.badge}>
                   <Text size="xs" style={styles.badgeText}>

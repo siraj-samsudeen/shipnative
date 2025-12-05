@@ -1,3 +1,3 @@
-export { useAuthStore } from "./authStore"
+export { useAuthStore, GUEST_USER_KEY } from "./auth"
 export { useSubscriptionStore } from "./subscriptionStore"
 export { useNotificationStore } from "./notificationStore"

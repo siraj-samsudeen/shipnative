@@ -1,5 +1,3 @@
-import { Platform } from "react-native"
-
 // Initialize Unistyles FIRST - before any other imports
 import "./app/theme/unistyles"
 
@@ -8,7 +6,6 @@ import "./app/utils/shims/reanimated.web"
 
 // Web global styles for scrolling fix
 import "./app/utils/shims/webGlobalStyles"
-
 import "@/utils/gestureHandler"
 import "@expo/metro-runtime" // this is for fast refresh on web w/o expo-router
 import { registerRootComponent } from "expo"

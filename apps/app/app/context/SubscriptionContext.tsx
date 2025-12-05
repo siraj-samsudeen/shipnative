@@ -34,7 +34,7 @@ export const SubscriptionProvider = ({ children }: { children: React.ReactNode }
           const info = await revenueCat.getSubscriptionInfo()
           setSubscriptionInfo(info)
           setIsPro(false)
-        } catch (error) {
+        } catch {
           // If getting info fails, just set empty state
           setSubscriptionInfo(null)
           setIsPro(false)

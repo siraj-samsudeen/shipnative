@@ -98,6 +98,52 @@ export const TIMING = {
   TOAST_DURATION: 3000,
   ANIMATION_DURATION: 300,
   SPLASH_SCREEN_DELAY: 1000,
+  SECOND_MS: 1000,
+  MINUTE_MS: 60 * 1000,
+  HOUR_MS: 60 * 60 * 1000,
+  COUNTDOWN_RESEND_EMAIL: 60, // seconds
+  SUCCESS_MESSAGE_DURATION: 5000, // 5 seconds
+  RETRY_DELAY_NETWORK: 1000,
+  RETRY_DELAY_SERVER: 2000,
+} as const
+
+/**
+ * Polling Intervals
+ */
+export const POLLING = {
+  EMAIL_VERIFICATION_INTERVAL: 3000, // 3 seconds
+  EMAIL_VERIFICATION_PAUSE_AFTER_RESEND: 5000, // 5 seconds
+} as const
+
+/**
+ * Animation Constants
+ */
+export const ANIMATION = {
+  STAGGER_DELAY: 100, // Base delay for staggered animations
+  DURATION_QUICK: 300,
+  DURATION_NORMAL: 400,
+  SPRING_DAMPING: 15,
+  SPRING_STIFFNESS: 400,
+} as const
+
+/**
+ * Rate Limiting Configuration
+ */
+export const RATE_LIMIT = {
+  WINDOW_AUTH_MS: 15 * 60 * 1000, // 15 minutes
+  WINDOW_PASSWORD_RESET_MS: 60 * 60 * 1000, // 1 hour
+  WINDOW_SIGNUP_MS: 60 * 60 * 1000, // 1 hour
+  MAX_ATTEMPTS_AUTH: 5,
+  MAX_ATTEMPTS_PASSWORD_RESET: 3,
+  MAX_ATTEMPTS_SIGNUP: 3,
+} as const
+
+/**
+ * Authentication Constants
+ */
+export const AUTH = {
+  EMAIL_CONFIRMATION_REQUIRED: true,
+  SESSION_REFRESH_THRESHOLD: 300, // seconds before expiry
 } as const
 
 /**
