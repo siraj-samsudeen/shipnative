@@ -76,6 +76,16 @@ const config = {
     Register: "register",
     ForgotPassword: "forgot-password",
     EmailVerification: "verify-email",
+    Paywall: "paywall",
+    Main: {
+      path: "",
+      screens: {
+        Home: "home",
+        Components: "components",
+        Paywall: "pro",
+        Profile: "profile",
+      },
+    },
     // Auth callback for email confirmation and password reset
     AuthCallback: {
       path: "auth/callback",

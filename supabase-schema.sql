@@ -50,12 +50,11 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 -- Enable Row Level Security
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
--- Policies for profiles table
--- Users can view their own profile
-CREATE POLICY "Users can view own profile"
+-- Profiles table is viewable by everyone
+CREATE POLICY "Public profiles are viewable by everyone"
     ON public.profiles
     FOR SELECT
-    USING (auth.uid() = id);
+    USING (true);
 
 -- Users can update their own profile
 CREATE POLICY "Users can update own profile"
@@ -324,12 +323,11 @@ CREATE POLICY "Anyone can add to waitlist"
     FOR INSERT
     WITH CHECK (true);
 
--- Only authenticated users can view waitlist (for admin purposes)
--- You can adjust this policy based on your needs
-CREATE POLICY "Authenticated users can view waitlist"
+-- Only authorized users can view waitlist (hardened: use service role for admin access)
+CREATE POLICY "Only authorized users can view waitlist"
     ON public.waitlist
     FOR SELECT
-    USING (auth.role() = 'authenticated');
+    USING (false);
 
 -- Create indexes
 CREATE INDEX IF NOT EXISTS waitlist_email_idx ON public.waitlist(email);

@@ -91,7 +91,7 @@ export const RegisterScreen = () => {
     try {
       setError("")
       const { error } = await signInWithApple()
-      if (error) setError(error.message || "Failed to sign in with Apple")
+      if (error) setError(formatAuthError(error as Error) || "Failed to sign in with Apple")
     } catch {
       setError("Failed to sign in with Apple")
     }
@@ -101,7 +101,7 @@ export const RegisterScreen = () => {
     try {
       setError("")
       const { error } = await signInWithGoogle()
-      if (error) setError(error.message || "Failed to sign in with Google")
+      if (error) setError(formatAuthError(error as Error) || "Failed to sign in with Google")
     } catch {
       setError("Failed to sign in with Google")
     }

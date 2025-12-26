@@ -48,8 +48,13 @@ export function formatAuthError(error: Error): string {
     errorMessage.includes("network") ||
     errorMessage.includes("fetch") ||
     errorMessage.includes("request failed") ||
-    errorMessage.includes("failed to fetch")
+    errorMessage.includes("failed to fetch") ||
+    errorMessage.includes("dns") ||
+    errorMessage.includes("host")
   ) {
+    if (__DEV__) {
+      return "Network error. Check your internet connection and verify if your Supabase project is paused in the dashboard."
+    }
     return "Network error. Please check your internet connection and try again."
   }
 
@@ -95,4 +100,5 @@ export function formatAuthError(error: Error): string {
   // Default: return original message or generic error
   return error.message || "Something went wrong. Please try again."
 }
+
 

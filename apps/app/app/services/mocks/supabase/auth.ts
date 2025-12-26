@@ -190,6 +190,56 @@ export class MockSupabaseAuth {
     }
   }
 
+  async setSession(session: { access_token: string; refresh_token: string }): Promise<AuthResponse> {
+    await initializeStorage()
+    await delay()
+
+    if (__DEV__) {
+      logger.debug(`[MockSupabase] Set session`)
+    }
+
+    // In mock, use current user or create one
+    let user = sharedState.currentSession?.user || null
+    if (!user) {
+      user = createMockUser("oauth-user@example.com")
+    }
+
+    const newSession = createMockSession(user)
+    sharedState.currentSession = newSession
+    await saveToStorage(STORAGE_KEYS.SESSION, newSession)
+    notifyAuthStateChange("SIGNED_IN", newSession)
+
+    return {
+      data: { user, session: newSession },
+      error: null,
+    }
+  }
+
+  async exchangeCodeForSession(code: string): Promise<AuthResponse> {
+    await initializeStorage()
+    await delay()
+
+    if (__DEV__) {
+      logger.debug(`[MockSupabase] Exchange code for session`, { code })
+    }
+
+    // Use current user or create generic one
+    let user = sharedState.currentSession?.user || null
+    if (!user) {
+      user = createMockUser("oauth-code-user@example.com")
+    }
+
+    const session = createMockSession(user)
+    sharedState.currentSession = session
+    await saveToStorage(STORAGE_KEYS.SESSION, session)
+    notifyAuthStateChange("SIGNED_IN", session)
+
+    return {
+      data: { user, session },
+      error: null,
+    }
+  }
+
   async verifyOtp(options: {
     token: string
     type: "email" | "signup" | "email_change" | "password_recovery"
@@ -596,4 +646,5 @@ export class MockSupabaseAuth {
     // No-op for mock
   }
 }
+
 

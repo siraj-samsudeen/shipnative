@@ -272,3 +272,13 @@ export const useSubscriptionStore = create<SubscriptionState>()(
     },
   ),
 )
+
+// Listen for auth changes to re-initialize subscription status
+useAuthStore.subscribe((state, prevState) => {
+  // If user changed (logged in or out)
+  if (state.user?.id !== prevState.user?.id) {
+    useSubscriptionStore.getState().initialize().catch((err) => {
+      console.error("Failed to re-initialize subscription on auth change:", err)
+    })
+  }
+})

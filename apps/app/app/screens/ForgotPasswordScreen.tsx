@@ -7,6 +7,7 @@ import { AuthScreenLayout } from "@/components/layouts/AuthScreenLayout"
 import { Text } from "@/components/Text"
 import { TextField } from "@/components/TextField"
 import { useAuthStore } from "@/stores/auth"
+import { formatAuthError } from "@/utils/formatAuthError"
 import { validateEmail } from "@/utils/validation"
 
 // =============================================================================
@@ -48,7 +49,7 @@ export const ForgotPasswordScreen = () => {
     setLoading(false)
 
     if (resetError) {
-      setError("An error occurred. Please try again.")
+      setError(formatAuthError(resetError as Error))
     } else {
       setSuccess(true)
     }

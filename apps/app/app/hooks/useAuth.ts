@@ -1,14 +1,26 @@
-/**
- * useAuth Hook
- *
- * React hook for authentication with Supabase.
- * Provides convenient access to auth state and methods.
- */
-
 import { useState, useEffect, useCallback } from "react"
+import { Platform } from "react-native"
+import * as Linking from "expo-linking"
 
 import { supabase } from "../services/supabase"
 import type { User, Session, SignUpCredentials, SignInCredentials } from "../types/auth"
+import { logger } from "../utils/Logger"
+
+// Conditionally import expo-web-browser only on native platforms
+const getWebBrowser = () => {
+  if (Platform.OS === "web") {
+    return null
+  }
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    return require("expo-web-browser")
+  } catch {
+    console.warn("expo-web-browser not available, falling back to Linking")
+    return null
+  }
+}
+
+const WebBrowser = getWebBrowser()
 
 export interface UseAuthReturn {
   // State
@@ -21,6 +33,8 @@ export interface UseAuthReturn {
   signIn: (credentials: SignInCredentials) => Promise<{ error: Error | null }>
   signInWithGoogle: () => Promise<{ error: Error | null }>
   signInWithApple: () => Promise<{ error: Error | null }>
+  signInWithMagicLink: (email: string, captchaToken?: string) => Promise<{ error: Error | null }>
+  verifyOtp: (email: string, token: string) => Promise<{ error: Error | null }>
   signOut: () => Promise<{ error: Error | null }>
   resetPassword: (email: string) => Promise<{ error: Error | null }>
   updateUser: (attributes: {
@@ -35,48 +49,6 @@ export interface UseAuthReturn {
 
 /**
  * Hook for authentication
- *
- * @example
- * ```tsx
- * function LoginScreen() {
- *   const { signIn, signInWithGoogle, signInWithApple, loading } = useAuth()
- *
- *   const handleLogin = async () => {
- *     const { error } = await signIn({
- *       email: 'user@example.com',
- *       password: 'password',
- *     })
- *
- *     if (error) {
- *       alert(error.message)
- *     }
- *   }
- *
- *   const handleGoogleLogin = async () => {
- *     const { error } = await signInWithGoogle()
- *
- *     if (error) {
- *       alert(error.message)
- *     }
- *   }
- *
- *   const handleAppleLogin = async () => {
- *     const { error } = await signInWithApple()
- *
- *     if (error) {
- *       alert(error.message)
- *     }
- *   }
- *
- *   return (
- *     <View>
- *       <Button onPress={handleLogin} disabled={loading} />
- *       <Button onPress={handleGoogleLogin} disabled={loading} />
- *       <Button onPress={handleAppleLogin} disabled={loading} />
- *     </View>
- *   )
- * }
- * ```
  */
 export function useAuth(): UseAuthReturn {
   const [user, setUser] = useState<User | null>(null)
@@ -145,10 +117,177 @@ export function useAuth(): UseAuthReturn {
   const signInWithGoogle = useCallback(async () => {
     setLoading(true)
     try {
-      const { error } = await (supabase.auth as any).signInWithOAuth({
+      let redirectTo: string | undefined
+
+      if (Platform.OS === "web") {
+        if (typeof window !== "undefined") {
+          redirectTo = `${window.location.origin}/auth/callback`
+        }
+      } else {
+        redirectTo = Linking.createURL("/auth/callback")
+      }
+
+      const { data, error } = await (supabase.auth as any).signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: undefined, // Will use default redirect
+          redirectTo,
+          skipBrowserRedirect: Platform.OS !== "web",
+        },
+      })
+
+      if (error) {
+        return { error }
+      }
+
+      if (Platform.OS !== "web" && data?.url) {
+        if (WebBrowser) {
+          const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo)
+
+          if (result.type === "success" && result.url) {
+            const urlStr = result.url
+            const getParam = (name: string) => {
+              const regex = new RegExp(`[?&|#]${name}=([^&|#]*)`)
+              const match = urlStr.match(regex)
+              return match ? decodeURIComponent(match[1]) : null
+            }
+
+            const accessToken = getParam("access_token")
+            const refreshToken = getParam("refresh_token")
+            const code = getParam("code")
+
+            if (code) {
+              const { data: sessionData, error: sessionError } = await (
+                supabase.auth as any
+              ).exchangeCodeForSession(code)
+              if (sessionError) {
+                logger.error("[useAuth] Failed to exchange code for session", { error: sessionError.message }, sessionError)
+                return { error: sessionError }
+              }
+              setSession(sessionData.session)
+              setUser(sessionData.user)
+            } else if (accessToken && refreshToken) {
+              const { error: sessionError } = await supabase.auth.setSession({
+                access_token: accessToken,
+                refresh_token: refreshToken,
+              })
+              if (sessionError) {
+                return { error: sessionError }
+              }
+            }
+          } else if (result.type === "cancel") {
+            return { error: new Error("OAuth flow cancelled") }
+          }
+        } else {
+          const canOpen = await Linking.canOpenURL(data.url)
+          if (canOpen) {
+            await Linking.openURL(data.url)
+          } else {
+            return { error: new Error("Unable to open OAuth URL") }
+          }
+        }
+      }
+
+      return { error: null }
+    } catch (error) {
+      return { error: error as Error }
+    } finally {
+      if (Platform.OS === "web") {
+        setLoading(false)
+      }
+    }
+  }, [])
+
+  const signInWithApple = useCallback(async () => {
+    setLoading(true)
+    try {
+      let redirectTo: string | undefined
+
+      if (Platform.OS === "web") {
+        if (typeof window !== "undefined") {
+          redirectTo = `${window.location.origin}/auth/callback`
+        }
+      } else {
+        redirectTo = Linking.createURL("/auth/callback")
+      }
+
+      const { data, error } = await (supabase.auth as any).signInWithOAuth({
+        provider: "apple",
+        options: {
+          redirectTo,
+          skipBrowserRedirect: Platform.OS !== "web",
+        },
+      })
+
+      if (error) {
+        return { error }
+      }
+
+      if (Platform.OS !== "web" && data?.url) {
+        if (WebBrowser) {
+          const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo)
+
+          if (result.type === "success" && result.url) {
+            const urlStr = result.url
+            const getParam = (name: string) => {
+              const regex = new RegExp(`[?&|#]${name}=([^&|#]*)`)
+              const match = urlStr.match(regex)
+              return match ? decodeURIComponent(match[1]) : null
+            }
+
+            const accessToken = getParam("access_token")
+            const refreshToken = getParam("refresh_token")
+            const code = getParam("code")
+
+            if (code) {
+              const { data: sessionData, error: sessionError } = await (
+                supabase.auth as any
+              ).exchangeCodeForSession(code)
+              if (sessionError) {
+                logger.error("[useAuth] Failed to exchange code for session (Apple)", { error: sessionError.message }, sessionError)
+                return { error: sessionError }
+              }
+              setSession(sessionData.session)
+              setUser(sessionData.user)
+            } else if (accessToken && refreshToken) {
+              const { error: sessionError } = await supabase.auth.setSession({
+                access_token: accessToken,
+                refresh_token: refreshToken,
+              })
+              if (sessionError) {
+                return { error: sessionError }
+              }
+            }
+          } else if (result.type === "cancel") {
+            return { error: new Error("OAuth flow cancelled") }
+          }
+        } else {
+          const canOpen = await Linking.canOpenURL(data.url)
+          if (canOpen) {
+            await Linking.openURL(data.url)
+          } else {
+            return { error: new Error("Unable to open OAuth URL") }
+          }
+        }
+      }
+
+      return { error: null }
+    } catch (error) {
+      return { error: error as Error }
+    } finally {
+      if (Platform.OS === "web") {
+        setLoading(false)
+      }
+    }
+  }, [])
+
+  const signInWithMagicLink = useCallback(async (email: string, captchaToken?: string) => {
+    setLoading(true)
+    try {
+      const { error } = await (supabase.auth as any).signInWithOtp({
+        email,
+        options: {
+          emailRedirectTo: undefined,
+          ...(captchaToken ? { captchaToken } : {}),
         },
       })
       return { error }
@@ -157,19 +296,20 @@ export function useAuth(): UseAuthReturn {
     }
   }, [])
 
-  const signInWithApple = useCallback(async () => {
+  const verifyOtp = useCallback(async (email: string, token: string) => {
     setLoading(true)
-    try {
-      const { error } = await (supabase.auth as any).signInWithOAuth({
-        provider: "apple",
-        options: {
-          redirectTo: undefined, // Will use default redirect
-        },
-      })
-      return { error }
-    } finally {
-      setLoading(false)
+    const { data, error } = await (supabase.auth as any).verifyOtp({
+      email,
+      token,
+      type: "email",
+    })
+    if (!error && data?.session) {
+      const { session } = data
+      setSession(session)
+      setUser(session?.user ?? null)
     }
+    setLoading(false)
+    return { error }
   }, [])
 
   return {
@@ -180,6 +320,8 @@ export function useAuth(): UseAuthReturn {
     signIn,
     signInWithGoogle,
     signInWithApple,
+    signInWithMagicLink,
+    verifyOtp,
     signOut,
     resetPassword,
     updateUser,

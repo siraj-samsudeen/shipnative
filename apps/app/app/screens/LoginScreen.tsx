@@ -75,7 +75,7 @@ export const LoginScreen = () => {
       setError("")
       const { error } = await signInWithApple()
       if (error) {
-        setError(error.message || translate("loginScreen:appleSignInFailed"))
+        setError(formatAuthError(error as Error) || translate("loginScreen:appleSignInFailed"))
       }
     } catch {
       setError(translate("loginScreen:appleSignInFailed"))
@@ -87,7 +87,7 @@ export const LoginScreen = () => {
       setError("")
       const { error } = await signInWithGoogle()
       if (error) {
-        setError(error.message || translate("loginScreen:googleSignInFailed"))
+        setError(formatAuthError(error as Error) || translate("loginScreen:googleSignInFailed"))
       }
     } catch {
       setError(translate("loginScreen:googleSignInFailed"))
