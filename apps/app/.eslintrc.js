@@ -17,7 +17,7 @@ module.exports = {
     // typescript-eslint
     "@typescript-eslint/array-type": 0,
     "@typescript-eslint/ban-ts-comment": 0,
-    "@typescript-eslint/no-explicit-any": 0,
+    "@typescript-eslint/no-explicit-any": "error",
     "@typescript-eslint/no-unused-vars": [
       "error",
       {
@@ -112,6 +112,12 @@ module.exports = {
       rules: {
         "no-undef": "off", // Node.js globals like __dirname
         "@typescript-eslint/no-var-requires": "off",
+      },
+    },
+    {
+      files: ["app/**/mocks/**", "app/**/__tests__/**", "app/**/*.test.*", "test/**"],
+      rules: {
+        "@typescript-eslint/no-explicit-any": "off",
       },
     },
   ],
