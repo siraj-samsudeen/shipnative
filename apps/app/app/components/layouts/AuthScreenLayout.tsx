@@ -42,8 +42,9 @@ import type { TOptions } from "i18next"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { StyleSheet, useUnistyles } from "react-native-unistyles"
 
+import { useTranslation } from "react-i18next"
+
 import { TxKeyPath } from "@/i18n"
-import { translate } from "@/i18n/translate"
 
 import { ScrollView } from "../ScrollView"
 import { Text } from "../Text"
@@ -114,6 +115,7 @@ export const AuthScreenLayout = ({
   centerContent = false,
 }: AuthScreenLayoutProps) => {
   const { theme } = useUnistyles()
+  const { t } = useTranslation()
   const insets = useSafeAreaInsets()
   const { width: windowWidth } = useWindowDimensions()
   // Web can complain if a View receives a raw string/number child. Normalize children so
@@ -184,7 +186,7 @@ export const AuthScreenLayout = ({
                   onPress={onClose}
                   activeOpacity={0.7}
                   accessibilityRole="button"
-                  accessibilityLabel={translate("authScreenLayout:closeButton")}
+                  accessibilityLabel={t("authScreenLayout:closeButton")}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
                   <View style={styles.closeButtonCircle}>
@@ -200,7 +202,7 @@ export const AuthScreenLayout = ({
                   onPress={onBack}
                   activeOpacity={0.7}
                   accessibilityRole="button"
-                  accessibilityLabel={translate("authScreenLayout:backButton")}
+                  accessibilityLabel={t("authScreenLayout:backButton")}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
                   <View style={styles.backButtonCircle}>

@@ -586,7 +586,7 @@ const getServiceStatus = (services: EnvVars): ServiceStatus => ({
   supabase: Boolean(
     services.EXPO_PUBLIC_SUPABASE_URL || services.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY
   ),
-  google: Boolean(services.EXPO_PUBLIC_GOOGLE_CLIENT_ID || services.EXPO_PUBLIC_GOOGLE_CLIENT_SECRET),
+  google: Boolean(services.EXPO_PUBLIC_GOOGLE_CLIENT_ID || services.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID),
   apple: Boolean(
     services.EXPO_PUBLIC_APPLE_SERVICES_ID ||
       services.EXPO_PUBLIC_APPLE_TEAM_ID ||
@@ -759,8 +759,9 @@ const configureGoogleOAuth = async (
     "",
     "💡 Setup guide:",
     "   1. Go to https://console.cloud.google.com/apis/credentials",
-    "   2. Create OAuth 2.0 Client ID",
-    "   3. Copy the Client ID and Secret",
+    "   2. Create OAuth client IDs for Web + iOS + Android",
+    "   3. Add all client IDs in Supabase Auth → Providers → Google (web first)",
+    "   4. Enable Skip Nonce Check if using the RN Google Sign-In SDK",
     "",
     "⏭️  You can skip this - users can still sign up with email.",
   ])
@@ -771,13 +772,21 @@ const configureGoogleOAuth = async (
     return false
   }
 
-  console.log(chalk.cyan("\n🔑 Google OAuth Client ID"))
+  console.log(chalk.cyan("\n🔑 Google OAuth Web Client ID"))
   console.log(chalk.dim("   Find this in Google Cloud Console: APIs & Services > Credentials"))
-  services.EXPO_PUBLIC_GOOGLE_CLIENT_ID = await askQuestion("Enter your Google OAuth Client ID", (id) => id.length > 10, defaults.EXPO_PUBLIC_GOOGLE_CLIENT_ID)
-  
-  console.log(chalk.cyan("\n🔐 Google OAuth Client Secret"))
-  console.log(chalk.dim("   Found in the same place as your Client ID"))
-  services.EXPO_PUBLIC_GOOGLE_CLIENT_SECRET = await askQuestion("Enter your Google OAuth Client Secret", (secret) => secret.length > 10, defaults.EXPO_PUBLIC_GOOGLE_CLIENT_SECRET, true)
+  services.EXPO_PUBLIC_GOOGLE_CLIENT_ID = await askQuestion(
+    "Enter your Google OAuth Web Client ID",
+    (id) => id.length > 10,
+    defaults.EXPO_PUBLIC_GOOGLE_CLIENT_ID
+  )
+
+  console.log(chalk.cyan("\n📱 Google OAuth iOS Client ID"))
+  console.log(chalk.dim("   Needed to register the iOS URL scheme for Google Sign-In"))
+  services.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID = await askQuestion(
+    "Enter your Google OAuth iOS Client ID",
+    (id) => id.length > 10,
+    defaults.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID
+  )
 
   return true
 }

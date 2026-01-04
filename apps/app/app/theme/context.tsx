@@ -16,6 +16,8 @@ import {
 } from "@react-navigation/native"
 import { StyleSheet, UnistylesRuntime, useUnistyles } from "react-native-unistyles"
 
+import { syncDarkModePreference } from "@/services/preferencesSync"
+import { useAuthStore } from "@/stores/auth"
 import { storage, useMMKVString } from "@/utils/storage"
 
 import { setImperativeTheming } from "./context.utils"
@@ -53,6 +55,9 @@ export const ThemeProvider: FC<PropsWithChildren<ThemeProviderProps>> = ({
   // Our saved theme context: can be "light", "dark", or undefined (system theme)
   const [themeScheme, setThemeScheme] = useMMKVString(THEME_STORAGE_KEY, storage)
 
+  // Get user ID for syncing preferences to database
+  const userId = useAuthStore((state) => state.user?.id)
+
   /**
    * This function is used to set the theme context and is exported from the useAppTheme() hook.
    *  - setThemeContextOverride("dark") sets the app theme to dark no matter what the system theme is.
@@ -71,8 +76,13 @@ export const ThemeProvider: FC<PropsWithChildren<ThemeProviderProps>> = ({
         // Re-enable adaptive themes to follow system
         UnistylesRuntime.setAdaptiveThemes(true)
       }
+
+      // Sync to database (fire-and-forget)
+      if (userId) {
+        syncDarkModePreference(userId, newTheme === "dark")
+      }
     },
-    [setThemeScheme],
+    [setThemeScheme, userId],
   )
 
   /**

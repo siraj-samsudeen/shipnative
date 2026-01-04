@@ -126,3 +126,13 @@ pnpm-lock.yaml
 # Setup script artifacts
 .setup-backups/
 .setup-summary.json
+
+# Claude Code / IDE settings (local only)
+.claude/
+
+# Supabase CLI temp files
+supabase/.temp/
+
+# Debug/test files
+test-resolve.js
+transformer.log

@@ -1,12 +1,13 @@
 import { useEffect, useCallback, useState } from "react"
 import { View, Platform, ActivityIndicator } from "react-native"
-import { useNavigation } from "@react-navigation/native"
+import { RouteProp, useRoute } from "@react-navigation/native"
+import { useTranslation } from "react-i18next"
 import { StyleSheet, useUnistyles } from "react-native-unistyles"
 
 import { Text, Container, Button } from "../components"
 import { env } from "../config/env"
-import { translate } from "../i18n"
-import type { AppStackScreenProps } from "../navigators/navigationTypes"
+import type { AppStackParamList } from "../navigators/navigationTypes"
+import { resetRoot } from "../navigators/navigationUtilities"
 import { isRevenueCatMock } from "../services/revenuecat"
 import { useSubscriptionStore } from "../stores/subscriptionStore"
 import type { PricingPackage } from "../types/subscription"
@@ -49,8 +50,9 @@ if (shouldLoadNativeSDK) {
 // =============================================================================
 
 export const PaywallScreen = () => {
-  const navigation = useNavigation<AppStackScreenProps<"Paywall">["navigation"]>()
+  const route = useRoute<RouteProp<AppStackParamList, "Paywall">>()
   const { theme } = useUnistyles()
+  const { t } = useTranslation()
   const isPro = useSubscriptionStore((state) => state.isPro)
   const packages = useSubscriptionStore((state) => state.packages)
   const fetchPackages = useSubscriptionStore((state) => state.fetchPackages)
@@ -62,28 +64,23 @@ export const PaywallScreen = () => {
   const [isPresenting, setIsPresenting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [hasAutoPresented, setHasAutoPresented] = useState(false)
-  const loadErrorMessage = translate("paywallScreen:loadFailed")
-  const purchaseErrorMessage = translate("paywallScreen:purchaseFailed")
-  const noWebOfferingMessage = translate("paywallScreen:noWebOfferingError")
-  const noPackagesMessage = translate("paywallScreen:noPackagesError")
-  const sdkUnavailableMessage = translate("paywallScreen:sdkUnavailableError")
+  const loadErrorMessage = t("paywallScreen:loadFailed")
+  const purchaseErrorMessage = t("paywallScreen:purchaseFailed")
+  const noWebOfferingMessage = t("paywallScreen:noWebOfferingError")
+  const noPackagesMessage = t("paywallScreen:noPackagesError")
+  const sdkUnavailableMessage = t("paywallScreen:sdkUnavailableError")
 
-  // Check if we can navigate back (i.e., came from onboarding)
-  const canGoBack = navigation.canGoBack()
-  const isFromOnboarding = !canGoBack
+  const isFromOnboarding = route.params?.fromOnboarding === true
 
   // Navigate to Main after successful purchase or skip
   const navigateToMain = useCallback(() => {
-    if (navigation.canGoBack()) {
-      navigation.goBack()
-    } else {
-      // Reset navigation stack to Main screen
-      navigation.reset({
-        index: 0,
-        routes: [{ name: "Main" }],
-      })
-    }
-  }, [navigation])
+    if (!isFromOnboarding) return
+    // Reset root navigation stack to Main screen (Paywall can be mounted under tabs or onboarding)
+    resetRoot({
+      index: 0,
+      routes: [{ name: "Main" }],
+    })
+  }, [isFromOnboarding])
 
   // Present RevenueCat Paywall
   const presentPaywall = useCallback(async () => {
@@ -126,7 +123,7 @@ export const PaywallScreen = () => {
       const currentOffering = offerings.current
 
       if (!currentOffering) {
-        throw new Error(translate("paywallScreen:noOfferingError"))
+        throw new Error(t("paywallScreen:noOfferingError"))
       }
 
       // Present the paywall configured in RevenueCat dashboard
@@ -252,9 +249,9 @@ export const PaywallScreen = () => {
             <Text style={styles.description}>
               {isMock
                 ? isWeb
-                  ? translate("paywallScreen:mockWebDescription")
-                  : translate("paywallScreen:mockNativeDescription")
-                : translate("paywallScreen:secureCheckoutDescription")}
+                  ? t("paywallScreen:mockWebDescription")
+                  : t("paywallScreen:mockNativeDescription")
+                : t("paywallScreen:secureCheckoutDescription")}
             </Text>
 
             {error ? <Text style={styles.errorText}>{error}</Text> : null}
@@ -280,8 +277,8 @@ export const PaywallScreen = () => {
                       <Button
                         text={
                           subscriptionLoading || isPresenting
-                            ? translate("paywallScreen:processing")
-                            : translate("paywallScreen:selectPlan")
+                            ? t("paywallScreen:processing")
+                            : t("paywallScreen:selectPlan")
                         }
                         onPress={() => handlePackagePurchase(pricingPkg)}
                         variant="filled"
@@ -297,7 +294,7 @@ export const PaywallScreen = () => {
 
             {isFromOnboarding && (
               <Button
-                text={translate("paywallScreen:continueWithFree")}
+                text={t("paywallScreen:continueWithFree")}
                 onPress={handleSkip}
                 variant="ghost"
                 style={styles.skipButton}
@@ -312,14 +309,14 @@ export const PaywallScreen = () => {
             <Text style={styles.errorText}>{error}</Text>
             <View style={styles.buttonContainer}>
               <Button
-                text={translate("paywallScreen:tryAgain")}
+                text={t("paywallScreen:tryAgain")}
                 onPress={handlePresentPaywall}
                 variant="filled"
                 style={styles.retryButton}
               />
               {isFromOnboarding && (
                 <Button
-                  text={translate("paywallScreen:continueWithFree")}
+                  text={t("paywallScreen:continueWithFree")}
                   onPress={handleSkip}
                   variant="ghost"
                   style={styles.skipButton}
@@ -333,14 +330,14 @@ export const PaywallScreen = () => {
             <Text preset="heading" style={styles.title} tx="paywallScreen:upgradeTitle" />
             <Text style={styles.description} tx="paywallScreen:upgradeDescription" />
             <Button
-              text={translate("paywallScreen:viewPlans")}
+              text={t("paywallScreen:viewPlans")}
               onPress={handlePresentPaywall}
               variant="filled"
               style={styles.presentButton}
             />
             {isFromOnboarding && (
               <Button
-                text={translate("paywallScreen:continueWithFree")}
+                text={t("paywallScreen:continueWithFree")}
                 onPress={handleSkip}
                 variant="ghost"
                 style={styles.skipButton}

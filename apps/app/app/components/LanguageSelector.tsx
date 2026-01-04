@@ -1,16 +1,12 @@
 import { FC, useState } from "react"
 import { Modal, Pressable, View, ScrollView } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
+import { useTranslation } from "react-i18next"
 import CountryFlag from "react-native-country-flag"
 import Animated, { FadeInDown } from "react-native-reanimated"
 import { StyleSheet, useUnistyles } from "react-native-unistyles"
 
-import {
-  changeLanguage,
-  getCurrentLanguage,
-  SUPPORTED_LANGUAGES,
-  type SupportedLanguage,
-} from "@/i18n"
+import { changeLanguage, SUPPORTED_LANGUAGES, type SupportedLanguage } from "@/i18n"
 import { haptics } from "@/utils/haptics"
 
 import { Text } from "./Text"
@@ -49,7 +45,9 @@ const LANGUAGE_METADATA: Record<
 export const LanguageSelector: FC<LanguageSelectorProps> = ({ visible, onClose }) => {
   const { theme } = useUnistyles()
   const [changing, setChanging] = useState(false)
-  const currentLanguage = getCurrentLanguage() as SupportedLanguage
+  // Use useTranslation hook to get reactive language updates
+  const { i18n } = useTranslation()
+  const currentLanguage = (i18n.language?.split("-")[0] || "en") as SupportedLanguage
 
   const handleLanguageChange = async (languageCode: SupportedLanguage) => {
     if (changing || languageCode === currentLanguage) {

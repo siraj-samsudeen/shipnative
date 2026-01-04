@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useNavigation } from "@react-navigation/native"
 import { NativeStackNavigationProp } from "@react-navigation/native-stack"
 import { Controller, useForm } from "react-hook-form"
+import { useTranslation } from "react-i18next"
 import { StyleSheet, useUnistyles } from "react-native-unistyles"
 import { z } from "zod"
 
@@ -15,7 +16,6 @@ import { Text } from "@/components/Text"
 import { TextField } from "@/components/TextField"
 import { features } from "@/config/features"
 import { useAuth } from "@/hooks/useAuth"
-import { translate } from "@/i18n"
 import { AppStackParamList } from "@/navigators/navigationTypes"
 import { loginSchema } from "@/schemas/authSchemas"
 import { useAuthStore } from "@/stores/auth"
@@ -29,6 +29,7 @@ type LoginFormData = z.infer<typeof loginSchema>
 
 export const LoginScreen = () => {
   const { theme } = useUnistyles()
+  const { t } = useTranslation()
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>()
   const signIn = useAuthStore((state) => state.signIn)
   const { signInWithGoogle, signInWithApple, loading: oauthLoading } = useAuth()
@@ -73,10 +74,10 @@ export const LoginScreen = () => {
       setError("")
       const { error } = await signInWithApple()
       if (error) {
-        setError(formatAuthError(error as Error) || translate("loginScreen:appleSignInFailed"))
+        setError(formatAuthError(error as Error) || t("loginScreen:appleSignInFailed"))
       }
     } catch {
-      setError(translate("loginScreen:appleSignInFailed"))
+      setError(t("loginScreen:appleSignInFailed"))
     }
   }
 
@@ -85,10 +86,10 @@ export const LoginScreen = () => {
       setError("")
       const { error } = await signInWithGoogle()
       if (error) {
-        setError(formatAuthError(error as Error) || translate("loginScreen:googleSignInFailed"))
+        setError(formatAuthError(error as Error) || t("loginScreen:googleSignInFailed"))
       }
     } catch {
-      setError(translate("loginScreen:googleSignInFailed"))
+      setError(t("loginScreen:googleSignInFailed"))
     }
   }
 
@@ -197,7 +198,7 @@ export const LoginScreen = () => {
       {/* Social Login Section */}
       {(features.enableGoogleAuth || features.enableAppleAuth) && (
         <>
-          <Divider label={translate("loginScreen:orContinueWith")} style={styles.divider} />
+          <Divider label={t("loginScreen:orContinueWith")} style={styles.divider} />
 
           <View style={styles.socialRow}>
             {features.enableAppleAuth && (

@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react"
 import { View, TouchableOpacity } from "react-native"
 import { useNavigation, useRoute, type RouteProp } from "@react-navigation/native"
+import { useTranslation } from "react-i18next"
 import { StyleSheet } from "react-native-unistyles"
 
 import { AuthScreenLayout } from "@/components/layouts/AuthScreenLayout"
 import { Text } from "@/components/Text"
-import { translate } from "@/i18n/translate"
 import type { AppStackParamList, AppStackScreenProps } from "@/navigators/navigationTypes"
 import { LoadingScreen } from "@/screens/LoadingScreen"
 import { supabase } from "@/services/supabase"
@@ -16,6 +16,7 @@ import { logger } from "@/utils/Logger"
 export const AuthCallbackScreen = () => {
   const navigation = useNavigation<AppStackScreenProps<"AuthCallback">["navigation"]>()
   const route = useRoute<RouteProp<AppStackParamList, "AuthCallback">>()
+  const { t } = useTranslation()
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const code = route.params?.code
@@ -48,7 +49,7 @@ export const AuthCallbackScreen = () => {
           return
         }
 
-        throw new Error(translate("authCallbackScreen:invalidParams"))
+        throw new Error(t("authCallbackScreen:invalidParams"))
       } catch (error) {
         const resolvedError = error instanceof Error ? error : new Error(String(error))
         logger.error("Auth callback failed", {}, resolvedError)
@@ -68,8 +69,8 @@ export const AuthCallbackScreen = () => {
   if (!errorMessage) {
     return (
       <LoadingScreen
-        message={translate("authCallbackScreen:loadingMessage")}
-        status={translate("authCallbackScreen:loadingStatus")}
+        message={t("authCallbackScreen:loadingMessage")}
+        status={t("authCallbackScreen:loadingStatus")}
       />
     )
   }
@@ -77,7 +78,7 @@ export const AuthCallbackScreen = () => {
   return (
     <AuthScreenLayout
       headerIcon="⚠️"
-      title={translate("authCallbackScreen:errorTitle")}
+      title={t("authCallbackScreen:errorTitle")}
       subtitle={errorMessage}
       scrollable={false}
     >

@@ -54,7 +54,7 @@ padding: 16, color: '#000000'
 padding: theme.spacing.md, color: theme.colors.foreground
 
 // ❌ DON'T: Use Expo Router
-import { useRouter } from 'expo-router'
+// import { useRouter } from 'expo-router'  // WRONG - Don't use!
 
 // ✅ DO: Use React Navigation
 import { useNavigation } from '@react-navigation/native'
@@ -77,19 +77,3 @@ const data: User = fetchData()
 - **Mock Services**: `vibe/MOCK_SERVICES.md` (detailed mock mode guide)
 - **Services**: `vibe/SERVICES.md` (service architecture)
 - **AI Context**: `AI_CONTEXT.md` (technology stack overview)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -201,11 +201,11 @@ export class MockSupabaseAuth {
     }
   }
 
-  async signOut(): Promise<{ error: Error | null }> {
+  async signOut(_options?: { scope?: "global" | "local" }): Promise<{ error: Error | null }> {
     await delay(200)
 
     if (__DEV__) {
-      logger.debug(`[MockSupabase] Sign out`)
+      logger.debug(`[MockSupabase] Sign out`, { scope: _options?.scope ?? "global" })
     }
 
     sharedState.currentSession = null

@@ -213,19 +213,17 @@ const revenueCatMobile: SubscriptionService = {
 
     if (MobilePurchases && mobileApiKey) {
       // Set log level BEFORE configure (best practice per RevenueCat docs)
-      if (__DEV__) {
-        MobilePurchases.setLogLevel(MobilePurchases.LOG_LEVEL.DEBUG)
-      } else {
-        MobilePurchases.setLogLevel(MobilePurchases.LOG_LEVEL.INFO)
-      }
+      // Use INFO level even in dev to reduce console spam - DEBUG is very verbose
+      MobilePurchases.setLogLevel(MobilePurchases.LOG_LEVEL.INFO)
 
-      // Set custom log handler to filter out expected errors and show helpful messages
+      // Set custom log handler to filter out expected errors and noisy messages
       // This prevents "no products configured" errors from causing stack traces
-      // when intercepted by Sentry's console instrumentation
+      // and reduces console spam from routine SDK operations
       let hasShownSetupMessage = false
       MobilePurchases.setLogHandler((logLevel: number, message: string) => {
+        const lowerMessage = message.toLowerCase()
+
         // Filter out expected errors that are normal when products aren't configured
-        // These errors occur when API keys are added but products haven't been created yet
         const expectedErrorPatterns = [
           "no products registered",
           "offerings",
@@ -241,10 +239,13 @@ const revenueCatMobile: SubscriptionService = {
           "can't make any purchases",
           "purchases instance already set",
           "already configured",
+          "font registration",
+          "error installing font",
+          "fonts.pawwalls.com",
         ]
 
         const isExpectedError = expectedErrorPatterns.some((pattern) =>
-          message.toLowerCase().includes(pattern.toLowerCase()),
+          lowerMessage.includes(pattern.toLowerCase()),
         )
 
         // Suppress ALL expected errors (they're normal during setup)
@@ -253,8 +254,6 @@ const revenueCatMobile: SubscriptionService = {
           if (!hasShownSetupMessage) {
             hasShownSetupMessage = true
             try {
-              // Use console.log instead of console.error to avoid Sentry interception
-              // and show a clear, actionable message
               logger.info(
                 "\n📦 [RevenueCat] Setup Required\n" +
                   "─────────────────────────────────────────────\n" +
@@ -273,26 +272,59 @@ const revenueCatMobile: SubscriptionService = {
               // Silently fail if logging causes issues
             }
           }
-          // Suppress this error - don't log it at all
           return
         }
 
-        // Log unexpected errors and other messages
-        // Use try-catch to prevent any issues with console methods
+        // Filter out noisy INFO/DEBUG messages that clutter the console
+        // These are routine SDK operations that don't need to be logged
+        const noisyPatterns = [
+          "api request started",
+          "api request completed",
+          "serial request done",
+          "requests left in the queue",
+          "vending customerinfo",
+          "customerinfo cache",
+          "customerinfo updated",
+          "network operation",
+          "skipping request",
+          "existing request for products",
+          "no existing products cached",
+          "started",
+          "finished",
+          "observing storekit",
+          "delegate set",
+          "identifying app user",
+          "no initial app user",
+          "using a simulator",
+          "response verification",
+          "configured with storekit",
+          "sdk version",
+          "bundle id",
+          "system version",
+          "userdefaults suite",
+          "debug logging enabled",
+        ]
+
+        const isNoisyMessage = noisyPatterns.some((pattern) => lowerMessage.includes(pattern))
+
+        // Skip noisy messages entirely
+        if (isNoisyMessage) {
+          return
+        }
+
+        // Log important messages only
         try {
           if (logLevel === MobilePurchases.LOG_LEVEL.ERROR) {
-            // Only log unexpected errors
             logger.error(`[RevenueCat] ${message}`)
           } else if (logLevel === MobilePurchases.LOG_LEVEL.WARN) {
             logger.warn(`[RevenueCat] ${message}`)
-          } else if (logLevel === MobilePurchases.LOG_LEVEL.DEBUG && __DEV__) {
-            logger.debug(`[RevenueCat] ${message}`)
           } else if (logLevel === MobilePurchases.LOG_LEVEL.INFO) {
+            // Only log truly important INFO messages
             logger.info(`[RevenueCat] ${message}`)
           }
+          // Skip DEBUG level entirely to reduce noise
         } catch {
           // Silently fail if logging causes issues
-          // This prevents infinite loops or stack traces
         }
       })
 

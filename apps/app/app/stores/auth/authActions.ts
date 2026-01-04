@@ -403,7 +403,14 @@ export async function signOutAction(
   set: SetState,
   guestUserKey: string,
 ): Promise<void> {
-  await supabase.auth.signOut()
+  try {
+    // Use "global" scope to properly revoke the session on the server
+    // "local" only clears local storage but leaves the refresh token valid on the server,
+    // which can cause the session to be restored unexpectedly
+    await supabase.auth.signOut({ scope: "global" })
+  } catch (error) {
+    logger.warn("Sign out request failed, clearing local session anyway", { error })
+  }
   queryClient.clear()
   const subscriptionState = useSubscriptionStore.getState()
   subscriptionState.setCustomerInfo(null)

@@ -25,15 +25,12 @@ export async function syncOnboardingToDatabase(userId: string, completed: boolea
   }
 
   try {
-    const profilesTable = supabase.from("profiles") as unknown as {
-      upsert: (
-        values: SupabaseDatabase["public"]["Tables"]["profiles"]["Insert"],
-      ) => Promise<{ error: Error | null }>
-    }
-    const { error } = await profilesTable.upsert({
-      id: userId,
-      has_completed_onboarding: completed,
-    })
+    const { error } = await supabase
+      .from("profiles")
+      .upsert({
+        id: userId,
+        has_completed_onboarding: completed,
+      } as SupabaseDatabase["public"]["Tables"]["profiles"]["Insert"])
 
     if (error) {
       const supabaseErr = extractSupabaseError(error)
@@ -61,12 +58,17 @@ export async function syncOnboardingToDatabase(userId: string, completed: boolea
           logger.info(
             "\n🗄️  [Supabase] Database Setup Required\n" +
               "─────────────────────────────────────────────\n" +
+              "The app can't find the required table `public.profiles`.\n" +
               "To enable database features, create the required tables in your Supabase project:\n" +
               "1. Go to your Supabase project dashboard\n" +
               "2. Navigate to SQL Editor\n" +
               "3. Open the `supabase-schema.sql` file from the root of this repository\n" +
               "4. Copy and paste the entire file into the SQL Editor\n" +
               "5. Click Run to execute\n" +
+              "\n" +
+              "If you use a custom table or schema, update the app queries to match your table name.\n" +
+              "Supabase error: " +
+              `${supabaseErr?.message || "table not found"}\n` +
               "\n" +
               "📚 See SUPABASE.md or docs for detailed instructions:\n" +
               "   https://docs.shipnative.app/core-features/authentication\n" +
@@ -130,12 +132,17 @@ export async function fetchOnboardingFromDatabase(userId: string): Promise<boole
           logger.info(
             "\n🗄️  [Supabase] Database Setup Required\n" +
               "─────────────────────────────────────────────\n" +
+              "The app can't find the required table `public.profiles`.\n" +
               "To enable database features, create the required tables in your Supabase project:\n" +
               "1. Go to your Supabase project dashboard\n" +
               "2. Navigate to SQL Editor\n" +
               "3. Open the `supabase-schema.sql` file from the root of this repository\n" +
               "4. Copy and paste the entire file into the SQL Editor\n" +
               "5. Click Run to execute\n" +
+              "\n" +
+              "If you use a custom table or schema, update the app queries to match your table name.\n" +
+              "Supabase error: " +
+              `${supabaseErr?.message || "table not found"}\n` +
               "\n" +
               "📚 See SUPABASE.md or docs for detailed instructions:\n" +
               "   https://docs.shipnative.app/core-features/authentication\n" +

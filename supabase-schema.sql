@@ -51,18 +51,21 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
 -- Profiles table is viewable by everyone
+DROP POLICY IF EXISTS "Public profiles are viewable by everyone" ON public.profiles;
 CREATE POLICY "Public profiles are viewable by everyone"
     ON public.profiles
     FOR SELECT
     USING (true);
 
 -- Users can update their own profile
+DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
 CREATE POLICY "Users can update own profile"
     ON public.profiles
     FOR UPDATE
     USING (auth.uid() = id);
 
 -- Users can insert their own profile
+DROP POLICY IF EXISTS "Users can insert own profile" ON public.profiles;
 CREATE POLICY "Users can insert own profile"
     ON public.profiles
     FOR INSERT
@@ -107,24 +110,28 @@ ALTER TABLE public.push_tokens ENABLE ROW LEVEL SECURITY;
 
 -- Policies for push_tokens table
 -- Users can view their own tokens
+DROP POLICY IF EXISTS "Users can view own push tokens" ON public.push_tokens;
 CREATE POLICY "Users can view own push tokens"
     ON public.push_tokens
     FOR SELECT
     USING (auth.uid() = user_id);
 
 -- Users can insert their own tokens
+DROP POLICY IF EXISTS "Users can insert own push tokens" ON public.push_tokens;
 CREATE POLICY "Users can insert own push tokens"
     ON public.push_tokens
     FOR INSERT
     WITH CHECK (auth.uid() = user_id);
 
 -- Users can update their own tokens
+DROP POLICY IF EXISTS "Users can update own push tokens" ON public.push_tokens;
 CREATE POLICY "Users can update own push tokens"
     ON public.push_tokens
     FOR UPDATE
     USING (auth.uid() = user_id);
 
 -- Users can delete their own tokens
+DROP POLICY IF EXISTS "Users can delete own push tokens" ON public.push_tokens;
 CREATE POLICY "Users can delete own push tokens"
     ON public.push_tokens
     FOR DELETE
@@ -167,18 +174,21 @@ ALTER TABLE public.user_preferences ENABLE ROW LEVEL SECURITY;
 
 -- Policies for user_preferences table
 -- Users can view their own preferences
+DROP POLICY IF EXISTS "Users can view own preferences" ON public.user_preferences;
 CREATE POLICY "Users can view own preferences"
     ON public.user_preferences
     FOR SELECT
     USING (auth.uid() = id);
 
 -- Users can update their own preferences
+DROP POLICY IF EXISTS "Users can update own preferences" ON public.user_preferences;
 CREATE POLICY "Users can update own preferences"
     ON public.user_preferences
     FOR UPDATE
     USING (auth.uid() = id);
 
 -- Users can insert their own preferences
+DROP POLICY IF EXISTS "Users can insert own preferences" ON public.user_preferences;
 CREATE POLICY "Users can insert own preferences"
     ON public.user_preferences
     FOR INSERT
@@ -287,6 +297,28 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+-- Function to delete the authenticated user and related data
+CREATE OR REPLACE FUNCTION public.delete_user_account()
+RETURNS VOID AS $$
+DECLARE
+    v_user_id UUID := auth.uid();
+BEGIN
+    IF v_user_id IS NULL THEN
+        RAISE EXCEPTION 'Must be authenticated to delete account';
+    END IF;
+
+    -- App tables (extend to any tables that reference the user)
+    DELETE FROM public.push_tokens WHERE user_id = v_user_id;
+    DELETE FROM public.user_preferences WHERE id = v_user_id;
+    DELETE FROM public.profiles WHERE id = v_user_id;
+
+    -- Remove the auth user (requires definer rights)
+    DELETE FROM auth.users WHERE id = v_user_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+
+GRANT EXECUTE ON FUNCTION public.delete_user_account() TO authenticated;
+
 -- =====================================================================
 -- WAITLIST TABLE
 -- =====================================================================
@@ -318,12 +350,14 @@ ALTER TABLE public.waitlist ENABLE ROW LEVEL SECURITY;
 
 -- Policies for waitlist table
 -- Allow anonymous inserts (for waitlist form submissions)
+DROP POLICY IF EXISTS "Anyone can add to waitlist" ON public.waitlist;
 CREATE POLICY "Anyone can add to waitlist"
     ON public.waitlist
     FOR INSERT
     WITH CHECK (true);
 
 -- Only authorized users can view waitlist (hardened: use service role for admin access)
+DROP POLICY IF EXISTS "Only authorized users can view waitlist" ON public.waitlist;
 CREATE POLICY "Only authorized users can view waitlist"
     ON public.waitlist
     FOR SELECT

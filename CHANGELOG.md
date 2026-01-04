@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Google Sign-In (Native)**: Switched native Google auth to ID token exchange using `@react-native-google-signin/google-signin`.
+- **iOS URL Scheme Automation**: Auto-registers the Google iOS URL scheme from `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` in `app.config.ts`.
+- **Node Tooling**: Added Volta pinning for Node 20 + Yarn 4 to stabilize installs.
+- **GDPR Account Deletion**: Complete account deletion system with secure edge function, optional RevenueCat/PostHog data deletion, and cryptographic JWT verification.
+
+### Changed
+- **Env Vars**: Added `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` and removed the need for storing Google client secrets in the app.
+- **Docs**: Updated Supabase + social login docs to align with the native Google ID token flow and Supabase guidance.
+- **Auth Storage (iOS/Android)**: Switched Supabase session storage to `expo-secure-store` for more reliable persistence.
+- **Auth Resilience**: Handle invalid refresh tokens, improve OAuth email-confirmation detection, and harden sign-out flows.
+- **Paywall Routing**: Onboarding now passes context so Paywall can correctly reset to Main.
+- **Supabase Schema**: Policies are now idempotent.
+- **RevenueCat**: Suppress known paywall font registration errors.
+- **Docs + Setup**: Setup wizard and README clarified Node version requirements.
+
+### Migration Notes
+- Pull the latest boilerplate changes and run `yarn install`.
+- Install `@react-native-google-signin/google-signin` (if upgrading from older versions).
+- Add `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` to `apps/app/.env` (keep `EXPO_PUBLIC_GOOGLE_CLIENT_ID`).
+- Rebuild the dev client so the Info.plist URL scheme is updated.
+- Deploy the account deletion edge function: `npx supabase functions deploy delete-user --no-verify-jwt`
+
 ### Planned
 - Stripe/PayPal add-ons alongside RevenueCat
 - Expanded component library drops (charts, file uploads)

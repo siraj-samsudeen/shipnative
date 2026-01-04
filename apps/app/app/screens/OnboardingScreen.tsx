@@ -38,7 +38,7 @@ export const OnboardingScreen: FC<OnboardingScreenProps> = function OnboardingSc
       await setHasCompletedOnboarding(true)
       // Navigate to Paywall after saving onboarding status
       // The Paywall screen will handle navigation to Main
-      navigation.replace("Paywall")
+      navigation.replace("Paywall", { fromOnboarding: true })
     }
   }
 

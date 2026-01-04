@@ -14,6 +14,7 @@ import {
   getLastNotificationResponse,
   type LocalNotificationInput,
 } from "@/services/notifications"
+import { syncPushNotificationsPreference } from "@/services/preferencesSync"
 import { storage } from "@/utils/storage"
 
 export interface NotificationState {
@@ -44,7 +45,7 @@ export interface NotificationState {
 
   // Actions
   initialize: () => Promise<void>
-  togglePush: () => Promise<void>
+  togglePush: (userId?: string) => Promise<void>
   requestPermission: () => Promise<boolean>
   registerForPush: () => Promise<void>
   scheduleNotification: (input: LocalNotificationInput) => Promise<string>
@@ -106,15 +107,26 @@ export const useNotificationStore = create<NotificationState>()(
         })
       },
 
-      togglePush: async () => {
+      togglePush: async (userId?: string) => {
         const { isPushEnabled, requestPermission } = get()
+        let newValue: boolean
+
         if (isPushEnabled) {
+          newValue = false
           set({ isPushEnabled: false })
         } else {
           const granted = await requestPermission()
           if (granted) {
+            newValue = true
             set({ isPushEnabled: true })
+          } else {
+            return // Permission denied, don't sync
           }
+        }
+
+        // Sync to database (fire-and-forget)
+        if (userId) {
+          syncPushNotificationsPreference(userId, newValue)
         }
       },
 

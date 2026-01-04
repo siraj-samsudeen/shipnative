@@ -1,9 +1,10 @@
 import { useEffect, useRef } from "react"
-import { View, Animated, Easing, Platform, useWindowDimensions } from "react-native"
+/* eslint-disable no-restricted-imports -- LoadingScreen renders before i18n init, must use RN Text directly */
+import { View, Animated, Easing, Platform, useWindowDimensions, Text as RNText } from "react-native"
+/* eslint-enable no-restricted-imports */
 import { LinearGradient } from "expo-linear-gradient"
 import { StyleSheet, useUnistyles } from "react-native-unistyles"
 
-import { Text } from "@/components/Text"
 import { ANIMATION } from "@/config/constants"
 import { webDimension } from "@/types/webStyles"
 
@@ -134,15 +135,15 @@ export function LoadingScreen(props: LoadingScreenProps) {
             />
           </View>
 
-          {/* Loading Text */}
+          {/* Loading Text - Using RNText directly since this screen renders before i18n init */}
           <View style={styles.textContainer}>
-            <Text style={styles.loadingText} weight="bold" size="2xl">
+            <RNText style={[styles.loadingText, { color: theme.colors.foreground }]}>
               {message}
-            </Text>
+            </RNText>
             {status && (
-              <Text style={styles.statusText} color="secondary" size="base">
+              <RNText style={[styles.statusText, { color: theme.colors.foregroundSecondary }]}>
                 {status}
-              </Text>
+              </RNText>
             )}
           </View>
 
@@ -256,9 +257,15 @@ const styles = StyleSheet.create((theme) => ({
   loadingText: {
     marginBottom: theme.spacing.xs,
     textAlign: "center",
+    fontSize: theme.typography.sizes["2xl"],
+    lineHeight: theme.typography.lineHeights["2xl"],
+    fontFamily: theme.typography.fonts.bold,
   },
   statusText: {
     textAlign: "center",
+    fontSize: theme.typography.sizes.base,
+    lineHeight: theme.typography.lineHeights.base,
+    fontFamily: theme.typography.fonts.regular,
   },
   dotsContainer: {
     flexDirection: "row",

@@ -29,12 +29,21 @@ import {
 } from "./authConstants"
 import { syncOnboardingStatus, syncOnboardingToDatabase, updateUserState } from "./authHelpers"
 import type { AuthState } from "./authTypes"
+import { env } from "../../config/env"
+import { fetchAndApplyUserPreferences } from "../../services/preferencesSync"
 import { supabase, isUsingMockSupabase } from "../../services/supabase"
 import { isEmailConfirmed } from "../../types/auth"
 import { logger } from "../../utils/Logger"
+import { loadString, saveString } from "../../utils/storage"
 
 // Track auth state change subscription to prevent duplicate listeners
 let authStateSubscription: { unsubscribe: () => void } | null = null
+const SUPABASE_URL_STORAGE_KEY = "supabase.last_url"
+
+const isInvalidRefreshToken = (error: unknown): boolean => {
+  const message = error instanceof Error ? error.message : String(error)
+  return /invalid refresh token|refresh token not found/i.test(message)
+}
 
 export const useAuthStore = create<AuthState>()(
   persist(
@@ -123,12 +132,39 @@ export const useAuthStore = create<AuthState>()(
         try {
           set({ loading: true })
 
+          const currentSupabaseUrl = env.supabaseUrl ?? ""
+          const storedSupabaseUrl = loadString(SUPABASE_URL_STORAGE_KEY)
+          if (storedSupabaseUrl && currentSupabaseUrl && storedSupabaseUrl !== currentSupabaseUrl) {
+            logger.warn("Supabase URL changed, clearing local session", {
+              storedSupabaseUrl,
+              currentSupabaseUrl,
+            })
+            await signOutAction(get, set, GUEST_USER_KEY)
+          }
+          if (currentSupabaseUrl) {
+            saveString(SUPABASE_URL_STORAGE_KEY, currentSupabaseUrl)
+          }
+
           const onboardingStatusByUserId = get().onboardingStatusByUserId
 
           // Get initial session
-          const {
-            data: { session },
-          } = await supabase.auth.getSession()
+          let session: Awaited<ReturnType<typeof supabase.auth.getSession>>["data"]["session"] = null
+          try {
+            const sessionResult = await supabase.auth.getSession()
+            if (sessionResult.error && isInvalidRefreshToken(sessionResult.error)) {
+              await signOutAction(get, set, GUEST_USER_KEY)
+              set({ loading: false })
+              return
+            }
+            session = sessionResult.data.session
+          } catch (error) {
+            if (isInvalidRefreshToken(error)) {
+              await signOutAction(get, set, GUEST_USER_KEY)
+              set({ loading: false })
+              return
+            }
+            throw error
+          }
 
           // If no session, try to get user anyway (user might exist but email not confirmed)
           let user = session?.user ?? null
@@ -156,6 +192,12 @@ export const useAuthStore = create<AuthState>()(
             // Mock Supabase doesn't need this as onboarding state is handled locally
             const syncedStatus = await syncOnboardingStatus(user.id, localOnboardingCompleted)
             hasCompletedOnboarding = syncedStatus
+
+            // Fetch and apply user preferences (theme, notifications) from database
+            // This runs in background and doesn't block initialization
+            fetchAndApplyUserPreferences(user.id).catch((err) => {
+              logger.debug("Failed to fetch user preferences", { error: err })
+            })
           }
 
           // Check email confirmation status
@@ -181,12 +223,26 @@ export const useAuthStore = create<AuthState>()(
             const {
               data: { subscription },
             } = supabase.auth.onAuthStateChange(async (event, session) => {
+              // Handle SIGNED_OUT event immediately - don't try to fetch user or preserve state
+              if (event === "SIGNED_OUT") {
+                const onboardingStatusByUserId = get().onboardingStatusByUserId
+                const guestOnboarding = onboardingStatusByUserId[GUEST_USER_KEY] ?? false
+                set({
+                  session: null,
+                  user: null,
+                  isAuthenticated: false,
+                  isEmailConfirmed: false,
+                  hasCompletedOnboarding: guestOnboarding,
+                  loading: false,
+                })
+                return
+              }
+
               // Refresh user data to get latest email confirmation status
               // This is important when email is confirmed from another device/browser
-              if (
-                session?.user &&
-                (event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "USER_UPDATED")
-              ) {
+              // Note: Skip getUser() for USER_UPDATED - the session already has updated data
+              // and calling getUser() can cause a deadlock with updateUser()
+              if (session?.user && (event === "SIGNED_IN" || event === "TOKEN_REFRESHED")) {
                 try {
                   // Refresh user data to get latest email_confirmed_at
                   const {
@@ -228,6 +284,11 @@ export const useAuthStore = create<AuthState>()(
                 // Only query database if using real Supabase
                 const syncedStatus = await syncOnboardingStatus(user.id, currentLocalOnboarding)
                 hasCompletedOnboarding = syncedStatus
+
+                // Fetch and apply user preferences on sign in
+                fetchAndApplyUserPreferences(user.id).catch((err) => {
+                  logger.debug("Failed to fetch user preferences on auth change", { error: err })
+                })
               }
 
               // Check email confirmation status

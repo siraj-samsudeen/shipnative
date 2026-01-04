@@ -1,7 +1,6 @@
 import { Image, ImageProps, ImageStyle, StyleProp, TextStyle, View, ViewStyle } from "react-native"
+import { useTranslation } from "react-i18next"
 import { StyleSheet, useUnistyles } from "react-native-unistyles"
-
-import { translate } from "@/i18n/translate"
 
 import { Button, ButtonProps } from "./Button"
 import { Text, TextProps } from "./Text"
@@ -131,13 +130,14 @@ interface EmptyStatePresetItem {
  */
 export function EmptyState(props: EmptyStateProps) {
   const { theme } = useUnistyles()
+  const { t } = useTranslation()
 
   const EmptyStatePresets = {
     generic: {
       imageSource: sadFace,
-      heading: translate("emptyStateComponent:generic.heading"),
-      content: translate("emptyStateComponent:generic.content"),
-      button: translate("emptyStateComponent:generic.button"),
+      heading: t("emptyStateComponent:generic.heading"),
+      content: t("emptyStateComponent:generic.content"),
+      button: t("emptyStateComponent:generic.button"),
     } as EmptyStatePresetItem,
   } as const
 

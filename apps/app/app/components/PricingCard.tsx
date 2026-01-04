@@ -1,8 +1,7 @@
 import { FC } from "react"
 import { Platform, Pressable, View } from "react-native"
+import { useTranslation } from "react-i18next"
 import { StyleSheet } from "react-native-unistyles"
-
-import { translate } from "@/i18n/translate"
 
 import { Text } from "./Text"
 
@@ -29,6 +28,8 @@ export const PricingCard: FC<PricingCardProps> = ({
   disabled = false,
   loading = false,
 }) => {
+  const { t } = useTranslation()
+
   return (
     <View style={[styles.container, isPopular && styles.popularContainer]}>
       {isPopular && (
@@ -69,7 +70,7 @@ export const PricingCard: FC<PricingCardProps> = ({
         disabled={disabled || loading}
       >
         <Text style={[styles.buttonText, isPopular && styles.popularButtonText]}>
-          {loading ? translate("pricingCard:processing") : translate("pricingCard:subscribeNow")}
+          {loading ? t("pricingCard:processing") : t("pricingCard:subscribeNow")}
         </Text>
       </Pressable>
     </View>

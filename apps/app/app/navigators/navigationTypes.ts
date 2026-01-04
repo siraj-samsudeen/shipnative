@@ -8,11 +8,15 @@ import {
 import { NativeStackScreenProps } from "@react-navigation/native-stack"
 
 // Main Tab Navigator types
+export type PaywallParams = {
+  fromOnboarding?: boolean
+}
+
 export type MainTabParamList = {
   Home: undefined
   Components: undefined
   Profile: undefined
-  Paywall: undefined
+  Paywall: PaywallParams | undefined
 }
 
 // App Stack Navigator types
@@ -32,7 +36,7 @@ export type AppStackParamList = {
       }
     | undefined
   Starter: undefined
-  Paywall: undefined
+  Paywall: PaywallParams | undefined
   Profile: undefined
   Welcome: undefined
   ComponentShowcase: undefined

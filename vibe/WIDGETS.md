@@ -24,8 +24,11 @@ yarn install
 # Run prebuild to generate native code
 yarn prebuild:clean
 
-# Build and run
+# Build and run (from apps/app directory)
 yarn ios    # or yarn android
+
+# Or from monorepo root:
+# yarn app:ios  or  yarn app:android
 ```
 
 ## Overview

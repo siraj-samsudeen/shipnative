@@ -1,4 +1,4 @@
-import { FC, useEffect, useState } from "react"
+import { FC, useCallback, useEffect, useRef, useState } from "react"
 import {
   KeyboardAvoidingView,
   Modal,
@@ -9,9 +9,9 @@ import {
   View,
 } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
+import { useTranslation } from "react-i18next"
 import { StyleSheet, useUnistyles } from "react-native-unistyles"
 
-import { translate } from "@/i18n/translate"
 import { deleteAccount } from "@/services/accountDeletion"
 import { haptics } from "@/utils/haptics"
 
@@ -25,9 +25,19 @@ export interface DeleteAccountModalProps {
 
 export const DeleteAccountModal: FC<DeleteAccountModalProps> = ({ visible, onClose }) => {
   const { theme } = useUnistyles()
+  const { t } = useTranslation()
   const [loading, setLoading] = useState(false)
   const [confirmChecked, setConfirmChecked] = useState(false)
   const [error, setError] = useState("")
+  const isMountedRef = useRef(true)
+
+  // Track mount state to prevent state updates after unmount
+  useEffect(() => {
+    isMountedRef.current = true
+    return () => {
+      isMountedRef.current = false
+    }
+  }, [])
 
   useEffect(() => {
     if (visible) {
@@ -37,30 +47,37 @@ export const DeleteAccountModal: FC<DeleteAccountModalProps> = ({ visible, onClo
     }
   }, [visible])
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     if (loading) return
     haptics.buttonPress()
     onClose()
-  }
+  }, [loading, onClose])
 
-  const handleDelete = async () => {
+  const handleDelete = useCallback(async () => {
     setError("")
     setLoading(true)
     haptics.delete()
 
     const result = await deleteAccount()
 
+    // Check if component is still mounted before updating state
+    if (!isMountedRef.current) {
+      // Component unmounted (likely due to successful deletion), nothing to do
+      return
+    }
+
     if (result.error) {
-      setError(result.error.message || translate("deleteAccountModal:errorGeneric"))
+      setError(result.error.message || t("deleteAccountModal:errorGeneric"))
       haptics.error()
       setLoading(false)
       return
     }
 
+    // Success - the auth state change will navigate away
     haptics.success()
     setLoading(false)
     onClose()
-  }
+  }, [onClose, t])
 
   return (
     <Modal

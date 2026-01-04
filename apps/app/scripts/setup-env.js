@@ -25,11 +25,11 @@ const questions = [
   },
   {
     key: "EXPO_PUBLIC_GOOGLE_CLIENT_ID",
-    question: "Enter your Google OAuth Client ID (optional, for social login): ",
+    question: "Enter your Google OAuth Web Client ID (optional, for social login): ",
   },
   {
-    key: "EXPO_PUBLIC_GOOGLE_CLIENT_SECRET",
-    question: "Enter your Google OAuth Client Secret (optional, for social login): ",
+    key: "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID",
+    question: "Enter your Google OAuth iOS Client ID (optional, for social login): ",
   },
   {
     key: "EXPO_PUBLIC_APPLE_SERVICES_ID",

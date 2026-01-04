@@ -4,12 +4,28 @@ Docs are the source of truth: https://docs.shipnative.app
 This README is a practical quickstart + conventions index.
 
 ## Quickstart
-1) `corepack enable`
-2) `yarn install`
-3) `yarn setup` (recommended to wire API keys before coding)
-4) `yarn app:start`
+1) Install Node 20 LTS (recommended: Volta)
+2) `corepack enable`
+3) `yarn install`
+4) `yarn setup` (recommended to wire API keys before coding)
+5) `yarn app:start`
 
-Node version: 20+ (see `.nvmrc`).
+Node version: 20.x (see `.nvmrc`). Volta users get it automatically.
+
+### Node Version (Required)
+We pin Node 20 LTS because some native deps (e.g., `esbuild`) fail on newer Node versions.
+
+**Fastest setup (Volta):**
+```bash
+curl https://get.volta.sh | bash
+volta install node@20.19.0 yarn@4.9.1
+```
+
+**nvm alternative:**
+```bash
+nvm install
+nvm use
+```
 
 ## Repo Layout
 - `apps/app` — React Native (Expo) application (iOS/Android/Web)

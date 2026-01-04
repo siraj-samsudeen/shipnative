@@ -1,8 +1,7 @@
 import { FC } from "react"
 import { Linking, Platform, Pressable, View } from "react-native"
+import { useTranslation } from "react-i18next"
 import { StyleSheet } from "react-native-unistyles"
-
-import { translate } from "@/i18n/translate"
 
 import { Text } from "./Text"
 
@@ -21,6 +20,8 @@ export const SubscriptionStatus: FC<SubscriptionStatusProps> = ({
   willRenew = false,
   onManagePress,
 }) => {
+  const { t } = useTranslation()
+
   const formatDate = (dateString: string | null | undefined) => {
     if (!dateString) return null
 
@@ -40,14 +41,14 @@ export const SubscriptionStatus: FC<SubscriptionStatusProps> = ({
     switch (platform) {
       case "revenuecat":
         return Platform.OS === "ios"
-          ? translate("subscriptionStatus:platformAppStore")
-          : translate("subscriptionStatus:platformGooglePlay")
+          ? t("subscriptionStatus:platformAppStore")
+          : t("subscriptionStatus:platformGooglePlay")
       case "revenuecat-web":
-        return translate("subscriptionStatus:platformWebBilling")
+        return t("subscriptionStatus:platformWebBilling")
       case "mock":
-        return translate("subscriptionStatus:platformMock")
+        return t("subscriptionStatus:platformMock")
       default:
-        return translate("subscriptionStatus:platformUnknown")
+        return t("subscriptionStatus:platformUnknown")
     }
   }
 
@@ -97,9 +98,9 @@ export const SubscriptionStatus: FC<SubscriptionStatusProps> = ({
         {expirationDate && (
           <Text style={styles.expirationText}>
             {willRenew
-              ? translate("subscriptionStatus:renews")
-              : translate("subscriptionStatus:expires")}{" "}
-            {translate("subscriptionStatus:on")} {formatDate(expirationDate)}
+              ? t("subscriptionStatus:renews")
+              : t("subscriptionStatus:expires")}{" "}
+            {t("subscriptionStatus:on")} {formatDate(expirationDate)}
           </Text>
         )}
       </View>

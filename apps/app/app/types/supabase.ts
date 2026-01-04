@@ -8,6 +8,10 @@ export type SupabaseDatabase = {
           first_name: string | null
           last_name: string | null
           full_name: string | null
+          dark_mode_enabled: boolean | null
+          notifications_enabled: boolean | null
+          push_notifications_enabled: boolean | null
+          email_notifications_enabled: boolean | null
           updated_at: string | null
         }
         Insert: {
@@ -16,6 +20,10 @@ export type SupabaseDatabase = {
           first_name?: string | null
           last_name?: string | null
           full_name?: string | null
+          dark_mode_enabled?: boolean | null
+          notifications_enabled?: boolean | null
+          push_notifications_enabled?: boolean | null
+          email_notifications_enabled?: boolean | null
           updated_at?: string | null
         }
         Update: {
@@ -24,6 +32,10 @@ export type SupabaseDatabase = {
           first_name?: string | null
           last_name?: string | null
           full_name?: string | null
+          dark_mode_enabled?: boolean | null
+          notifications_enabled?: boolean | null
+          push_notifications_enabled?: boolean | null
+          email_notifications_enabled?: boolean | null
           updated_at?: string | null
         }
         Relationships: []
@@ -34,4 +46,14 @@ export type SupabaseDatabase = {
     Enums: Record<string, never>
     CompositeTypes: Record<string, never>
   }
+}
+
+/**
+ * User preferences that sync to the profiles table
+ */
+export interface UserPreferences {
+  dark_mode_enabled: boolean | null
+  notifications_enabled: boolean | null
+  push_notifications_enabled: boolean | null
+  email_notifications_enabled: boolean | null
 }

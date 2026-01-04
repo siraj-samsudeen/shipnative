@@ -8,8 +8,9 @@ import {
   ViewStyle,
 } from "react-native"
 
+import { useTranslation } from "react-i18next"
+
 import { isRTL } from "@/i18n"
-import { translate } from "@/i18n/translate"
 import { useAppTheme } from "@/theme/context"
 import { $styles } from "@/theme/styles"
 import type { ThemedStyle } from "@/theme/types"
@@ -152,6 +153,7 @@ export function Header(props: HeaderProps) {
     theme: { colors },
     themed,
   } = useAppTheme()
+  const { t } = useTranslation()
   const {
     backgroundColor = colors.background,
     LeftActionComponent,
@@ -181,7 +183,7 @@ export function Header(props: HeaderProps) {
 
   const $containerInsets = useSafeAreaInsetsStyle(safeAreaEdges)
 
-  const titleContent = titleTx ? translate(titleTx, titleTxOptions) : title
+  const titleContent = titleTx ? t(titleTx, titleTxOptions as Record<string, string>) : title
 
   return (
     <View style={[$container, $containerInsets, { backgroundColor }, $containerStyleOverride]}>
@@ -237,8 +239,9 @@ export function Header(props: HeaderProps) {
 function HeaderAction(props: HeaderActionProps) {
   const { backgroundColor, icon, text, tx, txOptions, onPress, ActionComponent, iconColor } = props
   const { themed } = useAppTheme()
+  const { t } = useTranslation()
 
-  const content = tx ? translate(tx, txOptions) : text
+  const content = tx ? t(tx, txOptions as Record<string, string>) : text
 
   if (ActionComponent) return ActionComponent
 

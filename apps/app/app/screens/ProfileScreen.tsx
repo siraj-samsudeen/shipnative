@@ -70,6 +70,8 @@ export const ProfileScreen: FC = () => {
     typeof user?.user_metadata?.first_name === "string" ? user.user_metadata.first_name : undefined
   const userName = firstName ?? user?.email?.split("@")[0] ?? "User"
   const userInitials = userName.slice(0, 2).toUpperCase()
+  const avatarUrl =
+    typeof user?.user_metadata?.avatar_url === "string" ? user.user_metadata.avatar_url : undefined
 
   const toggleThemeMode = () => {
     haptics.switchChange()
@@ -78,12 +80,12 @@ export const ProfileScreen: FC = () => {
 
   const handleTogglePush = () => {
     haptics.switchChange()
-    togglePush()
+    togglePush(user?.id)
   }
 
-  const handleSignOut = () => {
+  const handleSignOut = async () => {
     haptics.buttonPress()
-    signOut()
+    await signOut()
   }
 
   const MenuItem = ({
@@ -165,9 +167,6 @@ export const ProfileScreen: FC = () => {
           {/* Header */}
           <Animated.View entering={FadeInDown.delay(0).springify()} style={styles.header}>
             <Text style={styles.screenTitle}>Profile</Text>
-            <Pressable onPress={handleSignOut} style={styles.signOutButton}>
-              <Ionicons name="log-out-outline" size={24} color={theme.colors.error} />
-            </Pressable>
           </Animated.View>
 
           {/* Profile Card */}
@@ -175,7 +174,7 @@ export const ProfileScreen: FC = () => {
             entering={FadeInDown.delay(ANIMATION.STAGGER_DELAY).springify()}
             style={styles.profileCard}
           >
-            <Avatar fallback={userInitials} size="xl" />
+            <Avatar source={avatarUrl ? { uri: avatarUrl } : undefined} fallback={userInitials} size="xl" />
             <View style={styles.profileInfo}>
               <Text style={styles.profileName}>{userName}</Text>
               <Text style={styles.profileEmail}>{user?.email}</Text>
@@ -315,6 +314,13 @@ export const ProfileScreen: FC = () => {
             entering={FadeInDown.delay(ANIMATION.STAGGER_DELAY * 4.5).springify()}
             style={styles.dangerCard}
           >
+            <MenuItem
+              icon="log-out-outline"
+              title="Sign Out"
+              subtitle="Log out of this device"
+              onPress={handleSignOut}
+            />
+            <View style={styles.divider} />
             <View style={styles.dangerHeader}>
               <View style={styles.dangerCopy}>
                 <Text style={styles.dangerTitle}>Delete Account</Text>
@@ -376,6 +382,14 @@ export const ProfileScreen: FC = () => {
         visible={languageModalVisible}
         onClose={() => setLanguageModalVisible(false)}
       />
+
+      <Pressable
+        onPress={handleSignOut}
+        style={[styles.signOutFloating, { top: insets.top + theme.spacing.lg }]}
+        hitSlop={12}
+      >
+        <Ionicons name="log-out-outline" size={24} color={theme.colors.error} />
+      </Pressable>
     </View>
   )
 }
@@ -410,7 +424,7 @@ const styles = StyleSheet.create((theme) => ({
   header: {
     alignItems: "center",
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "flex-start",
     marginBottom: theme.spacing.xl,
   },
   screenTitle: {
@@ -419,13 +433,17 @@ const styles = StyleSheet.create((theme) => ({
     fontSize: theme.typography.sizes["3xl"],
     lineHeight: theme.typography.lineHeights["3xl"],
   },
-  signOutButton: {
+  signOutFloating: {
+    position: "absolute",
+    right: theme.spacing.lg,
     alignItems: "center",
     backgroundColor: theme.colors.errorBackground,
     borderRadius: theme.radius.full,
     height: 40,
     justifyContent: "center",
     width: 40,
+    zIndex: 2,
+    elevation: 2,
   },
   profileCard: {
     alignItems: "center",

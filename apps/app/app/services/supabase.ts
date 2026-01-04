@@ -18,66 +18,112 @@ const secureStoreOptions: SecureStore.SecureStoreOptions =
       }
     : { keychainService: "shipnativeapp.supabase" }
 
+const SECURESTORE_CHUNK_SIZE = 1800
+const getChunkCountKey = (key: string) => `${key}.__chunks`
+const getChunkKey = (key: string, index: number) => `${key}.__chunk_${index}`
+
 // Platform-aware storage adapter for Supabase
 // Uses SecureStore on mobile, webSecureStorage on web
 type SupabaseAuthStorage = SupportedStorage
 
-const PlatformStorageAdapter: SupabaseAuthStorage = {
+const SecureStoreAdapter: SupabaseAuthStorage = {
   getItem: async (key: string): Promise<string | null> => {
-    if (Platform.OS === "web") {
-      // Use encrypted storage for sensitive auth keys on web
-      if (key.includes("auth") || key.includes("token") || key.includes("session")) {
-        return webSecureStorage.getItem(key)
-      }
-      // Use regular localStorage for non-sensitive data
-      return typeof localStorage !== "undefined" ? localStorage.getItem(key) : null
-    }
-    // Use SecureStore on mobile platforms
     try {
+      const chunkCountRaw = await SecureStore.getItemAsync(
+        getChunkCountKey(key),
+        secureStoreOptions,
+      )
+      const chunkCount = chunkCountRaw ? Number(chunkCountRaw) : 0
+      if (chunkCount > 0) {
+        const chunks: string[] = []
+        for (let i = 0; i < chunkCount; i += 1) {
+          const chunk = await SecureStore.getItemAsync(getChunkKey(key, i), secureStoreOptions)
+          if (!chunk) return null
+          chunks.push(chunk)
+        }
+        return chunks.join("")
+      }
       return await SecureStore.getItemAsync(key, secureStoreOptions)
-    } catch {
+    } catch (error) {
+      logger.error("SecureStore getItem failed for Supabase auth", { key }, error as Error)
       return null
     }
   },
   setItem: async (key: string, value: string): Promise<void> => {
+    try {
+      if (value.length <= SECURESTORE_CHUNK_SIZE) {
+        await SecureStore.setItemAsync(key, value, secureStoreOptions)
+        await SecureStore.deleteItemAsync(getChunkCountKey(key), secureStoreOptions)
+        return
+      }
+
+      const chunks = Math.ceil(value.length / SECURESTORE_CHUNK_SIZE)
+      for (let i = 0; i < chunks; i += 1) {
+        const start = i * SECURESTORE_CHUNK_SIZE
+        const chunk = value.slice(start, start + SECURESTORE_CHUNK_SIZE)
+        await SecureStore.setItemAsync(getChunkKey(key, i), chunk, secureStoreOptions)
+      }
+      await SecureStore.setItemAsync(getChunkCountKey(key), String(chunks), secureStoreOptions)
+      await SecureStore.deleteItemAsync(key, secureStoreOptions)
+    } catch (error) {
+      logger.error("SecureStore setItem failed for Supabase auth", { key }, error as Error)
+    }
+  },
+  removeItem: async (key: string): Promise<void> => {
+    try {
+      const chunkCountRaw = await SecureStore.getItemAsync(
+        getChunkCountKey(key),
+        secureStoreOptions,
+      )
+      const chunkCount = chunkCountRaw ? Number(chunkCountRaw) : 0
+      if (chunkCount > 0) {
+        for (let i = 0; i < chunkCount; i += 1) {
+          await SecureStore.deleteItemAsync(getChunkKey(key, i), secureStoreOptions)
+        }
+        await SecureStore.deleteItemAsync(getChunkCountKey(key), secureStoreOptions)
+      }
+      await SecureStore.deleteItemAsync(key, secureStoreOptions)
+    } catch (error) {
+      logger.error("SecureStore removeItem failed for Supabase auth", { key }, error as Error)
+    }
+  },
+}
+
+const PlatformStorageAdapter: SupabaseAuthStorage = {
+  getItem: async (key: string): Promise<string | null> => {
     if (Platform.OS === "web") {
-      // Use encrypted storage for sensitive auth keys on web
+      if (key.includes("auth") || key.includes("token") || key.includes("session")) {
+        return webSecureStorage.getItem(key)
+      }
+      return typeof localStorage !== "undefined" ? localStorage.getItem(key) : null
+    }
+    return SecureStoreAdapter.getItem(key)
+  },
+  setItem: async (key: string, value: string): Promise<void> => {
+    if (Platform.OS === "web") {
       if (key.includes("auth") || key.includes("token") || key.includes("session")) {
         webSecureStorage.setItem(key, value)
         return
       }
-      // Use regular localStorage for non-sensitive data
       if (typeof localStorage !== "undefined") {
         localStorage.setItem(key, value)
       }
       return
     }
-    // Use SecureStore on mobile platforms
-    try {
-      await SecureStore.setItemAsync(key, value, secureStoreOptions)
-    } catch {
-      // Ignore errors
-    }
+    await SecureStoreAdapter.setItem(key, value)
   },
   removeItem: async (key: string): Promise<void> => {
     if (Platform.OS === "web") {
-      // Remove from encrypted storage if it was stored there
       if (key.includes("auth") || key.includes("token") || key.includes("session")) {
         webSecureStorage.removeItem(key)
         return
       }
-      // Remove from regular localStorage
       if (typeof localStorage !== "undefined") {
         localStorage.removeItem(key)
       }
       return
     }
-    // Use SecureStore on mobile platforms
-    try {
-      await SecureStore.deleteItemAsync(key, secureStoreOptions)
-    } catch {
-      // Ignore errors
-    }
+    await SecureStoreAdapter.removeItem(key)
   },
 }
 

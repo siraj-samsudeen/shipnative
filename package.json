@@ -44,6 +44,10 @@
     "turbo": "latest"
   },
   "packageManager": "yarn@4.9.1",
+  "volta": {
+    "node": "20.19.0",
+    "yarn": "4.9.1"
+  },
   "workspaces": [
     "apps/*"
   ],

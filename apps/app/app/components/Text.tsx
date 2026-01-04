@@ -7,9 +7,10 @@ import {
   type TextStyle,
 } from "react-native"
 /* eslint-enable no-restricted-imports */
+import { useTranslation } from "react-i18next"
 import { StyleSheet } from "react-native-unistyles"
 
-import { translate, TxKeyPath } from "@/i18n"
+import { type TxKeyPath } from "@/i18n"
 
 // =============================================================================
 // TYPES
@@ -99,8 +100,11 @@ export const Text = forwardRef(function Text(props: TextProps, ref: ForwardedRef
     ...rest
   } = props
 
+  // Use useTranslation hook for reactive language changes
+  const { t } = useTranslation()
+
   // Get translated text if tx is provided
-  const i18nText = tx && translate(tx, txOptions)
+  const i18nText = tx ? t(tx, txOptions as Record<string, string>) : null
   const content = i18nText || text || children
 
   // Apply variants - map "default" to undefined for Unistyles

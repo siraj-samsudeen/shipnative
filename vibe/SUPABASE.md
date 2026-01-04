@@ -209,6 +209,9 @@ const handleAppleSignIn = async () => {
 }
 ```
 
+Google uses the native Google Sign-In SDK to obtain an ID token and exchanges it with Supabase.
+Apple (and web) uses OAuth with PKCE and redirects back to the app.
+
 Social login buttons are automatically shown/hidden based on feature flags:
 - `enableGoogleAuth`: Shows Google sign in button
 - `enableAppleAuth`: Shows Apple sign in button
@@ -222,17 +225,26 @@ The Shipnative setup wizard (`yarn setup`) will guide you through setting up Goo
 
 1. **Run setup wizard**: Run `yarn setup` from the project root
 2. **Choose Google OAuth**: Select "Yes" when prompted to set up Google OAuth
-3. **Google Cloud Console**: Create OAuth credentials:
+3. **Google Cloud Console**: Create OAuth credentials and consent screen:
    - Go to [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
-   - Enable Google+ API
-   - Create OAuth 2.0 Client ID
-   - Add authorized redirect URIs for Supabase
-4. **Supabase Configuration**: Enter credentials in Supabase Auth → Providers → Google
+   - Configure consent screen + scopes (`openid`, `email`, `profile`)
+   - Create OAuth client IDs for Web, iOS, and Android
+   - Add Android SHA-1 fingerprints for debug + release
+4. **Supabase Configuration**: Supabase Auth → Providers → Google
+   - Enable Google
+   - Add all client IDs (web first, then iOS/Android)
+   - Add the client secret from Google
+   - If using the RN Google Sign-In SDK, set **Skip Nonce Check** to avoid nonce mismatch errors
 5. **Environment Variables**: Setup wizard adds to `.env`:
    ```bash
-   EXPO_PUBLIC_GOOGLE_CLIENT_ID=your-client-id
-   EXPO_PUBLIC_GOOGLE_CLIENT_SECRET=your-client-secret
+   EXPO_PUBLIC_GOOGLE_CLIENT_ID=your-web-client-id
+   EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID=your-ios-client-id
    ```
+   The client secret stays in the Supabase dashboard, not in the app.
+6. **Native SDK**: Install `@react-native-google-signin/google-signin` and rebuild the dev client.
+
+For complete provider setup details, follow the official Supabase guide:
+https://supabase.com/docs/guides/auth/social-login/auth-google
 
 ### Apple Sign-In Setup
 

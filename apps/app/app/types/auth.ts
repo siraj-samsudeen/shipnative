@@ -102,6 +102,16 @@ export function getUserFromSession(session: Session | null): User | null {
  */
 export function isEmailConfirmed(user: User | null): boolean {
   if (!user) return false
+  const provider = typeof user.app_metadata?.provider === "string" ? user.app_metadata.provider : ""
+  const providers = Array.isArray(user.app_metadata?.providers) ? user.app_metadata.providers : []
+  const identities = Array.isArray(user.identities) ? user.identities : []
+  const hasOAuthProvider = provider !== "" && provider !== "email"
+  const hasOAuthProviders = providers.some((entry) => entry && entry !== "email")
+  const hasOAuthIdentity = identities.some((identity) => {
+    const identityProvider = identity?.provider ?? ""
+    return identityProvider !== "" && identityProvider !== "email"
+  })
+  if (hasOAuthProvider || hasOAuthProviders || hasOAuthIdentity) return true
   // Check both email_confirmed_at and confirmed_at (Supabase uses both)
   return !!(user.email_confirmed_at || user.confirmed_at)
 }

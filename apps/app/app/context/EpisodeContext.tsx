@@ -7,8 +7,7 @@ import {
   useMemo,
   useState,
 } from "react"
-
-import { translate } from "@/i18n/translate"
+import { useTranslation } from "react-i18next"
 import { api } from "@/services/api"
 import type { EpisodeItem } from "@/services/api/types"
 import { formatDate } from "@/utils/formatDate"
@@ -89,6 +88,7 @@ export const useEpisodes = () => {
 // A helper hook to extract and format episode details
 export const useEpisode = (episode: EpisodeItem) => {
   const { hasFavorite } = useEpisodes()
+  const { t } = useTranslation()
 
   const isFavorite = hasFavorite(episode)
 
@@ -97,7 +97,7 @@ export const useEpisode = (episode: EpisodeItem) => {
     const formatted = formatDate(episode.pubDate)
     datePublished = {
       textLabel: formatted,
-      accessibilityLabel: translate("demoPodcastListScreen:accessibility.publishLabel", {
+      accessibilityLabel: t("demoPodcastListScreen:accessibility.publishLabel", {
         date: formatted,
       }),
     }
@@ -111,7 +111,7 @@ export const useEpisode = (episode: EpisodeItem) => {
   const s = Math.floor((seconds % 3600) % 60)
   const duration = {
     textLabel: `${h > 0 ? `${h}:` : ""}${m > 0 ? `${m}:` : ""}${s}`,
-    accessibilityLabel: translate("demoPodcastListScreen:accessibility.durationLabel", {
+    accessibilityLabel: t("demoPodcastListScreen:accessibility.durationLabel", {
       hours: h,
       minutes: m,
       seconds: s,

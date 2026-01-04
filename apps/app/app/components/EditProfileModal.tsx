@@ -1,9 +1,9 @@
 import { FC, useState, useEffect } from "react"
 import { Modal, View, Pressable, KeyboardAvoidingView, Platform, ScrollView } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
+import { useTranslation } from "react-i18next"
 import { StyleSheet, useUnistyles } from "react-native-unistyles"
 
-import { translate } from "@/i18n/translate"
 import { supabase } from "@/services/supabase"
 import { useAuthStore } from "@/stores"
 import type { SupabaseDatabase } from "@/types/supabase"
@@ -30,6 +30,7 @@ type ProfilesInsert = SupabaseDatabase["public"]["Tables"]["profiles"]["Insert"]
 
 export const EditProfileModal: FC<EditProfileModalProps> = ({ visible, onClose }) => {
   const { theme } = useUnistyles()
+  const { t } = useTranslation()
   const user = useAuthStore((state) => state.user)
   const setUser = useAuthStore((state) => state.setUser)
 
@@ -56,45 +57,54 @@ export const EditProfileModal: FC<EditProfileModalProps> = ({ visible, onClose }
     haptics.buttonPress()
 
     try {
-      // Update user metadata
-      const { data, error: updateError } = await supabase.auth.updateUser({
-        data: {
-          first_name: firstName,
-          last_name: lastName,
-          full_name: `${firstName} ${lastName}`,
-        },
-      })
-
-      if (updateError) throw updateError
-
-      // Update profiles table
-      if (user?.id) {
-        const profilesTable = supabase.from("profiles") as unknown as {
-          upsert: (values: ProfilesInsert) => Promise<{ error: Error | null }>
-        }
-        const { error: profileError } = await profilesTable.upsert({
-          id: user.id,
-          first_name: firstName,
-          last_name: lastName,
-          full_name: `${firstName} ${lastName}`,
-          updated_at: new Date().toISOString(),
-        })
-
-        if (profileError) {
-          console.warn("Profile table update failed:", profileError)
-        }
+      const updatedMetadata = {
+        first_name: firstName,
+        last_name: lastName,
+        full_name: `${firstName} ${lastName}`,
       }
 
-      // Update local user state
-      if (data.user) {
-        setUser(data.user)
+      // Optimistic update: Update local state immediately for instant feedback
+      if (user) {
+        setUser({
+          ...user,
+          user_metadata: {
+            ...user.user_metadata,
+            ...updatedMetadata,
+          },
+        })
+      }
+
+      // Fire off the server updates in the background
+      // Note: Supabase updateUser can hang indefinitely but still succeeds on server
+      // We use fire-and-forget pattern to avoid blocking the UI
+      supabase.auth.updateUser({ data: updatedMetadata }).then(({ error: updateError }) => {
+        if (updateError) {
+          console.warn("Auth user update error:", updateError.message)
+        }
+      })
+
+      // Update profiles table (optional - may not exist)
+      if (user?.id) {
+        Promise.resolve(
+          supabase.from("profiles").upsert({
+            id: user.id,
+            first_name: firstName,
+            last_name: lastName,
+            full_name: `${firstName} ${lastName}`,
+            updated_at: new Date().toISOString(),
+          } as ProfilesInsert),
+        ).then(({ error: profileError }) => {
+          if (profileError) {
+            console.warn("Profile table update error:", profileError.message)
+          }
+        })
       }
 
       haptics.success()
       onClose()
     } catch (err) {
       console.error("Profile update error:", err)
-      setError(err instanceof Error ? err.message : translate("editProfileModal:errorGeneric"))
+      setError(err instanceof Error ? err.message : t("editProfileModal:errorGeneric"))
       haptics.error()
     } finally {
       setLoading(false)

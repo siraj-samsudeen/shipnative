@@ -8,10 +8,10 @@ import {
   type ViewStyle,
 } from "react-native"
 /* eslint-enable no-restricted-imports */
+import { useTranslation } from "react-i18next"
 import { StyleSheet, useUnistyles } from "react-native-unistyles"
 
 import { isRTL } from "@/i18n"
-import { translate } from "@/i18n/translate"
 
 import { Text, TextProps } from "./Text"
 
@@ -160,6 +160,7 @@ export const TextField = forwardRef(function TextField(
   } = props
 
   const { theme } = useUnistyles()
+  const { t } = useTranslation()
   const inputRef = useRef<RNTextInput>(null)
   const [isFocused, setIsFocused] = useState(false)
 
@@ -180,7 +181,7 @@ export const TextField = forwardRef(function TextField(
   })
 
   const placeholderContent = placeholderTx
-    ? translate(placeholderTx, placeholderTxOptions)
+    ? t(placeholderTx, placeholderTxOptions as Record<string, string>)
     : placeholder
 
   function focusInput() {

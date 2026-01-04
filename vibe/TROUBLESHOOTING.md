@@ -35,6 +35,22 @@ yarn install
 yarn install --force
 ```
 
+### Install Fails With esbuild on Node 25+
+
+**Problem**: `yarn install` fails with `esbuild` errors on Node 25+.
+
+**Solution**: Use Node 20 LTS (required for this repo).
+
+```bash
+# Volta (recommended)
+curl https://get.volta.sh | bash
+volta install node@20.19.0 yarn@4.9.1
+
+# nvm alternative
+nvm install
+nvm use
+```
+
 ### TypeScript Errors After Install
 
 **Problem**: TypeScript shows errors after fresh install
@@ -408,7 +424,7 @@ yarn app:android
 **Debug**:
 ```typescript
 // Log available routes
-import { useNavigation } from 'expo-router'
+import { useNavigation } from '@react-navigation/native'
 
 const navigation = useNavigation()
 console.log('Current state:', navigation.getState())

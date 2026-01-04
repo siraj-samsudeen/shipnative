@@ -12,9 +12,11 @@
 # EXPO_PUBLIC_SUPABASE_URL=
 # EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
 
-# Run app
+# Run app (from apps/app directory)
 cd apps/app
 yarn web  # or yarn ios, yarn android
+
+# Or from monorepo root: yarn app:web, yarn app:ios, yarn app:android
 ```
 
 **Benefits:**
@@ -66,6 +68,8 @@ yarn app:start
 ```bash
 cd apps/app
 yarn android
+
+# Or from monorepo root: yarn app:android
 ```
 
 **Why Android:**
@@ -153,19 +157,3 @@ yarn app:start --clear
 - Click confirmation link on any device
 - Supabase shows success page
 - App polls for confirmation status
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

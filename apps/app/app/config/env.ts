@@ -59,6 +59,7 @@ const EnvSchema = z
 
     // Google OAuth
     googleClientId: z.string().optional(),
+    googleIosClientId: z.string().optional(),
     googleClientSecret: z.string().optional(),
 
     // Apple Sign-In
@@ -108,6 +109,7 @@ const envInput: Partial<EnvConfig> = {
   posthogHost: readStringEnv("posthog_host"),
   sentryDsn: readStringEnv("sentry_dsn"),
   googleClientId: readStringEnv("google_client_id"),
+  googleIosClientId: readStringEnv("google_ios_client_id"),
   googleClientSecret: readStringEnv("google_client_secret"),
   appleServicesId: readStringEnv("apple_services_id"),
   appleTeamId: readStringEnv("apple_team_id"),

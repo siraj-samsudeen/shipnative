@@ -21,7 +21,7 @@ widgets/
 1. Enable widgets by setting `EXPO_PUBLIC_ENABLE_WIDGETS=true` in `.env` (or run `yarn setup` and choose Widgets)
 2. Set your App Group in `.env` as `APP_GROUP_IDENTIFIER=group.com.yourcompany.yourapp` (yarn setup will prompt)
 2. Run `yarn prebuild:clean` to generate native code
-3. Build and run the app: `yarn ios` or `yarn android`
+3. Build and run the app: `yarn ios` or `yarn android` (from `apps/app/`)
 4. Add the widget to your home screen
 
 ## Supabase Integration

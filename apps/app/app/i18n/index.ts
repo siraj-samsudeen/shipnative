@@ -43,17 +43,34 @@ if (locale?.languageTag && locale?.textDirection === "rtl") {
   I18nManager.allowRTL(false)
 }
 
-export const initI18n = async () => {
-  i18n.use(initReactI18next)
+// Initialize i18n synchronously at module load time
+// This ensures useTranslation hook always has a valid i18n instance
+// and prevents hook order violations during initial render
+i18n.use(initReactI18next).init({
+  resources,
+  lng: locale?.languageTag ?? fallbackLocale,
+  fallbackLng: fallbackLocale,
+  interpolation: {
+    escapeValue: false,
+  },
+  // Initialize synchronously to prevent hook issues
+  initImmediate: false,
+})
 
-  await i18n.init({
-    resources,
-    lng: locale?.languageTag ?? fallbackLocale,
-    fallbackLng: fallbackLocale,
-    interpolation: {
-      escapeValue: false,
-    },
-  })
+export const initI18n = async () => {
+  // i18n is already initialized synchronously above
+  // This function now just ensures the promise-based API still works
+  // for any code that awaits it
+  if (!i18n.isInitialized) {
+    await i18n.init({
+      resources,
+      lng: locale?.languageTag ?? fallbackLocale,
+      fallbackLng: fallbackLocale,
+      interpolation: {
+        escapeValue: false,
+      },
+    })
+  }
 
   return i18n
 }

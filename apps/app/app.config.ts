@@ -13,6 +13,7 @@ import withWidgetAppGroup from "./plugins/withWidgetAppGroup"
 module.exports = ({ config }: ConfigContext): ExpoConfig => {
   const baseConfig = config as ExpoConfig & { bundleIdentifier?: string }
   const existingPlugins = (baseConfig.plugins ?? []) as NonNullable<ExpoConfig["plugins"]>
+  const googleIosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID
 
   // Check if widgets are enabled via feature flag
   const enableWidgets = process.env.EXPO_PUBLIC_ENABLE_WIDGETS === "true"
@@ -55,6 +56,27 @@ module.exports = ({ config }: ConfigContext): ExpoConfig => {
     ] as unknown as NonNullable<ExpoConfig["plugins"]>[number])
   }
 
+  const reversedGoogleIosClientId = googleIosClientId
+    ? googleIosClientId.split(".").reverse().join(".")
+    : null
+  const existingUrlTypes =
+    (config.ios?.infoPlist?.CFBundleURLTypes as { CFBundleURLSchemes?: string[] }[]) ?? []
+  const hasGoogleScheme =
+    reversedGoogleIosClientId &&
+    existingUrlTypes.some((entry) =>
+      (entry.CFBundleURLSchemes ?? []).includes(reversedGoogleIosClientId),
+    )
+  const urlTypes = reversedGoogleIosClientId
+    ? hasGoogleScheme
+      ? existingUrlTypes
+      : [
+          ...existingUrlTypes,
+          {
+            CFBundleURLSchemes: [reversedGoogleIosClientId],
+          },
+        ]
+    : existingUrlTypes
+
   return {
     ...baseConfig,
     // Ensure icon is preserved from app.json
@@ -70,6 +92,7 @@ module.exports = ({ config }: ConfigContext): ExpoConfig => {
       infoPlist: {
         ...config.ios?.infoPlist,
         UIViewControllerBasedStatusBarAppearance: true,
+        CFBundleURLTypes: urlTypes,
       },
       // This privacyManifests is to get you started.
       // See Expo's guide on apple privacy manifests here:

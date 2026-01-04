@@ -3,6 +3,7 @@ import { View, TouchableOpacity } from "react-native"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useNavigation, useRoute, type RouteProp } from "@react-navigation/native"
 import { Controller, useForm } from "react-hook-form"
+import { useTranslation } from "react-i18next"
 import { StyleSheet } from "react-native-unistyles"
 import { z } from "zod"
 
@@ -10,7 +11,6 @@ import { AuthScreenLayout } from "@/components/layouts/AuthScreenLayout"
 import { Spinner } from "@/components/Spinner"
 import { Text } from "@/components/Text"
 import { TextField } from "@/components/TextField"
-import { translate } from "@/i18n/translate"
 import type { AppStackParamList, AppStackScreenProps } from "@/navigators/navigationTypes"
 import { resetPasswordSchema } from "@/schemas/authSchemas"
 import { supabase } from "@/services/supabase"
@@ -22,6 +22,7 @@ type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>
 export const ResetPasswordScreen = () => {
   const navigation = useNavigation<AppStackScreenProps<"ResetPassword">["navigation"]>()
   const route = useRoute<RouteProp<AppStackParamList, "ResetPassword">>()
+  const { t } = useTranslation()
   const [verifying, setVerifying] = useState(true)
   const [verificationError, setVerificationError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
@@ -69,7 +70,7 @@ export const ResetPasswordScreen = () => {
             useAuthStore.getState().setSession(data.session)
           }
         } else {
-          throw new Error(translate("resetPasswordScreen:missingToken"))
+          throw new Error(t("resetPasswordScreen:missingToken"))
         }
 
         if (isMounted) {
@@ -93,7 +94,14 @@ export const ResetPasswordScreen = () => {
 
   const onSubmit = async (data: ResetPasswordFormData) => {
     try {
-      const { error } = await supabase.auth.updateUser({ password: data.password })
+      // Add timeout to prevent hanging - Supabase updateUser can hang but still succeed
+      const timeoutMs = 10000
+      const updatePromise = supabase.auth.updateUser({ password: data.password })
+      const timeoutPromise = new Promise<{ error: Error }>((_, reject) =>
+        setTimeout(() => reject(new Error("Request timed out. Please try again.")), timeoutMs),
+      )
+
+      const { error } = await Promise.race([updatePromise, timeoutPromise])
       if (error) {
         throw error
       }
@@ -114,8 +122,8 @@ export const ResetPasswordScreen = () => {
     return (
       <AuthScreenLayout
         headerIcon="🔒"
-        title={translate("resetPasswordScreen:verifyingTitle")}
-        subtitle={translate("resetPasswordScreen:verifyingSubtitle")}
+        title={t("resetPasswordScreen:verifyingTitle")}
+        subtitle={t("resetPasswordScreen:verifyingSubtitle")}
         scrollable={false}
       >
         <View style={styles.loadingContainer}>
@@ -129,8 +137,8 @@ export const ResetPasswordScreen = () => {
     return (
       <AuthScreenLayout
         headerIcon="✅"
-        title={translate("resetPasswordScreen:successTitle")}
-        subtitle={translate("resetPasswordScreen:successSubtitle")}
+        title={t("resetPasswordScreen:successTitle")}
+        subtitle={t("resetPasswordScreen:successSubtitle")}
         scrollable={false}
       >
         <TouchableOpacity
@@ -151,8 +159,8 @@ export const ResetPasswordScreen = () => {
   return (
     <AuthScreenLayout
       headerIcon="🔐"
-      title={translate("resetPasswordScreen:title")}
-      subtitle={translate("resetPasswordScreen:subtitle")}
+      title={t("resetPasswordScreen:title")}
+      subtitle={t("resetPasswordScreen:subtitle")}
       showBackButton
       onBack={() => navigation.goBack()}
       scrollable={false}

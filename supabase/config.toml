@@ -1,0 +1,4 @@
+[functions.delete-user]
+# Disable JWT verification at the gateway level
+# We handle our own auth verification inside the function
+verify_jwt = false
