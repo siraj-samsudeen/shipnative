@@ -35,6 +35,22 @@ jest.mock("i18next", () => ({
   },
 }))
 
+// Mock react-i18next to avoid "You will need to pass in an i18next instance" warnings
+jest.mock("react-i18next", () => ({
+  useTranslation: () => ({
+    t: (key: string) => `translated:${key}`,
+    i18n: {
+      language: "en",
+      changeLanguage: jest.fn(),
+    },
+  }),
+  initReactI18next: {
+    type: "3rdParty",
+    init: jest.fn(),
+  },
+  Trans: ({ children }: { children: unknown }) => children,
+}))
+
 jest.mock("expo-localization", () => ({
   ...jest.requireActual("expo-localization"),
   getLocales: () => [{ languageTag: "en-US", textDirection: "ltr" }],

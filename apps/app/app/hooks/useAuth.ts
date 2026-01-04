@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from "react"
 import { Platform } from "react-native"
-import * as Linking from "expo-linking"
 import { makeRedirectUri } from "expo-auth-session"
+import * as Linking from "expo-linking"
 
 import { env } from "../config/env"
 import { supabase } from "../services/supabase"
+import { useAuthStore } from "../stores/auth"
 import type {
   User,
   Session,
@@ -12,7 +13,6 @@ import type {
   SignInCredentials,
   UpdateUserAttributes,
 } from "../types/auth"
-import { useAuthStore } from "../stores/auth"
 import { logger } from "../utils/Logger"
 
 // Conditionally import expo-web-browser only on native platforms
@@ -302,6 +302,7 @@ export function useAuth(): UseAuthReturn {
             if (code) {
               if (__DEV__) {
                 try {
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
                   const authInternal = supabase.auth as any
                   const storageKey = authInternal?.storageKey
                   const verifierKey = storageKey ? `${storageKey}-code-verifier` : null

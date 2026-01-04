@@ -148,7 +148,8 @@ export const useAuthStore = create<AuthState>()(
           const onboardingStatusByUserId = get().onboardingStatusByUserId
 
           // Get initial session
-          let session: Awaited<ReturnType<typeof supabase.auth.getSession>>["data"]["session"] = null
+          let session: Awaited<ReturnType<typeof supabase.auth.getSession>>["data"]["session"] =
+            null
           try {
             const sessionResult = await supabase.auth.getSession()
             if (sessionResult.error && isInvalidRefreshToken(sessionResult.error)) {

@@ -25,12 +25,10 @@ export async function syncOnboardingToDatabase(userId: string, completed: boolea
   }
 
   try {
-    const { error } = await supabase
-      .from("profiles")
-      .upsert({
-        id: userId,
-        has_completed_onboarding: completed,
-      } as SupabaseDatabase["public"]["Tables"]["profiles"]["Insert"])
+    const { error } = await supabase.from("profiles").upsert({
+      id: userId,
+      has_completed_onboarding: completed,
+    } as SupabaseDatabase["public"]["Tables"]["profiles"]["Insert"])
 
     if (error) {
       const supabaseErr = extractSupabaseError(error)

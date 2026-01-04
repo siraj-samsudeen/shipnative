@@ -12,10 +12,10 @@ import { UnistylesRuntime } from "react-native-unistyles"
 import { supabase, isUsingMockSupabase } from "./supabase"
 import { useNotificationStore } from "../stores/notificationStore"
 import type { SupabaseDatabase, UserPreferences } from "../types/supabase"
-import { storage } from "../utils/storage"
 import { logger } from "../utils/Logger"
+import { storage } from "../utils/storage"
 
-type ProfilesUpdate = SupabaseDatabase["public"]["Tables"]["profiles"]["Update"]
+type _ProfilesUpdate = SupabaseDatabase["public"]["Tables"]["profiles"]["Update"]
 
 // Storage keys (must match the keys used in theme context and notification store)
 const THEME_STORAGE_KEY = "shipnative.themeScheme"
@@ -32,7 +32,9 @@ export async function fetchUserPreferences(userId: string): Promise<UserPreferen
   try {
     const { data, error } = await supabase
       .from("profiles")
-      .select("dark_mode_enabled, notifications_enabled, push_notifications_enabled, email_notifications_enabled")
+      .select(
+        "dark_mode_enabled, notifications_enabled, push_notifications_enabled, email_notifications_enabled",
+      )
       .eq("id", userId)
       .single()
 
@@ -62,16 +64,14 @@ export function updatePreference(
     return
   }
 
-  const update: ProfilesUpdate = {
+  const update = {
     id: userId,
     [preference]: value,
     updated_at: new Date().toISOString(),
-  }
+  } as const
 
   // Fire and forget - don't await
-  Promise.resolve(
-    supabase.from("profiles").upsert(update as ProfilesUpdate),
-  )
+  Promise.resolve(supabase.from("profiles").upsert(update))
     .then(({ error }) => {
       if (error) {
         logger.debug(`Failed to sync ${preference} preference`, { error: error.message })
@@ -120,15 +120,13 @@ export function syncAllPreferences(userId: string, preferences: Partial<UserPref
     return
   }
 
-  const update: ProfilesUpdate = {
+  const update = {
     id: userId,
     ...preferences,
     updated_at: new Date().toISOString(),
   }
 
-  Promise.resolve(
-    supabase.from("profiles").upsert(update as ProfilesUpdate),
-  )
+  Promise.resolve(supabase.from("profiles").upsert({ ...update, id: userId }))
     .then(({ error }) => {
       if (error) {
         logger.debug("Failed to sync preferences", { error: error.message })
@@ -153,7 +151,9 @@ export function applyUserPreferences(preferences: UserPreferences): void {
     // Update Unistyles runtime
     UnistylesRuntime.setAdaptiveThemes(false)
     UnistylesRuntime.setTheme(themeValue)
-    logger.debug("Applied dark mode preference from database", { value: preferences.dark_mode_enabled })
+    logger.debug("Applied dark mode preference from database", {
+      value: preferences.dark_mode_enabled,
+    })
   }
 
   // Apply push notifications preference

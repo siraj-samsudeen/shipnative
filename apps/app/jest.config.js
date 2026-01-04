@@ -17,4 +17,9 @@ module.exports = {
       statements: 70,
     },
   },
+  // Force exit after tests complete to handle open handles from
+  // expo-notifications, supabase auth listeners, etc.
+  forceExit: true,
+  // Increase timeout for CI environments
+  testTimeout: 30000,
 }

@@ -39,10 +39,9 @@ import {
 import { LinearGradient } from "expo-linear-gradient"
 import { Ionicons } from "@expo/vector-icons"
 import type { TOptions } from "i18next"
+import { useTranslation } from "react-i18next"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { StyleSheet, useUnistyles } from "react-native-unistyles"
-
-import { useTranslation } from "react-i18next"
 
 import { TxKeyPath } from "@/i18n"
 

@@ -8,7 +8,11 @@ import { logger } from "../utils/Logger"
 
 const DELETE_TIMEOUT_MS = 10_000
 
-async function fetchWithTimeout(input: RequestInfo, init: RequestInit, timeoutMs = DELETE_TIMEOUT_MS) {
+async function fetchWithTimeout(
+  input: RequestInfo,
+  init: RequestInit,
+  timeoutMs = DELETE_TIMEOUT_MS,
+) {
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), timeoutMs)
   try {
@@ -90,7 +94,10 @@ async function deleteSupabaseAccount(session: Session, userId: string) {
     let errorBody: Record<string, unknown> | null = null
     try {
       errorBody = await response.json()
-      message = (errorBody?.error_description || errorBody?.message || errorBody?.error || message) as string
+      message = (errorBody?.error_description ||
+        errorBody?.message ||
+        errorBody?.error ||
+        message) as string
     } catch {
       // Ignore JSON parsing errors
     }

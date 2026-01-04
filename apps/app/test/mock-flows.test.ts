@@ -1,3 +1,17 @@
+// Mock environment config FIRST before any other imports
+// This ensures the supabase service uses mock mode
+jest.mock("../app/config/env", () => ({
+  env: {
+    supabaseUrl: "", // Empty to force mock mode
+    supabasePublishableKey: "",
+    posthogApiKey: "",
+    sentryDsn: "",
+    revenueCatIosKey: "",
+    revenueCatAndroidKey: "",
+    revenueCatWebKey: "",
+  },
+}))
+
 import { useAuthStore } from "../app/stores/auth"
 import { useSubscriptionStore } from "../app/stores/subscriptionStore"
 

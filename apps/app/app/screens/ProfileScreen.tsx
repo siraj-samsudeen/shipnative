@@ -174,7 +174,11 @@ export const ProfileScreen: FC = () => {
             entering={FadeInDown.delay(ANIMATION.STAGGER_DELAY).springify()}
             style={styles.profileCard}
           >
-            <Avatar source={avatarUrl ? { uri: avatarUrl } : undefined} fallback={userInitials} size="xl" />
+            <Avatar
+              source={avatarUrl ? { uri: avatarUrl } : undefined}
+              fallback={userInitials}
+              size="xl"
+            />
             <View style={styles.profileInfo}>
               <Text style={styles.profileName}>{userName}</Text>
               <Text style={styles.profileEmail}>{user?.email}</Text>

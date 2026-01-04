@@ -10,12 +10,12 @@ import { render } from "@testing-library/react-native"
 import { Text } from "./Text"
 import { ThemeProvider } from "../theme/context"
 
-// Mock i18n translate function
+// Mock @/i18n translate function (react-i18next is mocked in test/setup.ts)
 jest.mock("@/i18n", () => ({
   translate: (key: string, options?: Record<string, unknown>) => {
     return `translated:${key}${options ? ` ${JSON.stringify(options)}` : ""}`
   },
-  TxKeyPath: {} as any,
+  TxKeyPath: {} as unknown,
 }))
 
 describe("Text", () => {

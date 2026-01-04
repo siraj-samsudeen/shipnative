@@ -8,6 +8,7 @@ import {
   useState,
 } from "react"
 import { useTranslation } from "react-i18next"
+
 import { api } from "@/services/api"
 import type { EpisodeItem } from "@/services/api/types"
 import { formatDate } from "@/utils/formatDate"

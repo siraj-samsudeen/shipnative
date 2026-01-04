@@ -7,7 +7,6 @@ import {
   View,
   ViewStyle,
 } from "react-native"
-
 import { useTranslation } from "react-i18next"
 
 import { isRTL } from "@/i18n"
