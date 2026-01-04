@@ -564,6 +564,7 @@ const getMetadataDefaults = (): Partial<MetadataConfig> => {
 }
 
 const serviceLabels = {
+  appEnv: "App Environment & Links",
   supabase: "Supabase",
   google: "Google OAuth",
   apple: "Apple Sign-In",
@@ -583,6 +584,12 @@ type ServiceCatalogEntry = {
 }
 
 const getServiceStatus = (services: EnvVars): ServiceStatus => ({
+  appEnv: Boolean(
+    services.EXPO_PUBLIC_APP_ENV ||
+      services.EXPO_PUBLIC_EMAIL_REDIRECT_URL ||
+      services.EXPO_PUBLIC_PASSWORD_RESET_REDIRECT_URL ||
+      services.EXPO_PUBLIC_USE_MOCK_NOTIFICATIONS
+  ),
   supabase: Boolean(
     services.EXPO_PUBLIC_SUPABASE_URL || services.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY
   ),
@@ -745,6 +752,62 @@ const configureSupabase = async (
       console.warn("   ⚠️  Could not validate Supabase connection. Please check your URL and key.")
     }
   }
+
+  return true
+}
+
+const configureAppEnvironment = async (
+  services: EnvVars,
+  defaults: Partial<EnvVars> = {},
+  options: SetupOptions = {}
+): Promise<boolean> => {
+  printSection("🔹 APP ENVIRONMENT & LINKS", [
+    "These settings control runtime behavior and where auth links send users.",
+    "",
+    "✅ Safe to include in EXPO_PUBLIC_ envs (they are not secrets).",
+    "⏭️  You can skip this and keep the boilerplate defaults.",
+  ])
+
+  const shouldConfigure =
+    options.skipConfirm || (await askYesNo("Do you want to configure app environment and link settings?", true))
+  if (!shouldConfigure) {
+    console.log(chalk.dim("\n   ✅ Skipped. Using current or default values."))
+    return false
+  }
+
+  const appEnvDefault = defaults.EXPO_PUBLIC_APP_ENV || "development"
+  const appEnvChoice = await askChoice("Choose your app environment", [
+    { value: "development", label: "Development (local builds, fastest iteration)" },
+    { value: "staging", label: "Staging (test environment before release)" },
+    { value: "production", label: "Production (live app for users)" },
+  ], appEnvDefault)
+  services.EXPO_PUBLIC_APP_ENV = appEnvChoice
+
+  console.log(chalk.cyan("\n📧 Email Confirmation Redirect URL"))
+  console.log(chalk.dim("   Used in Supabase email confirmation links."))
+  console.log(chalk.dim("   Mobile default: shipnative://verify-email"))
+  services.EXPO_PUBLIC_EMAIL_REDIRECT_URL = await askQuestion(
+    "Enter email confirmation redirect URL (press Enter to keep default)",
+    null,
+    defaults.EXPO_PUBLIC_EMAIL_REDIRECT_URL || "shipnative://verify-email"
+  )
+
+  console.log(chalk.cyan("\n🔐 Password Reset Redirect URL"))
+  console.log(chalk.dim("   Used in Supabase password reset links."))
+  console.log(chalk.dim("   Mobile default: shipnative://reset-password"))
+  services.EXPO_PUBLIC_PASSWORD_RESET_REDIRECT_URL = await askQuestion(
+    "Enter password reset redirect URL (press Enter to keep default)",
+    null,
+    defaults.EXPO_PUBLIC_PASSWORD_RESET_REDIRECT_URL || "shipnative://reset-password"
+  )
+
+  console.log(chalk.cyan("\n🔔 Mock Notifications"))
+  console.log(chalk.dim("   Forces mock notifications (no OS permission prompts)."))
+  console.log(chalk.dim("   Recommended for development or CI environments."))
+  const useMockDefault =
+    (defaults.EXPO_PUBLIC_USE_MOCK_NOTIFICATIONS || "false").toLowerCase() === "true"
+  const useMock = await askYesNo("Force mock notifications?", useMockDefault)
+  services.EXPO_PUBLIC_USE_MOCK_NOTIFICATIONS = useMock ? "true" : "false"
 
   return true
 }
@@ -1007,6 +1070,7 @@ const configureWidgets = async (
 }
 
 const servicesCatalog: ServiceCatalogEntry[] = [
+  { key: "appEnv", label: "App Environment & Links", handler: configureAppEnvironment },
   { key: "supabase", label: "Supabase (Backend & Auth)", handler: configureSupabase },
   { key: "google", label: "Google OAuth (Social Login)", handler: configureGoogleOAuth },
   { key: "apple", label: "Apple Sign-In (Social Login)", handler: configureAppleSignIn },

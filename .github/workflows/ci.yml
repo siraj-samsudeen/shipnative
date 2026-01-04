@@ -6,14 +6,20 @@ on:
     branches:
       - main
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  build:
+  lint:
+    name: Lint
     runs-on: ubuntu-latest
-    env:
-      EXPO_PUBLIC_APP_ENV: development
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Enable Corepack
+        run: corepack enable
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -21,23 +27,98 @@ jobs:
           node-version: 20
           cache: yarn
 
-      - name: Enable Corepack
-        run: corepack enable
-
       - name: Install dependencies
         run: yarn install --immutable
 
       - name: Lint
         run: yarn lint:check
 
+  typecheck:
+    name: Typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
       - name: Typecheck
         run: yarn typecheck
 
-      - name: Tests
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Run tests
         run: yarn test
 
-      - name: Build (Web App)
+  build-web-app:
+    name: Build Web App
+    runs-on: ubuntu-latest
+    env:
+      EXPO_PUBLIC_APP_ENV: development
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Build Web App
         run: yarn app:web:build
 
-      - name: Build (Marketing Site)
+  build-marketing:
+    name: Build Marketing Site
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Build Marketing Site
         run: yarn marketing:build

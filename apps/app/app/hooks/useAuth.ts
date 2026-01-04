@@ -39,7 +39,7 @@ type GoogleSigninModule = {
     configure: (options: { webClientId?: string; iosClientId?: string }) => void
     signIn: () => Promise<{ idToken?: string; data?: { idToken?: string } }>
     hasPlayServices?: () => Promise<void>
-    getTokens?: () => Promise<{ idToken?: string }>
+    getTokens?: () => Promise<{ idToken?: string; accessToken?: string }>
   }
   statusCodes?: Record<string, string>
 }
@@ -200,11 +200,13 @@ export function useAuth(): UseAuthReturn {
         }
 
         let idToken = response?.idToken ?? response?.data?.idToken ?? null
+        let accessToken: string | null = null
 
-        if (!idToken && googleModule.GoogleSignin.getTokens) {
+        if (googleModule.GoogleSignin.getTokens) {
           try {
             const tokens = await googleModule.GoogleSignin.getTokens()
-            idToken = tokens?.idToken ?? null
+            idToken = tokens?.idToken ?? idToken
+            accessToken = tokens?.accessToken ?? null
           } catch {
             // getTokens can fail if sign-in was cancelled or incomplete
             return { error: new Error("OAuth flow cancelled") }
@@ -218,6 +220,7 @@ export function useAuth(): UseAuthReturn {
         const { data, error } = await supabase.auth.signInWithIdToken({
           provider: "google",
           token: idToken,
+          ...(accessToken ? { access_token: accessToken } : {}),
         })
 
         if (error) {
