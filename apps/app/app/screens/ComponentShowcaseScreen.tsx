@@ -1,5 +1,6 @@
 import { FC, useState } from "react"
 import { View, ScrollView, Switch, useWindowDimensions, Platform } from "react-native"
+import { Ionicons } from "@expo/vector-icons"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { StyleSheet, useUnistyles } from "react-native-unistyles"
 
@@ -118,7 +119,9 @@ export const ComponentShowcaseScreen: FC<ComponentShowcaseScreenProps> =
             <Button text="Loading" loading={isLoading} onPress={simulateLoading} />
             <Button
               text="With Icon"
-              LeftAccessory={() => <Text style={styles.starIcon}>⭐</Text>}
+              LeftAccessory={() => (
+                <Ionicons name="star" size={16} color={theme.colors.primaryForeground} />
+              )}
             />
           </View>
         </Section>
@@ -344,7 +347,7 @@ export const ComponentShowcaseScreen: FC<ComponentShowcaseScreenProps> =
             onPress={() => console.log("Card pressed")}
             RightComponent={
               <View style={styles.cardIcon}>
-                <Text>→</Text>
+                <Ionicons name="arrow-forward" size={20} color={theme.colors.foreground} />
               </View>
             }
           />
@@ -360,14 +363,16 @@ export const ComponentShowcaseScreen: FC<ComponentShowcaseScreenProps> =
               text="With Left Icon"
               LeftComponent={
                 <View style={styles.listIconBox}>
-                  <Text>📱</Text>
+                  <Ionicons name="phone-portrait-outline" size={18} color={theme.colors.foreground} />
                 </View>
               }
               bottomSeparator
             />
             <ListItem
               text="With Right Chevron"
-              RightComponent={<Text color="secondary">→</Text>}
+              RightComponent={
+                <Ionicons name="chevron-forward" size={20} color={theme.colors.foregroundSecondary} />
+              }
               bottomSeparator
             />
             <ListItem text="Tappable Item" onPress={() => console.log("Item pressed")} />
@@ -509,9 +514,11 @@ export const ComponentShowcaseScreen: FC<ComponentShowcaseScreenProps> =
             </Text>
           </View>
           <View style={styles.themeToggle}>
-            <Text size="sm" color="secondary">
-              {themeContext === "dark" ? "🌙" : "☀️"}
-            </Text>
+            <Ionicons
+              name={themeContext === "dark" ? "moon" : "sunny"}
+              size={18}
+              color={theme.colors.foregroundSecondary}
+            />
             <Switch
               value={themeContext === "dark"}
               onValueChange={toggleTheme}
@@ -615,20 +622,21 @@ const styles = StyleSheet.create((theme) => ({
     gap: theme.spacing.xs,
   },
   section: {
-    marginBottom: theme.spacing.md,
+    marginBottom: theme.spacing.lg,
   },
   sectionTitle: {
-    marginBottom: theme.spacing.sm,
+    marginBottom: theme.spacing.md,
+    color: theme.colors.foreground,
   },
   sectionDescription: {
     marginBottom: theme.spacing.md,
     marginTop: -theme.spacing.xs,
   },
   sectionContent: {
-    gap: theme.spacing.sm,
+    gap: theme.spacing.md,
   },
   sectionDivider: {
-    marginVertical: theme.spacing.md,
+    marginVertical: theme.spacing.lg,
   },
   variantLabel: {
     marginTop: theme.spacing.md,
@@ -643,9 +651,6 @@ const styles = StyleSheet.create((theme) => ({
     flexDirection: "row",
     gap: theme.spacing.md,
     alignItems: "center",
-  },
-  starIcon: {
-    color: theme.colors.primaryForeground,
   },
   tabContent: {
     padding: theme.spacing.md,

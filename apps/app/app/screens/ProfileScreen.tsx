@@ -21,7 +21,7 @@ import {
 } from "@/components"
 import { ANIMATION } from "@/config/constants"
 import { features } from "@/config/features"
-import { useAuthStore, useNotificationStore, useSubscriptionStore } from "@/stores"
+import { useAuthStore, useNotificationStore, useSubscriptionStore, useWidgetStore } from "@/stores"
 import { useAppTheme } from "@/theme/context"
 import { webDimension } from "@/types/webStyles"
 import { haptics } from "@/utils/haptics"
@@ -48,6 +48,7 @@ export const ProfileScreen: FC = () => {
   const signOut = useAuthStore((state) => state.signOut)
   const isPro = useSubscriptionStore((state) => state.isPro)
   const { isPushEnabled, togglePush } = useNotificationStore()
+  const { isWidgetsEnabled, userWidgetsEnabled, toggleWidgets, syncStatus } = useWidgetStore()
   const insets = useSafeAreaInsets()
   const { setThemeContextOverride, themeContext } = useAppTheme()
   const { theme } = useUnistyles()
@@ -81,6 +82,11 @@ export const ProfileScreen: FC = () => {
   const handleTogglePush = () => {
     haptics.switchChange()
     togglePush(user?.id)
+  }
+
+  const handleToggleWidgets = () => {
+    haptics.switchChange()
+    toggleWidgets()
   }
 
   const handleSignOut = async () => {
@@ -174,24 +180,26 @@ export const ProfileScreen: FC = () => {
             entering={FadeInDown.delay(ANIMATION.STAGGER_DELAY).springify()}
             style={styles.profileCard}
           >
-            <Avatar
-              source={avatarUrl ? { uri: avatarUrl } : undefined}
-              fallback={userInitials}
-              size="xl"
-            />
-            <View style={styles.profileInfo}>
-              <Text style={styles.profileName}>{userName}</Text>
-              <Text style={styles.profileEmail}>{user?.email}</Text>
-              {isPro ? (
-                <View style={styles.proBadge}>
-                  <Ionicons name="star" size={12} color={theme.colors.background} />
-                  <Text style={styles.proText}>PRO MEMBER</Text>
-                </View>
-              ) : (
-                <Pressable style={styles.upgradeButton} onPress={() => haptics.buttonPress()}>
-                  <Text style={styles.upgradeText}>Upgrade to Pro</Text>
-                </Pressable>
-              )}
+            <View style={styles.profileCardInner}>
+              <Avatar
+                source={avatarUrl ? { uri: avatarUrl } : undefined}
+                fallback={userInitials}
+                size="xl"
+              />
+              <View style={styles.profileInfo}>
+                <Text style={styles.profileName}>{userName}</Text>
+                <Text style={styles.profileEmail}>{user?.email}</Text>
+                {isPro ? (
+                  <View style={styles.proBadge}>
+                    <Ionicons name="diamond" size={12} color={theme.colors.background} />
+                    <Text style={styles.proText}>PRO</Text>
+                  </View>
+                ) : (
+                  <Pressable style={styles.upgradeButton} onPress={() => haptics.buttonPress()}>
+                    <Text style={styles.upgradeText}>Upgrade to Pro</Text>
+                  </Pressable>
+                )}
+              </View>
             </View>
           </Animated.View>
 
@@ -243,6 +251,31 @@ export const ProfileScreen: FC = () => {
               subtitle="Change app language"
               onPress={() => setLanguageModalVisible(true)}
             />
+            {isWidgetsEnabled && (
+              <>
+                <View style={styles.divider} />
+                <MenuItem
+                  icon="apps-outline"
+                  title="Home Screen Widgets"
+                  subtitle={
+                    syncStatus === "syncing"
+                      ? "Syncing..."
+                      : userWidgetsEnabled
+                        ? "Enabled - add widgets from home screen"
+                        : "Show app data on your home screen"
+                  }
+                  rightElement={
+                    <Switch
+                      value={userWidgetsEnabled}
+                      onValueChange={handleToggleWidgets}
+                      trackColor={{ false: theme.colors.borderSecondary, true: theme.colors.primary }}
+                      thumbColor={theme.colors.card}
+                      disabled={syncStatus === "syncing"}
+                    />
+                  }
+                />
+              </>
+            )}
           </Animated.View>
 
           {/* Support Section */}
@@ -386,14 +419,6 @@ export const ProfileScreen: FC = () => {
         visible={languageModalVisible}
         onClose={() => setLanguageModalVisible(false)}
       />
-
-      <Pressable
-        onPress={handleSignOut}
-        style={[styles.signOutFloating, { top: insets.top + theme.spacing.lg }]}
-        hitSlop={12}
-      >
-        <Ionicons name="log-out-outline" size={24} color={theme.colors.error} />
-      </Pressable>
     </View>
   )
 }
@@ -437,44 +462,34 @@ const styles = StyleSheet.create((theme) => ({
     fontSize: theme.typography.sizes["3xl"],
     lineHeight: theme.typography.lineHeights["3xl"],
   },
-  signOutFloating: {
-    position: "absolute",
-    right: theme.spacing.lg,
-    alignItems: "center",
-    backgroundColor: theme.colors.errorBackground,
-    borderRadius: theme.radius.full,
-    height: 40,
-    justifyContent: "center",
-    width: 40,
-    zIndex: 2,
-    elevation: 2,
-  },
   profileCard: {
-    alignItems: "center",
     backgroundColor: theme.colors.card,
     borderRadius: theme.radius["3xl"],
-    flexDirection: "row",
-    gap: theme.spacing.md,
     marginBottom: theme.spacing.xl,
-    padding: theme.spacing.xl,
+    padding: theme.spacing.lg,
     ...theme.shadows.lg,
+  },
+  profileCardInner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.spacing.lg,
   },
   profileInfo: {
     flex: 1,
+    gap: theme.spacing.xxs,
   },
   profileName: {
     color: theme.colors.foreground,
     fontFamily: theme.typography.fonts.semiBold,
     fontSize: theme.typography.sizes.xl,
     lineHeight: theme.typography.lineHeights.xl,
-    marginBottom: theme.spacing.xxs,
   },
   profileEmail: {
     color: theme.colors.foregroundSecondary,
     fontFamily: theme.typography.fonts.regular,
-    fontSize: theme.typography.sizes.base,
-    lineHeight: theme.typography.lineHeights.base,
-    marginBottom: theme.spacing.md,
+    fontSize: theme.typography.sizes.sm,
+    lineHeight: theme.typography.lineHeights.sm,
+    marginBottom: theme.spacing.xs,
   },
   proBadge: {
     alignItems: "center",

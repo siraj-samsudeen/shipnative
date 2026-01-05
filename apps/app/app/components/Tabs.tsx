@@ -151,6 +151,17 @@ export function Tabs(props: TabsProps) {
 
   return (
     <View style={[styles.container, fullWidth && styles.fullWidth, style]}>
+      {/* Animated indicator - rendered BEFORE tabs so it's behind them */}
+      {variant !== "pills" && (
+        <Animated.View
+          style={[
+            styles.indicator,
+            variant === "underline" && styles.indicatorUnderline,
+            indicatorStyle,
+          ]}
+        />
+      )}
+
       <View style={styles.tabList}>
         {tabs.map((tab) => {
           const isActive = tab.key === activeTab
@@ -183,17 +194,6 @@ export function Tabs(props: TabsProps) {
           )
         })}
       </View>
-
-      {/* Animated indicator */}
-      {variant !== "pills" && (
-        <Animated.View
-          style={[
-            styles.indicator,
-            variant === "underline" && styles.indicatorUnderline,
-            indicatorStyle,
-          ]}
-        />
-      )}
     </View>
   )
 }
@@ -232,6 +232,7 @@ const styles = StyleSheet.create((theme) => ({
   tabList: {
     flexDirection: "row",
     alignItems: "center",
+    zIndex: 1,
   },
   tab: {
     flexDirection: "row",
@@ -262,13 +263,15 @@ const styles = StyleSheet.create((theme) => ({
   },
   indicator: {
     position: "absolute",
+    top: theme.spacing.xxs,
     bottom: theme.spacing.xxs,
-    height: "80%",
     backgroundColor: theme.colors.card,
     borderRadius: theme.radius.md,
+    zIndex: 0,
     ...theme.shadows.sm,
   },
   indicatorUnderline: {
+    top: "auto",
     height: 2,
     bottom: 0,
     backgroundColor: theme.colors.primary,

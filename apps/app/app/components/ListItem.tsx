@@ -17,7 +17,7 @@ import { Text, TextProps } from "./Text"
 export interface ListItemProps {
   /**
    * How tall the list item should be.
-   * Default: 56
+   * Default: 56 (or 72 if subtitle is present)
    */
   height?: number
   /**
@@ -48,13 +48,33 @@ export interface ListItemProps {
    */
   txOptions?: TextProps["txOptions"]
   /**
+   * Subtitle/description text displayed below the main text.
+   */
+  subtitle?: string
+  /**
+   * i18n key for subtitle.
+   */
+  subtitleTx?: TextProps["tx"]
+  /**
+   * Subtitle translation options.
+   */
+  subtitleTxOptions?: TextProps["txOptions"]
+  /**
    * Optional text style override.
    */
   textStyle?: StyleProp<TextStyle>
   /**
+   * Optional subtitle style override.
+   */
+  subtitleStyle?: StyleProp<TextStyle>
+  /**
    * Pass any additional props directly to the Text component.
    */
   TextProps?: TextProps
+  /**
+   * Pass any additional props directly to the subtitle Text component.
+   */
+  SubtitleTextProps?: TextProps
   /**
    * Optional View container style override.
    */
@@ -102,6 +122,10 @@ export interface ListItemProps {
    */
   haptic?: boolean
   /**
+   * Show a chevron icon on the right (shorthand for rightIcon="chevron-forward")
+   */
+  showChevron?: boolean
+  /**
    * Test ID
    */
   testID?: string
@@ -127,11 +151,18 @@ interface ListItemActionProps {
  * // Basic list item
  * <ListItem text="Settings" onPress={() => {}} />
  *
+ * // With subtitle
+ * <ListItem
+ *   text="Profile"
+ *   subtitle="Manage your account settings"
+ *   onPress={() => {}}
+ * />
+ *
  * // With icons
  * <ListItem
  *   text="Profile"
  *   leftIcon="person"
- *   rightIcon="chevron-forward"
+ *   showChevron
  *   onPress={() => {}}
  * />
  *
@@ -149,7 +180,6 @@ export const ListItem = forwardRef<View, ListItemProps>(function ListItem(
   const {
     bottomSeparator,
     children,
-    height = 56,
     LeftComponent,
     leftIcon,
     leftIconColor,
@@ -162,13 +192,26 @@ export const ListItem = forwardRef<View, ListItemProps>(function ListItem(
     topSeparator,
     tx,
     txOptions,
+    subtitle,
+    subtitleTx,
+    subtitleTxOptions,
+    subtitleStyle: $subtitleStyleOverride,
+    SubtitleTextProps: subtitleTextProps,
     textStyle: $textStyleOverride,
     containerStyle: $containerStyleOverride,
     onPress,
     onLongPress,
     haptic = true,
+    showChevron = false,
     testID,
   } = props
+
+  const hasSubtitle = !!(subtitle || subtitleTx)
+  // Default height changes based on whether subtitle is present
+  const height = props.height ?? (hasSubtitle ? 72 : 56)
+
+  // Use showChevron as shorthand for rightIcon
+  const resolvedRightIcon = showChevron ? "caretRight" : rightIcon
 
   const isTouchable = !!onPress || !!onLongPress
 
@@ -199,20 +242,34 @@ export const ListItem = forwardRef<View, ListItemProps>(function ListItem(
         Component={LeftComponent}
       />
 
-      <Text
-        {...textProps}
-        tx={tx}
-        text={text}
-        txOptions={txOptions}
-        style={[styles.text, $textStyleOverride, textProps?.style]}
-      >
-        {children}
-      </Text>
+      <View style={styles.textContainer}>
+        <Text
+          {...textProps}
+          tx={tx}
+          text={text}
+          txOptions={txOptions}
+          style={[styles.text, $textStyleOverride, textProps?.style]}
+        >
+          {children}
+        </Text>
+
+        {hasSubtitle && (
+          <Text
+            {...subtitleTextProps}
+            tx={subtitleTx}
+            text={subtitle}
+            txOptions={subtitleTxOptions}
+            size="sm"
+            color="secondary"
+            style={[styles.subtitle, $subtitleStyleOverride, subtitleTextProps?.style]}
+          />
+        )}
+      </View>
 
       <ListItemAction
         side="right"
         size={height}
-        icon={rightIcon}
+        icon={resolvedRightIcon}
         iconColor={rightIconColor}
         Component={RightComponent}
       />
@@ -280,10 +337,17 @@ const styles = StyleSheet.create((theme) => ({
     alignItems: "center",
     paddingHorizontal: theme.spacing.md,
   },
-  text: {
+  textContainer: {
+    flex: 1,
+    justifyContent: "center",
     paddingVertical: theme.spacing.sm,
+  },
+  text: {
     flexGrow: 1,
     flexShrink: 1,
+  },
+  subtitle: {
+    marginTop: theme.spacing.xxs,
   },
   iconContainer: {
     justifyContent: "center",

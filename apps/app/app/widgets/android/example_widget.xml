@@ -1,33 +1,53 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   Example Widget Layout
-  Defines the UI structure for the widget
+  Defines the UI structure for the widget with click handlers
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_container"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp"
-    android:background="@android:color/white">
+    android:padding="12dp"
+    android:background="@drawable/widget_background">
 
-    <!-- Title -->
-    <TextView
-        android:id="@+id/widget_title"
+    <!-- Header with Title and Refresh Button -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Example Widget"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        android:textColor="#1a1a1a"
-        android:maxLines="1"
-        android:ellipsize="end" />
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <!-- Title -->
+        <TextView
+            android:id="@+id/widget_title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Example Widget"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="#1a1a1a"
+            android:maxLines="1"
+            android:ellipsize="end" />
+
+        <!-- Refresh Button -->
+        <ImageView
+            android:id="@+id/widget_refresh_button"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:src="@android:drawable/ic_menu_rotate"
+            android:padding="4dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Refresh widget" />
+    </LinearLayout>
 
     <!-- Subtitle -->
     <TextView
         android:id="@+id/widget_subtitle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
+        android:layout_marginTop="2dp"
         android:text="Loading..."
         android:textSize="12sp"
         android:textColor="#666666"
@@ -41,28 +61,29 @@
         android:layout_height="0dp"
         android:layout_weight="1"
         android:orientation="vertical"
-        android:gravity="center_vertical">
+        android:gravity="center">
 
         <!-- Count Display -->
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:layout_gravity="center">
+            android:layout_gravity="center"
+            android:padding="8dp">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Count: "
-                android:textSize="12sp"
-                android:textColor="#999999" />
+                android:textSize="14sp"
+                android:textColor="#666666" />
 
             <TextView
                 android:id="@+id/widget_count"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="0"
-                android:textSize="14sp"
+                android:textSize="24sp"
                 android:textStyle="bold"
                 android:textColor="#3366cc" />
         </LinearLayout>
@@ -77,30 +98,25 @@
         android:textSize="12sp"
         android:textColor="#cc3333"
         android:visibility="gone"
+        android:gravity="center"
+        android:padding="8dp"
         android:maxLines="2"
         android:ellipsize="end" />
 
-    <!-- Timestamp -->
-    <TextView
-        android:id="@+id/widget_timestamp"
+    <!-- Footer with Timestamp -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_gravity="end"
-        android:text="Updated: --:--"
-        android:textSize="10sp"
-        android:textColor="#999999"
-        android:gravity="end" />
+        android:orientation="horizontal"
+        android:gravity="end|center_vertical">
+
+        <TextView
+            android:id="@+id/widget_timestamp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Updated: --:--"
+            android:textSize="10sp"
+            android:textColor="#999999" />
+    </LinearLayout>
 
 </LinearLayout>
-
-
-
-
-
-
-
-
-
-
-
-

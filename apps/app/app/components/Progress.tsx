@@ -2,15 +2,23 @@ import { useEffect } from "react"
 import { View, ViewStyle } from "react-native"
 import Animated, {
   useAnimatedStyle,
+  useAnimatedProps,
   useSharedValue,
   withSpring,
   withTiming,
+  withRepeat,
   interpolate,
   Easing,
 } from "react-native-reanimated"
+import { LinearGradient } from "expo-linear-gradient"
+import Svg, { Circle } from "react-native-svg"
 import { StyleSheet, useUnistyles } from "react-native-unistyles"
 
+import { Text } from "./Text"
 import { SPRING_CONFIG_PROGRESS } from "@/utils/animations"
+
+// Create animated circle component
+const AnimatedCircle = Animated.createAnimatedComponent(Circle)
 
 // =============================================================================
 // TYPES
@@ -18,6 +26,7 @@ import { SPRING_CONFIG_PROGRESS } from "@/utils/animations"
 
 type Variants = "default" | "success" | "warning" | "error" | "gradient"
 type Sizes = "sm" | "md" | "lg"
+type Types = "linear" | "circular"
 
 export interface ProgressProps {
   /**
@@ -33,13 +42,25 @@ export interface ProgressProps {
    */
   size?: Sizes
   /**
-   * Show animated stripes
+   * Progress type: linear bar or circular ring
+   */
+  type?: Types
+  /**
+   * Show animated stripes (linear only)
    */
   animated?: boolean
   /**
    * Show indeterminate loading animation
    */
   indeterminate?: boolean
+  /**
+   * Show percentage text inside (circular only)
+   */
+  showValue?: boolean
+  /**
+   * Stroke width for circular progress
+   */
+  strokeWidth?: number
   /**
    * Additional container style
    */
@@ -51,11 +72,18 @@ export interface ProgressProps {
 // =============================================================================
 
 /**
- * Progress bar component with multiple variants and animations.
+ * Progress component with linear bar or circular ring variants.
  *
  * @example
- * // Basic progress
+ * // Basic progress bar
  * <Progress value={75} />
+ *
+ * // Circular progress
+ * <Progress type="circular" value={75} />
+ * <Progress type="circular" value={75} showValue />
+ *
+ * // Animated stripes
+ * <Progress value={60} animated />
  *
  * // Variants
  * <Progress value={100} variant="success" />
@@ -67,31 +95,88 @@ export interface ProgressProps {
  *
  * // Indeterminate (loading)
  * <Progress indeterminate />
+ * <Progress type="circular" indeterminate />
  */
 export function Progress(props: ProgressProps) {
   const {
     value,
     variant = "default",
     size = "md",
+    type = "linear",
     animated = false,
     indeterminate = false,
+    showValue = false,
+    strokeWidth: customStrokeWidth,
     style,
   } = props
 
   const { theme } = useUnistyles()
 
+  // Circular progress dimensions based on size
+  const circularSizes = {
+    sm: { size: 32, strokeWidth: 3, fontSize: 10 },
+    md: { size: 48, strokeWidth: 4, fontSize: 12 },
+    lg: { size: 64, strokeWidth: 5, fontSize: 14 },
+  }
+
+  const circularConfig = circularSizes[size]
+  const circleSize = circularConfig.size
+  const strokeWidth = customStrokeWidth ?? circularConfig.strokeWidth
+  const radius = (circleSize - strokeWidth) / 2
+  const circumference = radius * 2 * Math.PI
+
   // Animation values
   const progressWidth = useSharedValue(0)
   const indeterminatePosition = useSharedValue(0)
+  const stripesPosition = useSharedValue(0)
+  const circularProgress = useSharedValue(0)
+  const circularRotation = useSharedValue(0)
 
   // Apply variants
   styles.useVariants({ size })
 
+  // Stripes animation
   useEffect(() => {
-    if (!indeterminate && value !== undefined) {
+    if (animated && !indeterminate && type === "linear") {
+      stripesPosition.value = withRepeat(
+        withTiming(1, {
+          duration: 1000,
+          easing: Easing.linear,
+        }),
+        -1,
+        false,
+      )
+    }
+  }, [animated, indeterminate, stripesPosition, type])
+
+  // Linear progress animation
+  useEffect(() => {
+    if (!indeterminate && value !== undefined && type === "linear") {
       progressWidth.value = withSpring(Math.min(Math.max(value, 0), 100), SPRING_CONFIG_PROGRESS)
     }
-  }, [value, indeterminate, progressWidth])
+  }, [value, indeterminate, progressWidth, type])
+
+  // Circular progress animation
+  useEffect(() => {
+    if (type === "circular" && !indeterminate && value !== undefined) {
+      const clampedValue = Math.min(Math.max(value, 0), 100)
+      circularProgress.value = withSpring(clampedValue / 100, SPRING_CONFIG_PROGRESS)
+    }
+  }, [value, indeterminate, circularProgress, type])
+
+  // Circular indeterminate rotation
+  useEffect(() => {
+    if (type === "circular" && indeterminate) {
+      circularRotation.value = withRepeat(
+        withTiming(360, {
+          duration: 1000,
+          easing: Easing.linear,
+        }),
+        -1,
+        false,
+      )
+    }
+  }, [indeterminate, circularRotation, type])
 
   // Indeterminate animation
   useEffect(() => {
@@ -139,6 +224,80 @@ export function Progress(props: ProgressProps) {
     ],
   }))
 
+  // Animated stripes style - moves diagonally
+  const stripesAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [
+      {
+        translateX: interpolate(stripesPosition.value, [0, 1], [0, 20]),
+      },
+    ],
+  }))
+
+  // Circular progress stroke animation (using animatedProps for SVG)
+  const circularStrokeProps = useAnimatedProps(() => ({
+    strokeDashoffset: circumference * (1 - circularProgress.value),
+  }))
+
+  // Circular indeterminate rotation
+  const circularRotationStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${circularRotation.value}deg` }],
+  }))
+
+  // Render circular progress
+  if (type === "circular") {
+    const progressColor = getProgressColor()
+    const displayValue = Math.round(Math.min(Math.max(value ?? 0, 0), 100))
+
+    return (
+      <View style={[styles.circularContainer, { width: circleSize, height: circleSize }, style]}>
+        <Animated.View style={indeterminate ? circularRotationStyle : undefined}>
+          <Svg
+            width={circleSize}
+            height={circleSize}
+            style={{ transform: [{ rotate: "-90deg" }] }}
+          >
+            {/* Background circle */}
+            <Circle
+              cx={circleSize / 2}
+              cy={circleSize / 2}
+              r={radius}
+              stroke={theme.colors.backgroundSecondary}
+              strokeWidth={strokeWidth}
+              fill="transparent"
+            />
+            {/* Progress circle */}
+            <AnimatedCircle
+              cx={circleSize / 2}
+              cy={circleSize / 2}
+              r={radius}
+              stroke={progressColor}
+              strokeWidth={strokeWidth}
+              fill="transparent"
+              strokeDasharray={`${circumference} ${circumference}`}
+              strokeLinecap="round"
+              animatedProps={circularStrokeProps}
+            />
+          </Svg>
+        </Animated.View>
+
+        {/* Percentage text */}
+        {showValue && !indeterminate && (
+          <View style={styles.circularValueContainer}>
+            <Text
+              style={[
+                styles.circularValue,
+                { fontSize: circularConfig.fontSize },
+              ]}
+            >
+              {displayValue}%
+            </Text>
+          </View>
+        )}
+      </View>
+    )
+  }
+
+  // Render linear progress
   return (
     <View style={[styles.container, style]}>
       {indeterminate ? (
@@ -154,7 +313,26 @@ export function Progress(props: ProgressProps) {
         <Animated.View
           style={[styles.progress, { backgroundColor: getProgressColor() }, progressStyle]}
         >
-          {animated && <View style={styles.stripes} />}
+          {animated && (
+            <Animated.View style={[styles.stripesContainer, stripesAnimatedStyle]}>
+              <LinearGradient
+                colors={[
+                  "transparent",
+                  "rgba(255,255,255,0.2)",
+                  "transparent",
+                  "rgba(255,255,255,0.2)",
+                  "transparent",
+                  "rgba(255,255,255,0.2)",
+                  "transparent",
+                  "rgba(255,255,255,0.2)",
+                  "transparent",
+                ]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.stripesGradient}
+              />
+            </Animated.View>
+          )}
         </Animated.View>
       )}
     </View>
@@ -193,12 +371,35 @@ const styles = StyleSheet.create((theme) => ({
     width: "30%",
     position: "absolute",
   },
-  stripes: {
+  stripesContainer: {
+    position: "absolute",
+    top: 0,
+    left: -20,
+    right: 0,
+    bottom: 0,
+    width: "200%",
+    overflow: "hidden",
+  },
+  stripesGradient: {
+    flex: 1,
+    width: "100%",
+  },
+  circularContainer: {
+    position: "relative",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  circularValueContainer: {
     position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    opacity: 0.2,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  circularValue: {
+    fontFamily: theme.typography.fonts.semiBold,
+    color: theme.colors.foreground,
   },
 }))

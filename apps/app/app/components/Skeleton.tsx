@@ -1,5 +1,5 @@
 import { useEffect } from "react"
-import { ViewStyle } from "react-native"
+import { View, ViewStyle, DimensionValue } from "react-native"
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -8,6 +8,7 @@ import Animated, {
   interpolate,
   Easing,
 } from "react-native-reanimated"
+import { LinearGradient } from "expo-linear-gradient"
 import { StyleSheet, useUnistyles } from "react-native-unistyles"
 
 // =============================================================================
@@ -34,6 +35,10 @@ export interface SkeletonProps {
    */
   borderRadius?: number
   /**
+   * Animation type: "shimmer" for horizontal sweep, "pulse" for opacity fade
+   */
+  animation?: "shimmer" | "pulse"
+  /**
    * Additional style
    */
   style?: ViewStyle
@@ -44,10 +49,10 @@ export interface SkeletonProps {
 // =============================================================================
 
 /**
- * Skeleton loading placeholder component.
+ * Skeleton loading placeholder component with shimmer animation.
  *
  * @example
- * // Text skeleton
+ * // Text skeleton with shimmer
  * <Skeleton variant="text" width="80%" />
  *
  * // Circular skeleton (avatar)
@@ -56,40 +61,47 @@ export interface SkeletonProps {
  * // Rectangular skeleton (card)
  * <Skeleton variant="rectangular" width="100%" height={200} />
  *
- * // Rounded skeleton
- * <Skeleton variant="rounded" width="100%" height={100} />
+ * // Rounded skeleton with pulse animation
+ * <Skeleton variant="rounded" width="100%" height={100} animation="pulse" />
  */
 export function Skeleton(props: SkeletonProps) {
-  const { variant = "rectangular", width = "100%", height, borderRadius, style } = props
+  const {
+    variant = "rectangular",
+    width = "100%",
+    height,
+    borderRadius,
+    animation = "shimmer",
+    style,
+  } = props
 
   const { theme } = useUnistyles()
 
-  // Animation value for shimmer effect
-  const shimmer = useSharedValue(0)
+  // Animation value for shimmer/pulse effect
+  const animationValue = useSharedValue(0)
 
   useEffect(() => {
-    shimmer.value = withRepeat(
+    animationValue.value = withRepeat(
       withTiming(1, {
-        duration: 1200,
+        duration: animation === "shimmer" ? 1500 : 1200,
         easing: Easing.inOut(Easing.ease),
       }),
       -1,
-      false,
+      animation === "pulse", // Reverse for pulse, not for shimmer
     )
-  }, [shimmer])
+  }, [animationValue, animation])
 
   // Get dimensions based on variant
-  const getDimensions = (): { width: number | string; height: number | string } => {
+  const getDimensions = (): { width: DimensionValue; height: DimensionValue } => {
     switch (variant) {
       case "text":
-        return { width: width, height: height ?? 16 }
+        return { width: width as DimensionValue, height: (height ?? 16) as DimensionValue }
       case "circular":
         const size = typeof width === "number" ? width : 40
-        return { width: size, height: height ?? size }
+        return { width: size as DimensionValue, height: (height ?? size) as DimensionValue }
       case "rounded":
-        return { width: width, height: height ?? 40 }
+        return { width: width as DimensionValue, height: (height ?? 40) as DimensionValue }
       default:
-        return { width: width, height: height ?? 100 }
+        return { width: width as DimensionValue, height: (height ?? 100) as DimensionValue }
     }
   }
 
@@ -109,25 +121,69 @@ export function Skeleton(props: SkeletonProps) {
   }
 
   const dimensions = getDimensions()
+  const computedBorderRadius = getBorderRadius()
 
-  // Animated shimmer style
-  const shimmerStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(shimmer.value, [0, 0.5, 1], [0.4, 0.7, 0.4]),
-  }))
+  // Animated shimmer style - horizontal sweep
+  const shimmerStyle = useAnimatedStyle(() => {
+    if (animation === "pulse") {
+      return {
+        opacity: interpolate(animationValue.value, [0, 0.5, 1], [0.4, 0.7, 0.4]),
+      }
+    }
+    // Shimmer animation - translate gradient from left to right
+    return {
+      transform: [
+        {
+          translateX: interpolate(animationValue.value, [0, 1], [-200, 200]),
+        },
+      ],
+    }
+  })
 
+  // Pulse animation (simpler, no gradient)
+  if (animation === "pulse") {
+    return (
+      <Animated.View
+        style={[
+          styles.skeleton,
+          {
+            width: dimensions.width,
+            height: dimensions.height,
+            borderRadius: computedBorderRadius,
+          },
+          shimmerStyle,
+          style,
+        ]}
+      />
+    )
+  }
+
+  // Shimmer animation with gradient sweep
   return (
-    <Animated.View
+    <View
       style={[
         styles.skeleton,
         {
           width: dimensions.width,
           height: dimensions.height,
-          borderRadius: getBorderRadius(),
+          borderRadius: computedBorderRadius,
         },
-        shimmerStyle,
         style,
       ]}
-    />
+    >
+      <Animated.View style={[styles.shimmerContainer, shimmerStyle]}>
+        <LinearGradient
+          colors={[
+            "transparent",
+            theme.colors.backgroundTertiary,
+            "transparent",
+          ]}
+          start={{ x: 0, y: 0.5 }}
+          end={{ x: 1, y: 0.5 }}
+          style={styles.shimmerGradient}
+        />
+      </Animated.View>
+    </View>
   )
 }
 
@@ -169,15 +225,70 @@ export function SkeletonGroup(props: SkeletonGroupProps) {
   const { count = 1, gap = 8, children, style } = props
 
   if (children) {
-    return <Animated.View style={[styles.group, { gap }, style]}>{children}</Animated.View>
+    return <View style={[styles.group, { gap }, style]}>{children}</View>
   }
 
   return (
-    <Animated.View style={[styles.group, { gap }, style]}>
+    <View style={[styles.group, { gap }, style]}>
       {Array.from({ length: count }).map((_, index) => (
         <Skeleton key={index} variant="text" width={`${100 - index * 10}%`} />
       ))}
-    </Animated.View>
+    </View>
+  )
+}
+
+// =============================================================================
+// SKELETON PRESETS
+// =============================================================================
+
+/**
+ * Pre-built skeleton for card layouts
+ */
+export function SkeletonCard(props: { style?: ViewStyle }) {
+  return (
+    <View style={[styles.cardPreset, props.style]}>
+      <Skeleton variant="rectangular" width="100%" height={120} />
+      <View style={styles.cardPresetContent}>
+        <Skeleton variant="text" width="70%" height={20} />
+        <Skeleton variant="text" width="100%" height={14} />
+        <Skeleton variant="text" width="40%" height={14} />
+      </View>
+    </View>
+  )
+}
+
+/**
+ * Pre-built skeleton for list item layouts
+ */
+export function SkeletonListItem(props: { style?: ViewStyle; showAvatar?: boolean }) {
+  const { showAvatar = true, style } = props
+  return (
+    <View style={[styles.listItemPreset, style]}>
+      {showAvatar && <Skeleton variant="circular" width={48} height={48} />}
+      <View style={styles.listItemPresetContent}>
+        <Skeleton variant="text" width="60%" height={16} />
+        <Skeleton variant="text" width="80%" height={14} />
+      </View>
+    </View>
+  )
+}
+
+/**
+ * Pre-built skeleton for paragraph text
+ */
+export function SkeletonParagraph(props: { lines?: number; style?: ViewStyle }) {
+  const { lines = 3, style } = props
+  return (
+    <SkeletonGroup gap={8} style={style}>
+      {Array.from({ length: lines }).map((_, index) => (
+        <Skeleton
+          key={index}
+          variant="text"
+          width={index === lines - 1 ? "60%" : "100%"}
+          height={14}
+        />
+      ))}
+    </SkeletonGroup>
   )
 }
 
@@ -188,8 +299,40 @@ export function SkeletonGroup(props: SkeletonGroupProps) {
 const styles = StyleSheet.create((theme) => ({
   skeleton: {
     backgroundColor: theme.colors.backgroundSecondary,
+    overflow: "hidden",
+  },
+  shimmerContainer: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: "200%",
+  },
+  shimmerGradient: {
+    flex: 1,
+    width: "50%",
   },
   group: {
     flexDirection: "column",
+  },
+  cardPreset: {
+    borderRadius: theme.radius.lg,
+    backgroundColor: theme.colors.card,
+    overflow: "hidden",
+  },
+  cardPresetContent: {
+    padding: theme.spacing.md,
+    gap: theme.spacing.xs,
+  },
+  listItemPreset: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: theme.spacing.md,
+    gap: theme.spacing.md,
+  },
+  listItemPresetContent: {
+    flex: 1,
+    gap: theme.spacing.xs,
   },
 }))

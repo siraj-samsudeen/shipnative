@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next"
 import { StyleSheet, useUnistyles } from "react-native-unistyles"
 
 import { Button, ButtonProps } from "./Button"
+import { Icon, IconTypes } from "./Icon"
 import { Text, TextProps } from "./Text"
 
 const sadFace = require("@assets/images/sad-face.png")
@@ -11,11 +12,24 @@ const sadFace = require("@assets/images/sad-face.png")
 // TYPES
 // =============================================================================
 
+type EmptyStatePreset =
+  | "generic"
+  | "noResults"
+  | "noConnection"
+  | "error"
+  | "noNotifications"
+  | "noMessages"
+  | "noFavorites"
+  | "emptyCart"
+  | "emptyInbox"
+
 interface EmptyStateProps {
   /**
    * An optional prop that specifies the text/image set to use for the empty state.
+   * Available presets: generic, noResults, noConnection, error, noNotifications,
+   * noMessages, noFavorites, emptyCart, emptyInbox
    */
-  preset?: "generic"
+  preset?: EmptyStatePreset
   /**
    * Style override for the container.
    */
@@ -24,6 +38,15 @@ interface EmptyStateProps {
    * An Image source to be displayed above the heading.
    */
   imageSource?: ImageProps["source"]
+  /**
+   * An icon to display instead of an image (uses Icon component).
+   * Takes precedence over imageSource when using presets.
+   */
+  icon?: IconTypes
+  /**
+   * Size of the icon. Defaults to 64.
+   */
+  iconSize?: number
   /**
    * Style overrides for image.
    */
@@ -102,10 +125,11 @@ interface EmptyStateProps {
 }
 
 interface EmptyStatePresetItem {
-  imageSource: ImageProps["source"]
+  imageSource?: ImageProps["source"]
+  icon?: IconTypes
   heading: TextProps["text"]
   content: TextProps["text"]
-  button: TextProps["text"]
+  button?: TextProps["text"]
 }
 
 // =============================================================================
@@ -127,34 +151,93 @@ interface EmptyStatePresetItem {
  *
  * // Using preset
  * <EmptyState preset="generic" />
+ *
+ * // Other presets
+ * <EmptyState preset="noResults" />
+ * <EmptyState preset="noConnection" buttonOnPress={handleRetry} />
+ * <EmptyState preset="error" buttonOnPress={handleRetry} />
+ * <EmptyState preset="noNotifications" />
+ * <EmptyState preset="noMessages" />
+ * <EmptyState preset="noFavorites" />
+ * <EmptyState preset="emptyCart" buttonOnPress={handleShop} />
+ * <EmptyState preset="emptyInbox" />
+ *
+ * // With custom icon
+ * <EmptyState icon="settings" heading="No Settings" content="Configure your preferences" />
  */
 export function EmptyState(props: EmptyStateProps) {
   const { theme } = useUnistyles()
   const { t } = useTranslation()
 
-  const EmptyStatePresets = {
+  const EmptyStatePresets: Record<EmptyStatePreset, EmptyStatePresetItem> = {
     generic: {
       imageSource: sadFace,
       heading: t("emptyStateComponent:generic.heading"),
       content: t("emptyStateComponent:generic.content"),
       button: t("emptyStateComponent:generic.button"),
-    } as EmptyStatePresetItem,
-  } as const
+    },
+    noResults: {
+      icon: "view",
+      heading: "No results found",
+      content: "Try adjusting your search or filters to find what you're looking for.",
+    },
+    noConnection: {
+      icon: "community",
+      heading: "No connection",
+      content: "Please check your internet connection and try again.",
+      button: "Try Again",
+    },
+    error: {
+      icon: "x",
+      heading: "Something went wrong",
+      content: "We encountered an error. Please try again later.",
+      button: "Retry",
+    },
+    noNotifications: {
+      icon: "bell",
+      heading: "No notifications",
+      content: "You're all caught up! Check back later for new updates.",
+    },
+    noMessages: {
+      icon: "community",
+      heading: "No messages yet",
+      content: "Start a conversation to see your messages here.",
+      button: "Start Chat",
+    },
+    noFavorites: {
+      icon: "heart",
+      heading: "No favorites yet",
+      content: "Items you favorite will appear here for quick access.",
+    },
+    emptyCart: {
+      icon: "components",
+      heading: "Your cart is empty",
+      content: "Browse our products and add items to your cart.",
+      button: "Start Shopping",
+    },
+    emptyInbox: {
+      icon: "components",
+      heading: "Inbox is empty",
+      content: "New items will appear here when you receive them.",
+    },
+  }
 
-  const preset = EmptyStatePresets[props.preset ?? "generic"]
+  const presetData = EmptyStatePresets[props.preset ?? "generic"]
 
   const {
-    button = preset.button,
+    button = presetData.button,
     buttonTx,
     buttonOnPress,
     buttonTxOptions,
-    content = preset.content,
+    content = presetData.content,
     contentTx,
     contentTxOptions,
-    heading = preset.heading,
+    heading = presetData.heading,
     headingTx,
     headingTxOptions,
-    imageSource = preset.imageSource,
+    imageSource = presetData.imageSource,
+    icon = presetData.icon,
+    iconSize = 64,
     style: $containerStyleOverride,
     buttonStyle: $buttonStyleOverride,
     contentStyle: $contentStyleOverride,
@@ -166,13 +249,30 @@ export function EmptyState(props: EmptyStateProps) {
     ImageProps,
   } = props
 
-  const isImagePresent = !!imageSource
+  const isIconPresent = !!icon
+  const isImagePresent = !!imageSource && !isIconPresent
   const isHeadingPresent = !!(heading || headingTx)
   const isContentPresent = !!(content || contentTx)
   const isButtonPresent = !!(button || buttonTx)
 
   return (
     <View style={[styles.container, $containerStyleOverride]}>
+      {/* Render icon if present, otherwise render image */}
+      {isIconPresent && (
+        <View
+          style={[
+            styles.iconContainer,
+            (isHeadingPresent || isContentPresent || isButtonPresent) && styles.imageSpacing,
+          ]}
+        >
+          <Icon
+            icon={icon}
+            size={iconSize}
+            color={theme.colors.foregroundTertiary}
+          />
+        </View>
+      )}
+
       {isImagePresent && (
         <Image
           source={imageSource}
@@ -196,7 +296,7 @@ export function EmptyState(props: EmptyStateProps) {
           {...HeadingTextProps}
           style={[
             styles.heading,
-            isImagePresent && styles.headingAfterImage,
+            (isImagePresent || isIconPresent) && styles.headingAfterImage,
             (isContentPresent || isButtonPresent) && styles.headingSpacing,
             $headingStyleOverride,
             HeadingTextProps?.style,
@@ -213,7 +313,7 @@ export function EmptyState(props: EmptyStateProps) {
           {...ContentTextProps}
           style={[
             styles.content,
-            (isImagePresent || isHeadingPresent) && styles.contentAfterHeading,
+            (isImagePresent || isIconPresent || isHeadingPresent) && styles.contentAfterHeading,
             isButtonPresent && styles.contentSpacing,
             $contentStyleOverride,
             ContentTextProps?.style,
@@ -230,7 +330,8 @@ export function EmptyState(props: EmptyStateProps) {
           {...buttonProps}
           style={[
             styles.button,
-            (isImagePresent || isHeadingPresent || isContentPresent) && styles.buttonSpacing,
+            (isImagePresent || isIconPresent || isHeadingPresent || isContentPresent) &&
+              styles.buttonSpacing,
             $buttonStyleOverride,
             buttonProps?.style,
           ]}
@@ -249,6 +350,14 @@ const styles = StyleSheet.create((theme) => ({
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: theme.spacing.xl,
+  },
+  iconContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    width: 96,
+    height: 96,
+    borderRadius: theme.radius.full,
+    backgroundColor: theme.colors.backgroundSecondary,
   },
   image: {
     alignSelf: "center",

@@ -4,11 +4,13 @@ import {
   TextInput as RNTextInput,
   type TextInputProps,
   TouchableOpacity,
+  Pressable,
   View,
   type ViewStyle,
 } from "react-native"
 /* eslint-enable no-restricted-imports */
 import { useTranslation } from "react-i18next"
+import Ionicons from "@expo/vector-icons/Ionicons"
 import { StyleSheet, useUnistyles } from "react-native-unistyles"
 
 import { isRTL } from "@/i18n"
@@ -98,6 +100,18 @@ export interface TextFieldProps extends Omit<TextInputProps, "ref"> {
    * Additional helper text props
    */
   HelperTextProps?: TextProps
+  /**
+   * Show character count (requires maxLength to be set)
+   */
+  showCharacterCount?: boolean
+  /**
+   * Show clear button when input has value
+   */
+  clearable?: boolean
+  /**
+   * Callback when clear button is pressed
+   */
+  onClear?: () => void
 }
 
 // =============================================================================
@@ -156,6 +170,12 @@ export const TextField = forwardRef(function TextField(
     inputWrapperStyle,
     multiline,
     editable = true,
+    showCharacterCount = false,
+    clearable = false,
+    onClear,
+    maxLength,
+    value,
+    onChangeText,
     ...textInputProps
   } = props
 
@@ -163,9 +183,27 @@ export const TextField = forwardRef(function TextField(
   const { t } = useTranslation()
   const inputRef = useRef<RNTextInput>(null)
   const [isFocused, setIsFocused] = useState(false)
+  const [internalValue, setInternalValue] = useState(value || "")
+
+  // Track value for character count and clear button
+  const currentValue = value !== undefined ? value : internalValue
+  const characterCount = currentValue?.length || 0
+  const showClearButton = clearable && currentValue && currentValue.length > 0
 
   const isDisabled = !editable || status === "disabled"
   const currentStatus = isDisabled ? "disabled" : status
+
+  const handleChangeText = (text: string) => {
+    setInternalValue(text)
+    onChangeText?.(text)
+  }
+
+  const handleClear = () => {
+    setInternalValue("")
+    onChangeText?.("")
+    onClear?.()
+    inputRef.current?.focus()
+  }
 
   // Apply variants - map "default" to undefined for Unistyles
   const statusForStyles =
@@ -243,8 +281,28 @@ export const TextField = forwardRef(function TextField(
             textInputProps.onBlur?.(e)
           }}
           multiline={multiline}
+          maxLength={maxLength}
+          value={value}
+          onChangeText={handleChangeText}
           {...textInputProps}
         />
+
+        {/* Clear button */}
+        {showClearButton && !isDisabled && (
+          <Pressable
+            onPress={handleClear}
+            style={styles.clearButton}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            accessibilityLabel="Clear input"
+            accessibilityRole="button"
+          >
+            <Ionicons
+              name="close-circle"
+              size={18}
+              color={theme.colors.foregroundTertiary}
+            />
+          </Pressable>
+        )}
 
         {/* Right accessory */}
         {!!RightAccessory && (
@@ -254,18 +312,34 @@ export const TextField = forwardRef(function TextField(
         )}
       </View>
 
-      {/* Helper text */}
-      {!!(helper || helperTx) && (
-        <Text
-          size="sm"
-          text={helper}
-          tx={helperTx}
-          txOptions={helperTxOptions}
-          color={currentStatus === "error" ? "error" : "secondary"}
-          style={styles.helper}
-          {...HelperTextProps}
-        />
-      )}
+      {/* Footer row: helper text and character count */}
+      <View style={styles.footer}>
+        {/* Helper text */}
+        {!!(helper || helperTx) ? (
+          <Text
+            size="sm"
+            text={helper}
+            tx={helperTx}
+            txOptions={helperTxOptions}
+            color={currentStatus === "error" ? "error" : "secondary"}
+            style={styles.helper}
+            {...HelperTextProps}
+          />
+        ) : (
+          <View />
+        )}
+
+        {/* Character count */}
+        {showCharacterCount && maxLength && (
+          <Text
+            size="xs"
+            color={characterCount >= maxLength ? "error" : "tertiary"}
+            style={styles.characterCount}
+          >
+            {characterCount}/{maxLength}
+          </Text>
+        )}
+      </View>
     </TouchableOpacity>
   )
 })
@@ -377,9 +451,24 @@ const styles = StyleSheet.create((theme) => ({
     justifyContent: "center",
     alignItems: "center",
   },
-  helper: {
+  clearButton: {
+    marginRight: theme.spacing.xs,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: theme.spacing.xxs,
+  },
+  footer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
     marginTop: theme.spacing.xs,
+  },
+  helper: {
+    flex: 1,
     marginLeft: theme.spacing.xxs,
+  },
+  characterCount: {
+    marginLeft: theme.spacing.sm,
   },
   inputRTL: {
     textAlign: "right",

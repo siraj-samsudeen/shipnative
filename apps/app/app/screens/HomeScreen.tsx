@@ -46,10 +46,17 @@ interface PressableCardProps {
   children: React.ReactNode
   onPress?: () => void
   style?: StyleProp<ViewStyle>
+  containerStyle?: StyleProp<ViewStyle>
   delay?: number
 }
 
-function PressableCard({ children, onPress, style, delay = 0 }: PressableCardProps) {
+function PressableCard({
+  children,
+  onPress,
+  style,
+  containerStyle,
+  delay = 0,
+}: PressableCardProps) {
   const scale = useSharedValue(1)
 
   const handlePressIn = () => {
@@ -70,7 +77,7 @@ function PressableCard({ children, onPress, style, delay = 0 }: PressableCardPro
   }))
 
   return (
-    <Animated.View entering={FadeInDown.delay(delay).springify()}>
+    <Animated.View entering={FadeInDown.delay(delay).springify()} style={containerStyle}>
       <Pressable
         onPress={handlePress}
         onPressIn={handlePressIn}
@@ -161,7 +168,9 @@ export const HomeScreen: FC<HomeScreenProps> = function HomeScreen(_props) {
             <View style={styles.featuredContent}>
               <Badge tx="homeScreen:dailyChallenge" variant="info" size="sm" />
               <View style={styles.titleRow}>
-                <Text style={styles.emoji}>🧘‍♀️</Text>
+                <View style={styles.featuredIconBox}>
+                  <Ionicons name="flower-outline" size={24} color={theme.colors.palette.primary600} />
+                </View>
                 <Text
                   size="2xl"
                   weight="bold"
@@ -183,23 +192,44 @@ export const HomeScreen: FC<HomeScreenProps> = function HomeScreen(_props) {
 
           {/* Stats Row */}
           <View style={styles.statsRow}>
-            <PressableCard style={styles.statCard} delay={ANIMATION.STAGGER_DELAY * 2}>
+            <PressableCard
+              style={styles.statCard}
+              containerStyle={styles.statCardContainer}
+              delay={ANIMATION.STAGGER_DELAY * 2}
+            >
+              <View style={styles.statIconBox}>
+                <Ionicons name="flame-outline" size={18} color={theme.colors.palette.accent500} />
+              </View>
               <Text size="2xl" weight="bold">
                 12
               </Text>
-              <Text size="sm" color="secondary" tx="homeScreen:statStreak" />
+              <Text size="xs" color="secondary" tx="homeScreen:statStreak" />
             </PressableCard>
-            <PressableCard style={styles.statCard} delay={ANIMATION.STAGGER_DELAY * 2.5}>
+            <PressableCard
+              style={styles.statCard}
+              containerStyle={styles.statCardContainer}
+              delay={ANIMATION.STAGGER_DELAY * 2.5}
+            >
+              <View style={styles.statIconBox}>
+                <Ionicons name="checkmark-circle-outline" size={18} color={theme.colors.success} />
+              </View>
               <Text size="2xl" weight="bold">
                 85%
               </Text>
-              <Text size="sm" color="secondary" tx="homeScreen:statCompleted" />
+              <Text size="xs" color="secondary" tx="homeScreen:statCompleted" />
             </PressableCard>
-            <PressableCard style={styles.statCard} delay={ANIMATION.STAGGER_DELAY * 3}>
+            <PressableCard
+              style={styles.statCard}
+              containerStyle={styles.statCardContainer}
+              delay={ANIMATION.STAGGER_DELAY * 3}
+            >
+              <View style={styles.statIconBox}>
+                <Ionicons name="star-outline" size={18} color={theme.colors.warning} />
+              </View>
               <Text size="2xl" weight="bold">
                 4.8
               </Text>
-              <Text size="sm" color="secondary" tx="homeScreen:statRating" />
+              <Text size="xs" color="secondary" tx="homeScreen:statRating" />
             </PressableCard>
           </View>
 
@@ -362,9 +392,13 @@ const styles = StyleSheet.create((theme) => ({
     gap: theme.spacing.sm,
     marginTop: theme.spacing.xs,
   },
-  emoji: {
-    fontSize: 32,
-    lineHeight: 40,
+  featuredIconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: theme.radius.lg,
+    backgroundColor: theme.colors.palette.primary100,
+    alignItems: "center",
+    justifyContent: "center",
   },
   featuredTitle: {
     flex: 1,
@@ -394,17 +428,30 @@ const styles = StyleSheet.create((theme) => ({
   },
   statsRow: {
     flexDirection: "row",
-    gap: theme.spacing.md,
+    gap: theme.spacing.sm,
     marginBottom: theme.spacing.xl,
+  },
+  statCardContainer: {
+    flex: 1,
   },
   statCard: {
     flex: 1,
     backgroundColor: theme.colors.card,
-    padding: theme.spacing.md,
+    paddingVertical: theme.spacing.lg,
+    paddingHorizontal: theme.spacing.md,
     borderRadius: theme.radius.xl,
     alignItems: "center",
-    opacity: 0.95,
+    gap: theme.spacing.xs,
     ...theme.shadows.sm,
+  },
+  statIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: theme.radius.full,
+    backgroundColor: theme.colors.backgroundSecondary,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: theme.spacing.xxs,
   },
   sectionTitle: {
     marginBottom: theme.spacing.md,
@@ -419,9 +466,9 @@ const styles = StyleSheet.create((theme) => ({
     ...theme.shadows.sm,
   },
   iconBox: {
-    width: 32,
-    height: 32,
-    borderRadius: theme.radius.md,
+    width: 40,
+    height: 40,
+    borderRadius: theme.radius.lg,
     alignItems: "center",
     justifyContent: "center",
   },

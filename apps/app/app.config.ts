@@ -32,6 +32,7 @@ module.exports = ({ config }: ConfigContext): ExpoConfig => {
       {
         ios: {
           src: "./app/widgets/ios",
+          devTeamId: process.env.APPLE_TEAM_ID || "",
           mode: "production",
           useLiveActivities: false,
           frequentUpdates: false,
@@ -42,6 +43,10 @@ module.exports = ({ config }: ConfigContext): ExpoConfig => {
             {
               name: "ExampleWidgetProvider",
               resourceName: "@xml/example_widget_info",
+            },
+            {
+              name: "StatsWidgetProvider",
+              resourceName: "@xml/stats_widget_info",
             },
           ],
         },

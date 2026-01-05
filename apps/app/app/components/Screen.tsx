@@ -4,6 +4,7 @@ import {
   KeyboardAvoidingViewProps,
   LayoutChangeEvent,
   Platform,
+  RefreshControl,
   ScrollView,
   ScrollViewProps,
   StyleProp,
@@ -13,6 +14,7 @@ import {
 import { useScrollToTop } from "@react-navigation/native"
 import { SystemBars, SystemBarsProps, SystemBarStyle } from "react-native-edge-to-edge"
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller"
+import { useUnistyles } from "react-native-unistyles"
 
 import { useAppTheme } from "@/theme/context"
 import { $styles } from "@/theme/styles"
@@ -77,6 +79,16 @@ interface ScrollScreenProps extends BaseScreenProps {
    * Pass any additional props directly to the ScrollView component.
    */
   ScrollViewProps?: ScrollViewProps
+  /**
+   * Enable pull-to-refresh functionality.
+   * Only applies to scroll and auto presets.
+   */
+  refreshing?: boolean
+  /**
+   * Callback when pull-to-refresh is triggered.
+   * Only applies to scroll and auto presets.
+   */
+  onRefresh?: () => void
 }
 
 interface AutoScreenProps extends Omit<ScrollScreenProps, "preset"> {
@@ -196,8 +208,11 @@ function ScreenWithScrolling(props: ScreenProps) {
     contentContainerStyle,
     ScrollViewProps,
     style,
+    refreshing,
+    onRefresh,
   } = props as ScrollScreenProps
 
+  const { theme } = useUnistyles()
   const ref = useRef<ScrollView>(null)
 
   const { scrollEnabled, onContentSizeChange, onLayout } = useAutoPreset(props as AutoScreenProps)
@@ -214,11 +229,23 @@ function ScreenWithScrolling(props: ScreenProps) {
       } as ViewStyle)
     : {}
 
+  // Create refresh control if onRefresh is provided
+  const refreshControl = onRefresh ? (
+    <RefreshControl
+      refreshing={refreshing ?? false}
+      onRefresh={onRefresh}
+      tintColor={theme.colors.primary}
+      colors={[theme.colors.primary]}
+      progressBackgroundColor={theme.colors.background}
+    />
+  ) : undefined
+
   return (
     <KeyboardAwareScrollView
       bottomOffset={keyboardBottomOffset}
       {...{ keyboardShouldPersistTaps, scrollEnabled, ref }}
       {...ScrollViewProps}
+      refreshControl={refreshControl}
       onLayout={(e) => {
         onLayout(e)
         ScrollViewProps?.onLayout?.(e)

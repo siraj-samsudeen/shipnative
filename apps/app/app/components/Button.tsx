@@ -81,6 +81,10 @@ export interface ButtonProps {
    */
   haptic?: boolean
   /**
+   * Make button take full container width
+   */
+  fullWidth?: boolean
+  /**
    * Additional style
    */
   style?: StyleProp<ViewStyle>
@@ -121,6 +125,9 @@ export interface ButtonProps {
  * // Different sizes
  * <Button text="Small" size="sm" />
  * <Button text="Large" size="lg" />
+ *
+ * // Full width button
+ * <Button text="Continue" fullWidth />
  */
 export function Button(props: ButtonProps) {
   const {
@@ -138,6 +145,7 @@ export function Button(props: ButtonProps) {
     onPress,
     onLongPress,
     haptic = true,
+    fullWidth = false,
     style,
     testID,
   } = props
@@ -215,7 +223,13 @@ export function Button(props: ButtonProps) {
   return (
     <GestureDetector gesture={gesture}>
       <Animated.View
-        style={[styles.container, isDisabled && styles.disabled, animatedStyle, style]}
+        style={[
+          styles.container,
+          fullWidth && styles.fullWidth,
+          isDisabled && styles.disabled,
+          animatedStyle,
+          style,
+        ]}
         testID={testID}
         accessibilityRole="button"
         accessibilityState={{ disabled: isDisabled }}
@@ -298,6 +312,9 @@ const styles = StyleSheet.create((theme) => ({
   },
   disabled: {
     opacity: 0.5,
+  },
+  fullWidth: {
+    width: "100%",
   },
   spinner: {
     marginRight: 0,

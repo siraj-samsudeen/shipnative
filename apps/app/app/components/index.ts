@@ -36,6 +36,7 @@ export * from "./Spinner"
 export * from "./EmptyState"
 export * from "./Progress"
 export * from "./Skeleton"
+export * from "./Toast"
 
 // Animation
 export * from "./AnimatedCard"
@@ -44,6 +45,7 @@ export * from "./AnimatedCard"
 export * from "./AutoImage"
 
 // Modals
+export * from "./Modal"
 export * from "./EditProfileModal"
 export * from "./DeleteAccountModal"
 export * from "./LanguageSelector"

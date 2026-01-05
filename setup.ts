@@ -1041,6 +1041,9 @@ const configureWidgets = async (
     "Enable native home screen widgets for iOS and Android.",
     "Widgets can display data from Supabase and update automatically.",
     "Requires native code generation (prebuild) after enabling.",
+    "",
+    "⚠️  iOS widgets require an Apple Developer account ($99/year) for code signing.",
+    "   Android widgets work without any paid account.",
   ])
 
   const shouldConfigure = options.skipConfirm || (await askYesNo("Do you want to enable native widgets?", false))
@@ -1053,6 +1056,20 @@ const configureWidgets = async (
 
   services.EXPO_PUBLIC_ENABLE_WIDGETS = "true"
 
+  console.log(chalk.cyan("\n👥 Apple Team ID (iOS)"))
+  console.log(chalk.dim("   Required for iOS widget code signing."))
+  console.log(chalk.dim("   Find this in Apple Developer: Membership (top right corner)"))
+  console.log(chalk.dim("   Format: 10 uppercase letters/numbers (e.g., ABC123DEF4)"))
+  console.log(chalk.dim("   💡 Leave empty to skip iOS widgets (Android will still work)"))
+  const appleTeamId = await askQuestion(
+    "Enter your Apple Team ID (or press Enter to skip iOS)",
+    (id) => !id || /^[A-Z0-9]{10}$/.test(id.toUpperCase()),
+    defaults.APPLE_TEAM_ID || process.env.APPLE_TEAM_ID || ""
+  )
+  if (appleTeamId) {
+    services.APPLE_TEAM_ID = appleTeamId.toUpperCase()
+  }
+
   console.log(chalk.cyan("\n🧩 App Group (iOS)"))
   console.log(chalk.dim("   Used for sharing data between the app and the widget extension."))
   console.log(chalk.dim("   Format: group.com.yourcompany.yourapp"))
@@ -1063,6 +1080,12 @@ const configureWidgets = async (
   )
 
   console.log("\n✅ Widgets enabled!")
+  if (appleTeamId) {
+    console.log("   📱 iOS widgets: Ready (requires Apple Developer account)")
+  } else {
+    console.log("   📱 iOS widgets: Skipped (no Apple Team ID)")
+  }
+  console.log("   🤖 Android widgets: Ready")
   console.log("   💡 After setup, run 'yarn prebuild:clean' to generate native code")
   console.log("   📖 See docs/WIDGETS.md for widget development guide")
 
