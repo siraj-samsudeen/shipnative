@@ -1,9 +1,8 @@
 import { createContext, useCallback, useContext, useMemo, useState, ReactNode } from "react"
-import { Pressable, View, ViewStyle } from "react-native"
+import { Pressable, View } from "react-native"
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
-  withSpring,
   withTiming,
   runOnJS,
   SlideInUp,
@@ -153,8 +152,7 @@ export function ToastProvider(props: ToastProviderProps) {
 // =============================================================================
 
 function Toast(props: ToastProps) {
-  const { id, title, description, variant = "default", icon, duration = 4000, action, onHide } =
-    props
+  const { title, description, variant = "default", icon, duration = 4000, action, onHide } = props
 
   const { theme } = useUnistyles()
   const progress = useSharedValue(1)

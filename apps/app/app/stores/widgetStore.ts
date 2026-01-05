@@ -11,8 +11,8 @@ import { persist, createJSONStorage } from "zustand/middleware"
 
 import { features } from "@/config/features"
 import { getWidgetConfig } from "@/services/widgets"
-import { storage } from "@/utils/storage"
 import { logger } from "@/utils/Logger"
+import { storage } from "@/utils/storage"
 
 export interface WidgetState {
   // Whether widgets are enabled in the app

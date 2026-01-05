@@ -1,5 +1,6 @@
 import { useEffect } from "react"
 import { View, ViewStyle, DimensionValue } from "react-native"
+import { LinearGradient } from "expo-linear-gradient"
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -8,7 +9,6 @@ import Animated, {
   interpolate,
   Easing,
 } from "react-native-reanimated"
-import { LinearGradient } from "expo-linear-gradient"
 import { StyleSheet, useUnistyles } from "react-native-unistyles"
 
 // =============================================================================
@@ -173,11 +173,7 @@ export function Skeleton(props: SkeletonProps) {
     >
       <Animated.View style={[styles.shimmerContainer, shimmerStyle]}>
         <LinearGradient
-          colors={[
-            "transparent",
-            theme.colors.backgroundTertiary,
-            "transparent",
-          ]}
+          colors={["transparent", theme.colors.backgroundTertiary, "transparent"]}
           start={{ x: 0, y: 0.5 }}
           end={{ x: 1, y: 0.5 }}
           style={styles.shimmerGradient}

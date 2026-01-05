@@ -265,11 +265,7 @@ export function EmptyState(props: EmptyStateProps) {
             (isHeadingPresent || isContentPresent || isButtonPresent) && styles.imageSpacing,
           ]}
         >
-          <Icon
-            icon={icon}
-            size={iconSize}
-            color={theme.colors.foregroundTertiary}
-          />
+          <Icon icon={icon} size={iconSize} color={theme.colors.foregroundTertiary} />
         </View>
       )}
 

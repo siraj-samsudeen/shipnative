@@ -185,12 +185,7 @@ export function Avatar(props: AvatarProps) {
   if (externalLoading) {
     return (
       <Animated.View
-        style={[
-          styles.skeleton,
-          showBorder && styles.border,
-          shimmerStyle,
-          style,
-        ]}
+        style={[styles.skeleton, showBorder && styles.border, shimmerStyle, style]}
         accessibilityLabel="Loading avatar"
       />
     )
@@ -202,22 +197,12 @@ export function Avatar(props: AvatarProps) {
       <View style={[styles.container, style]}>
         {/* Show skeleton while loading */}
         {isLoading && (
-          <Animated.View
-            style={[
-              styles.skeleton,
-              styles.skeletonAbsolute,
-              shimmerStyle,
-            ]}
-          />
+          <Animated.View style={[styles.skeleton, styles.skeletonAbsolute, shimmerStyle]} />
         )}
 
         <Image
           source={source}
-          style={[
-            styles.image,
-            showBorder && styles.border,
-            isLoading && styles.imageHidden,
-          ]}
+          style={[styles.image, showBorder && styles.border, isLoading && styles.imageHidden]}
           accessibilityLabel={alt || "Avatar"}
           onLoadStart={handleLoadStart}
           onLoadEnd={handleLoadEnd}
@@ -298,13 +283,7 @@ export function AvatarGroup(props: AvatarGroupProps) {
   return (
     <View style={[styles.group, style]}>
       {visibleAvatars.map((avatar, index) => (
-        <View
-          key={index}
-          style={[
-            styles.groupItem,
-            { zIndex: visibleAvatars.length - index },
-          ]}
-        >
+        <View key={index} style={[styles.groupItem, { zIndex: visibleAvatars.length - index }]}>
           <Avatar {...avatar} size={size} showBorder />
         </View>
       ))}

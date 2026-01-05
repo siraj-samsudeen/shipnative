@@ -1,5 +1,6 @@
 import { useEffect } from "react"
 import { View, ViewStyle } from "react-native"
+import { LinearGradient } from "expo-linear-gradient"
 import Animated, {
   useAnimatedStyle,
   useAnimatedProps,
@@ -10,12 +11,12 @@ import Animated, {
   interpolate,
   Easing,
 } from "react-native-reanimated"
-import { LinearGradient } from "expo-linear-gradient"
 import Svg, { Circle } from "react-native-svg"
 import { StyleSheet, useUnistyles } from "react-native-unistyles"
 
-import { Text } from "./Text"
 import { SPRING_CONFIG_PROGRESS } from "@/utils/animations"
+
+import { Text } from "./Text"
 
 // Create animated circle component
 const AnimatedCircle = Animated.createAnimatedComponent(Circle)
@@ -251,11 +252,7 @@ export function Progress(props: ProgressProps) {
     return (
       <View style={[styles.circularContainer, { width: circleSize, height: circleSize }, style]}>
         <Animated.View style={indeterminate ? circularRotationStyle : undefined}>
-          <Svg
-            width={circleSize}
-            height={circleSize}
-            style={{ transform: [{ rotate: "-90deg" }] }}
-          >
+          <Svg width={circleSize} height={circleSize} style={{ transform: [{ rotate: "-90deg" }] }}>
             {/* Background circle */}
             <Circle
               cx={circleSize / 2}
@@ -283,12 +280,7 @@ export function Progress(props: ProgressProps) {
         {/* Percentage text */}
         {showValue && !indeterminate && (
           <View style={styles.circularValueContainer}>
-            <Text
-              style={[
-                styles.circularValue,
-                { fontSize: circularConfig.fontSize },
-              ]}
-            >
+            <Text style={[styles.circularValue, { fontSize: circularConfig.fontSize }]}>
               {displayValue}%
             </Text>
           </View>

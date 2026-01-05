@@ -169,7 +169,11 @@ export const HomeScreen: FC<HomeScreenProps> = function HomeScreen(_props) {
               <Badge tx="homeScreen:dailyChallenge" variant="info" size="sm" />
               <View style={styles.titleRow}>
                 <View style={styles.featuredIconBox}>
-                  <Ionicons name="flower-outline" size={24} color={theme.colors.palette.primary600} />
+                  <Ionicons
+                    name="flower-outline"
+                    size={24}
+                    color={theme.colors.palette.primary600}
+                  />
                 </View>
                 <Text
                   size="2xl"

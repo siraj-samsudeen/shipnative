@@ -9,8 +9,8 @@ import {
   type ViewStyle,
 } from "react-native"
 /* eslint-enable no-restricted-imports */
-import { useTranslation } from "react-i18next"
 import Ionicons from "@expo/vector-icons/Ionicons"
+import { useTranslation } from "react-i18next"
 import { StyleSheet, useUnistyles } from "react-native-unistyles"
 
 import { isRTL } from "@/i18n"
@@ -296,11 +296,7 @@ export const TextField = forwardRef(function TextField(
             accessibilityLabel="Clear input"
             accessibilityRole="button"
           >
-            <Ionicons
-              name="close-circle"
-              size={18}
-              color={theme.colors.foregroundTertiary}
-            />
+            <Ionicons name="close-circle" size={18} color={theme.colors.foregroundTertiary} />
           </Pressable>
         )}
 

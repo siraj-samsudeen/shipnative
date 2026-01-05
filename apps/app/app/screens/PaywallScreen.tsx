@@ -173,6 +173,7 @@ export const PaywallScreen = () => {
     noPackagesMessage,
     noWebOfferingMessage,
     sdkUnavailableMessage,
+    t,
   ])
 
   // Handle purchase flow (web or mock mode)

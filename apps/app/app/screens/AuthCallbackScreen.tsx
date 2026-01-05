@@ -64,7 +64,7 @@ export const AuthCallbackScreen = () => {
     return () => {
       isMounted = false
     }
-  }, [code, accessToken, refreshToken])
+  }, [code, accessToken, refreshToken, t])
 
   if (!errorMessage) {
     return (

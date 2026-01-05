@@ -268,7 +268,10 @@ export const ProfileScreen: FC = () => {
                     <Switch
                       value={userWidgetsEnabled}
                       onValueChange={handleToggleWidgets}
-                      trackColor={{ false: theme.colors.borderSecondary, true: theme.colors.primary }}
+                      trackColor={{
+                        false: theme.colors.borderSecondary,
+                        true: theme.colors.primary,
+                      }}
                       thumbColor={theme.colors.card}
                       disabled={syncStatus === "syncing"}
                     />

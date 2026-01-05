@@ -1,3 +1,6 @@
+import { useAuthStore } from "../app/stores/auth"
+import { useSubscriptionStore } from "../app/stores/subscriptionStore"
+
 // Mock environment config FIRST before any other imports
 // This ensures the supabase service uses mock mode
 jest.mock("../app/config/env", () => ({
@@ -11,9 +14,6 @@ jest.mock("../app/config/env", () => ({
     revenueCatWebKey: "",
   },
 }))
-
-import { useAuthStore } from "../app/stores/auth"
-import { useSubscriptionStore } from "../app/stores/subscriptionStore"
 
 // Mock MMKV
 jest.mock("react-native-mmkv", () => ({

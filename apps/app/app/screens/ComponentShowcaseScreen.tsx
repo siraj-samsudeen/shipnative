@@ -363,7 +363,11 @@ export const ComponentShowcaseScreen: FC<ComponentShowcaseScreenProps> =
               text="With Left Icon"
               LeftComponent={
                 <View style={styles.listIconBox}>
-                  <Ionicons name="phone-portrait-outline" size={18} color={theme.colors.foreground} />
+                  <Ionicons
+                    name="phone-portrait-outline"
+                    size={18}
+                    color={theme.colors.foreground}
+                  />
                 </View>
               }
               bottomSeparator
@@ -371,7 +375,11 @@ export const ComponentShowcaseScreen: FC<ComponentShowcaseScreenProps> =
             <ListItem
               text="With Right Chevron"
               RightComponent={
-                <Ionicons name="chevron-forward" size={20} color={theme.colors.foregroundSecondary} />
+                <Ionicons
+                  name="chevron-forward"
+                  size={20}
+                  color={theme.colors.foregroundSecondary}
+                />
               }
               bottomSeparator
             />

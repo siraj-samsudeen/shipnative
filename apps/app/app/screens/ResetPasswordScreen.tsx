@@ -90,7 +90,7 @@ export const ResetPasswordScreen = () => {
     return () => {
       isMounted = false
     }
-  }, [code, token])
+  }, [code, token, t])
 
   const onSubmit = async (data: ResetPasswordFormData) => {
     try {
