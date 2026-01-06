@@ -72,6 +72,8 @@ export const PaywallScreen = () => {
   const [error, setError] = useState<string | null>(null)
   const [hasAutoPresented, setHasAutoPresented] = useState(false)
   const [selectedPackage, setSelectedPackage] = useState<string | null>(null)
+  const [isRestoring, setIsRestoring] = useState(false)
+  const [restoreMessage, setRestoreMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
   const loadErrorMessage = t("paywallScreen:loadFailed")
   const purchaseErrorMessage = t("paywallScreen:purchaseFailed")
   const noWebOfferingMessage = t("paywallScreen:noWebOfferingError")
@@ -261,6 +263,36 @@ export const PaywallScreen = () => {
   // Get selected package for purchase
   const getSelectedPkg = () => packages.find((p) => p.identifier === selectedPackage)
 
+  // Handle restore purchases
+  const handleRestorePurchases = useCallback(async () => {
+    try {
+      setIsRestoring(true)
+      setRestoreMessage(null)
+
+      const result = await useSubscriptionStore.getState().restorePurchases()
+
+      if (result.error) {
+        setRestoreMessage({ type: "error", text: "Failed to restore purchases. Please try again." })
+      } else {
+        const isPro = useSubscriptionStore.getState().isPro
+        if (isPro) {
+          setRestoreMessage({ type: "success", text: "Purchases restored successfully!" })
+        } else {
+          setRestoreMessage({ type: "error", text: "No previous purchases found." })
+        }
+      }
+
+      // Auto-hide message after 3 seconds
+      setTimeout(() => setRestoreMessage(null), 3000)
+    } catch (err) {
+      logger.error("Restore purchases failed", { error: err })
+      setRestoreMessage({ type: "error", text: "Failed to restore purchases. Please try again." })
+      setTimeout(() => setRestoreMessage(null), 3000)
+    } finally {
+      setIsRestoring(false)
+    }
+  }, [])
+
   return (
     <Container safeAreaEdges={["top"]}>
       {isPro ? (
@@ -411,13 +443,38 @@ export const PaywallScreen = () => {
             />
           )}
 
-          {/* Restore purchases link */}
-          <Pressable
-            style={styles.restoreLink}
-            onPress={() => useSubscriptionStore.getState().restorePurchases()}
-          >
-            <Text style={styles.restoreLinkText}>Restore purchases</Text>
-          </Pressable>
+          {/* Restore purchases */}
+          <View style={styles.restoreContainer}>
+            {restoreMessage && (
+              <View
+                style={[
+                  styles.restoreMessageBanner,
+                  restoreMessage.type === "success"
+                    ? styles.restoreMessageSuccess
+                    : styles.restoreMessageError,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.restoreMessageText,
+                    restoreMessage.type === "success"
+                      ? styles.restoreMessageTextSuccess
+                      : styles.restoreMessageTextError,
+                  ]}
+                >
+                  {restoreMessage.text}
+                </Text>
+              </View>
+            )}
+            <Button
+              text={isRestoring ? "Restoring..." : "Restore purchases"}
+              onPress={handleRestorePurchases}
+              variant="ghost"
+              style={styles.restoreButton}
+              disabled={isRestoring || subscriptionLoading}
+              loading={isRestoring}
+            />
+          </View>
         </ScrollView>
       ) : error ? (
         // Error state - show error and retry option
@@ -681,14 +738,40 @@ const styles = StyleSheet.create((theme) => ({
   skipButton: {
     marginBottom: theme.spacing.sm,
   },
-  restoreLink: {
+  restoreContainer: {
     alignItems: "center",
-    paddingVertical: theme.spacing.md,
+    gap: theme.spacing.sm,
   },
-  restoreLinkText: {
-    color: theme.colors.tint,
-    fontSize: 14,
+  restoreButton: {
+    minWidth: 160,
+  },
+  restoreMessageBanner: {
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+    borderRadius: 8,
+    width: "100%",
+    alignItems: "center",
+  },
+  restoreMessageSuccess: {
+    backgroundColor: theme.colors.palette.success100,
+    borderWidth: 1,
+    borderColor: theme.colors.palette.success500,
+  },
+  restoreMessageError: {
+    backgroundColor: theme.colors.palette.error100,
+    borderWidth: 1,
+    borderColor: theme.colors.palette.error500,
+  },
+  restoreMessageText: {
+    fontSize: 13,
     fontWeight: "500",
+    textAlign: "center",
+  },
+  restoreMessageTextSuccess: {
+    color: theme.colors.palette.success700,
+  },
+  restoreMessageTextError: {
+    color: theme.colors.palette.error700,
   },
   // Mock banner
   mockBanner: {
