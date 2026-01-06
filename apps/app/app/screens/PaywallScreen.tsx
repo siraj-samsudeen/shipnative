@@ -4,7 +4,7 @@ import { RouteProp, useRoute } from "@react-navigation/native"
 import { useTranslation } from "react-i18next"
 import { StyleSheet, useUnistyles } from "react-native-unistyles"
 
-import { Text, Container, Button } from "../components"
+import { Text, Container, Button, PricingCard } from "../components"
 import { env } from "../config/env"
 import type { AppStackParamList } from "../navigators/navigationTypes"
 import { resetRoot } from "../navigators/navigationUtilities"
@@ -256,6 +256,34 @@ export const PaywallScreen = () => {
                 : t("paywallScreen:secureCheckoutDescription")}
             </Text>
 
+            {/* Value proposition */}
+            <View style={styles.valueProps}>
+              <View style={styles.valuePropRow}>
+                <View style={styles.checkIcon}>
+                  <Text style={styles.checkText}>✓</Text>
+                </View>
+                <Text style={styles.valuePropText}>Unlimited projects</Text>
+              </View>
+              <View style={styles.valuePropRow}>
+                <View style={styles.checkIcon}>
+                  <Text style={styles.checkText}>✓</Text>
+                </View>
+                <Text style={styles.valuePropText}>Priority support</Text>
+              </View>
+              <View style={styles.valuePropRow}>
+                <View style={styles.checkIcon}>
+                  <Text style={styles.checkText}>✓</Text>
+                </View>
+                <Text style={styles.valuePropText}>Advanced analytics</Text>
+              </View>
+              <View style={styles.valuePropRow}>
+                <View style={styles.checkIcon}>
+                  <Text style={styles.checkText}>✓</Text>
+                </View>
+                <Text style={styles.valuePropText}>No watermarks</Text>
+              </View>
+            </View>
+
             {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
             <View style={styles.packageList}>
@@ -264,35 +292,53 @@ export const PaywallScreen = () => {
                   {isWeb ? noWebOfferingMessage : noPackagesMessage}
                 </Text>
               ) : (
-                packages.map((pricingPkg) => {
+                packages.map((pricingPkg, index) => {
+                  const isPopular = index === 0
+                  const isAnnual = pricingPkg.identifier.toLowerCase().includes('annual') ||
+                                   pricingPkg.identifier.toLowerCase().includes('year')
+
+                  // Calculate proper display
+                  let displayPrice = pricingPkg.priceString || `$${pricingPkg.price.toFixed(2)}`
+                  let billingPeriod = "month"
+                  let pricePerMonth = undefined
+                  let savingsText = undefined
+                  let ctaText = undefined
+
+                  if (isAnnual) {
+                    // For annual: show yearly price, then monthly breakdown
+                    billingPeriod = "year"
+                    const monthlyEquivalent = (pricingPkg.price / 12).toFixed(2)
+                    pricePerMonth = `≈ $${monthlyEquivalent}/month`
+                    savingsText = "Save 40%"
+                    ctaText = "Unlock Pro"
+                  } else {
+                    // For monthly: simpler CTA
+                    ctaText = "Choose Monthly"
+                  }
+
                   return (
-                    <View key={pricingPkg.identifier} style={styles.packageCard}>
-                      <View style={styles.packageHeader}>
-                        <Text style={styles.packageTitle}>{pricingPkg.title}</Text>
-                        <Text style={styles.packagePrice}>
-                          {pricingPkg.priceString || `$${pricingPkg.price.toFixed(2)}`}
-                        </Text>
-                      </View>
-                      {pricingPkg.description ? (
-                        <Text style={styles.packageDescription}>{pricingPkg.description}</Text>
-                      ) : null}
-                      <Button
-                        text={
-                          subscriptionLoading || isPresenting
-                            ? t("paywallScreen:processing")
-                            : t("paywallScreen:selectPlan")
-                        }
-                        onPress={() => handlePackagePurchase(pricingPkg)}
-                        variant="filled"
-                        loading={subscriptionLoading || isPresenting}
-                        disabled={subscriptionLoading || isPresenting}
-                        style={styles.presentButton}
-                      />
-                    </View>
+                    <PricingCard
+                      key={pricingPkg.identifier}
+                      title={pricingPkg.title}
+                      price={displayPrice}
+                      description={pricingPkg.description || ""}
+                      billingPeriod={billingPeriod}
+                      features={[]}
+                      isPopular={isPopular}
+                      onPress={() => handlePackagePurchase(pricingPkg)}
+                      disabled={subscriptionLoading || isPresenting}
+                      loading={subscriptionLoading || isPresenting}
+                      savingsText={savingsText}
+                      pricePerMonth={pricePerMonth}
+                      ctaText={ctaText}
+                    />
                   )
                 })
               )}
             </View>
+
+            {/* Risk reversal */}
+            <Text style={styles.riskReversal}>Cancel anytime • Secure App Store checkout</Text>
 
             {isFromOnboarding && (
               <Button
@@ -358,28 +404,61 @@ const styles = StyleSheet.create((theme) => ({
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: theme.colors.background,
-    paddingHorizontal: theme.spacing.xl,
+    paddingHorizontal: theme.spacing.lg,
   },
   content: {
     alignItems: "center",
     justifyContent: "center",
-    maxWidth: 400,
+    maxWidth: 480,
     width: "100%",
   },
   title: {
     color: theme.colors.foreground,
-    fontSize: 28,
-    fontWeight: "bold",
-    lineHeight: 36,
-    marginBottom: theme.spacing.md,
+    fontSize: 32,
+    fontWeight: "800",
+    lineHeight: 38,
+    marginBottom: theme.spacing.sm,
     textAlign: "center",
+    letterSpacing: -0.5,
   },
   description: {
     color: theme.colors.foregroundSecondary,
-    fontSize: 16,
-    lineHeight: 24,
-    marginBottom: theme.spacing.xl,
+    fontSize: 15,
+    lineHeight: 22,
+    marginBottom: theme.spacing.lg,
     textAlign: "center",
+  },
+  valueProps: {
+    alignSelf: "stretch",
+    backgroundColor: theme.colors.backgroundSecondary,
+    borderRadius: 16,
+    padding: theme.spacing.lg,
+    marginBottom: theme.spacing.xl,
+    gap: theme.spacing.sm,
+  },
+  valuePropRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.spacing.sm,
+  },
+  checkIcon: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: theme.colors.palette.success500,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  checkText: {
+    color: theme.colors.palette.white,
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  valuePropText: {
+    color: theme.colors.foreground,
+    fontSize: 15,
+    fontWeight: "500",
+    flex: 1,
   },
   loadingText: {
     color: theme.colors.foregroundSecondary,
@@ -406,41 +485,19 @@ const styles = StyleSheet.create((theme) => ({
     width: "100%",
   },
   skipButton: {
-    marginTop: theme.spacing.sm,
+    marginTop: theme.spacing.md,
   },
   packageList: {
-    gap: theme.spacing.md,
+    gap: theme.spacing.lg,
     width: "100%",
+    marginTop: theme.spacing.md,
   },
-  packageCard: {
-    backgroundColor: theme.colors.card,
-    borderColor: theme.colors.border,
-    borderRadius: 12,
-    borderWidth: 1,
-    padding: theme.spacing.lg,
-    width: "100%",
-  },
-  packageHeader: {
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: theme.spacing.xs,
-    width: "100%",
-  },
-  packageTitle: {
-    color: theme.colors.foreground,
-    fontSize: 18,
-    fontWeight: "700",
-  },
-  packagePrice: {
-    color: theme.colors.primary,
-    fontSize: 18,
-    fontWeight: "700",
-  },
-  packageDescription: {
-    color: theme.colors.foregroundSecondary,
-    fontSize: 14,
-    lineHeight: 20,
-    marginBottom: theme.spacing.md,
+  riskReversal: {
+    color: theme.colors.foregroundTertiary,
+    fontSize: 13,
+    textAlign: "center",
+    marginTop: theme.spacing.lg,
+    marginBottom: theme.spacing.sm,
+    fontWeight: "500",
   },
 }))

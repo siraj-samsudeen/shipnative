@@ -1,7 +1,8 @@
 import { FC } from "react"
 import { Linking, Platform, Pressable, View } from "react-native"
+import { Ionicons } from "@expo/vector-icons"
 import { useTranslation } from "react-i18next"
-import { StyleSheet } from "react-native-unistyles"
+import { StyleSheet, useUnistyles } from "react-native-unistyles"
 
 import { Text } from "./Text"
 
@@ -21,6 +22,7 @@ export const SubscriptionStatus: FC<SubscriptionStatusProps> = ({
   onManagePress,
 }) => {
   const { t } = useTranslation()
+  const { theme } = useUnistyles()
 
   const formatDate = (dateString: string | null | undefined) => {
     if (!dateString) return null
@@ -73,7 +75,7 @@ export const SubscriptionStatus: FC<SubscriptionStatusProps> = ({
     return (
       <View style={styles.container}>
         <View style={styles.iconContainer}>
-          <Text style={styles.icon}>🆓</Text>
+          <Ionicons name="gift-outline" size={24} color={theme.colors.foregroundSecondary} />
         </View>
         <View style={styles.content}>
           <Text style={styles.title} tx="subscriptionStatus:freePlan" />
@@ -86,7 +88,7 @@ export const SubscriptionStatus: FC<SubscriptionStatusProps> = ({
   return (
     <View style={[styles.container, styles.proContainer]}>
       <View style={[styles.iconContainer, styles.proIconContainer]}>
-        <Text style={styles.icon}>✨</Text>
+        <Ionicons name="sparkles" size={24} color={theme.colors.palette.white} />
       </View>
       <View style={styles.content}>
         <Text style={[styles.title, styles.proTitle]} tx="subscriptionStatus:proMember" />
@@ -137,9 +139,6 @@ const styles = StyleSheet.create((theme) => ({
     color: theme.colors.foregroundSecondary,
     fontSize: 12,
     marginTop: 4,
-  },
-  icon: {
-    fontSize: 24,
   },
   iconContainer: {
     alignItems: "center",

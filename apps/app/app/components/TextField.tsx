@@ -13,8 +13,6 @@ import Ionicons from "@expo/vector-icons/Ionicons"
 import { useTranslation } from "react-i18next"
 import { StyleSheet, useUnistyles } from "react-native-unistyles"
 
-import { isRTL } from "@/i18n"
-
 import { Text, TextProps } from "./Text"
 
 // =============================================================================
@@ -180,7 +178,9 @@ export const TextField = forwardRef(function TextField(
   } = props
 
   const { theme } = useUnistyles()
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const languageTag = i18n.language?.split("-")[0]
+  const isRTL = i18n.dir?.(i18n.language) === "rtl" || languageTag === "ar"
   const inputRef = useRef<RNTextInput>(null)
   const [isFocused, setIsFocused] = useState(false)
   const [internalValue, setInternalValue] = useState(value || "")

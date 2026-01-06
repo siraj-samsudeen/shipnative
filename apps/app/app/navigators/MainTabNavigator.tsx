@@ -11,13 +11,13 @@ import Animated, {
   interpolateColor,
 } from "react-native-reanimated"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
-import { StyleSheet, useUnistyles } from "react-native-unistyles"
+import { StyleSheet, useUnistyles, UnistylesRuntime } from "react-native-unistyles"
+import { useTranslation } from "react-i18next"
 
 import { ComponentShowcaseScreen } from "@/screens/ComponentShowcaseScreen"
 import { HomeScreen } from "@/screens/HomeScreen"
 import { PaywallScreen } from "@/screens/PaywallScreen"
 import { ProfileScreen } from "@/screens/ProfileScreen"
-import { useAppTheme } from "@/theme/context"
 import { designTokens } from "@/theme/designTokens"
 import { haptics } from "@/utils/haptics"
 
@@ -34,13 +34,13 @@ const TAB_CONFIG: Record<
   {
     icon: keyof typeof Ionicons.glyphMap
     iconOutline: keyof typeof Ionicons.glyphMap
-    label: string
+    labelTx: string
   }
 > = {
-  Home: { icon: "home", iconOutline: "home-outline", label: "Home" },
-  Components: { icon: "cube", iconOutline: "cube-outline", label: "Components" },
-  Paywall: { icon: "diamond", iconOutline: "diamond-outline", label: "Pro" },
-  Profile: { icon: "person", iconOutline: "person-outline", label: "Profile" },
+  Home: { icon: "home", iconOutline: "home-outline", labelTx: "tabs:home" },
+  Components: { icon: "cube", iconOutline: "cube-outline", labelTx: "tabs:components" },
+  Paywall: { icon: "diamond", iconOutline: "diamond-outline", labelTx: "tabs:pro" },
+  Profile: { icon: "person", iconOutline: "person-outline", labelTx: "tabs:profile" },
 }
 
 // Spring config for snappy animations
@@ -72,6 +72,8 @@ function TabItem({
   activeBackgroundColor: string
 }) {
   const config = TAB_CONFIG[routeName]
+  const { t } = useTranslation()
+  const label = t(config.labelTx)
 
   // Animation values
   const focusAnim = useSharedValue(isFocused ? 1 : 0)
@@ -156,7 +158,7 @@ function TabItem({
       style={$pressableStyle}
       accessibilityRole="tab"
       accessibilityState={{ selected: isFocused }}
-      accessibilityLabel={config.label}
+      accessibilityLabel={label}
     >
       <Animated.View style={[$tabContainerStyle, containerAnimatedStyle]}>
         <Animated.View style={iconAnimatedStyle}>
@@ -169,7 +171,7 @@ function TabItem({
 
         <Animated.View style={[$labelContainerStyle, labelAnimatedStyle]}>
           <Animated.Text numberOfLines={1} style={$labelTextStyle}>
-            {config.label}
+            {label}
           </Animated.Text>
         </Animated.View>
       </Animated.View>
@@ -192,6 +194,8 @@ function SidebarItem({
 }) {
   const config = TAB_CONFIG[routeName]
   const { theme } = useUnistyles()
+  const { t } = useTranslation()
+  const label = t(config.labelTx)
 
   // Animation values
   const scaleAnim = useSharedValue(1)
@@ -220,7 +224,7 @@ function SidebarItem({
       onPressOut={handlePressOut}
       accessibilityRole="tab"
       accessibilityState={{ selected: isFocused }}
-      accessibilityLabel={config.label}
+      accessibilityLabel={label}
     >
       <Animated.View
         style={[styles.sidebarItem, isFocused && styles.sidebarItemActive, animatedStyle]}
@@ -231,7 +235,7 @@ function SidebarItem({
           color={isFocused ? theme.colors.primary : theme.colors.foregroundSecondary}
         />
         <Animated.Text style={[styles.sidebarLabel, isFocused && styles.sidebarLabelActive]}>
-          {config.label}
+          {label}
         </Animated.Text>
       </Animated.View>
     </Pressable>
@@ -298,17 +302,17 @@ function DesktopSidebar({ state, navigation }: BottomTabBarProps) {
 
 function MobileTabBar({ state, navigation }: BottomTabBarProps) {
   const { bottom } = useSafeAreaInsets()
-  const { theme, themeContext } = useAppTheme()
-  const { theme: unistylesTheme } = useUnistyles()
+  const { theme } = useUnistyles()
+  const isDark = UnistylesRuntime.themeName === "dark"
 
   // Invert nav background for contrast: dark pill on light theme, light pill on dark theme
   const navBackground = theme.colors.palette.neutral900
-  const activeColor = theme.isDark
+  const activeColor = isDark
     ? theme.colors.palette.primary300
     : theme.colors.palette.primary300 || designTokens.colors.primary
-  const inactiveColor = theme.isDark ? theme.colors.palette.neutral400 : "rgba(255, 255, 255, 0.65)"
-  const activeBackgroundColor = theme.isDark ? "rgba(0, 0, 0, 0.06)" : "rgba(255, 255, 255, 0.14)"
-  const borderColor = theme.isDark ? "rgba(0, 0, 0, 0.08)" : "rgba(255, 255, 255, 0.2)"
+  const inactiveColor = isDark ? theme.colors.palette.neutral400 : "rgba(255, 255, 255, 0.65)"
+  const activeBackgroundColor = isDark ? "rgba(0, 0, 0, 0.06)" : "rgba(255, 255, 255, 0.14)"
+  const borderColor = isDark ? "rgba(0, 0, 0, 0.08)" : "rgba(255, 255, 255, 0.2)"
   const containerStyle = {
     flexDirection: "row" as const,
     alignItems: "center" as const,
@@ -321,11 +325,11 @@ function MobileTabBar({ state, navigation }: BottomTabBarProps) {
     gap: 2,
     overflow: "hidden" as const,
     // Use Unistyles theme shadow as base, with custom adjustments for tab bar
-    ...unistylesTheme.shadows.xl,
+    ...theme.shadows.xl,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: Platform.select({
-      web: theme.isDark ? 0.12 : 0.2,
-      default: theme.isDark ? 0.2 : 0.35,
+      web: isDark ? 0.12 : 0.2,
+      default: isDark ? 0.2 : 0.35,
     }),
     shadowRadius: 18,
     elevation: 16,
@@ -344,7 +348,7 @@ function MobileTabBar({ state, navigation }: BottomTabBarProps) {
       {false && Platform.OS === "ios" ? (
         <BlurView
           intensity={80}
-          tint={themeContext === "dark" ? "dark" : "light"}
+          tint={isDark ? "dark" : "light"}
           style={containerStyle}
         >
           {state.routes.map((route, index) => {

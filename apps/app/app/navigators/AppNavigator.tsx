@@ -14,7 +14,7 @@ import Config from "@/config"
 import * as Screens from "@/screens"
 import { ErrorBoundary } from "@/screens/ErrorScreen/ErrorBoundary"
 import { useAuthStore } from "@/stores"
-import { useAppTheme } from "@/theme/context"
+import { UnistylesRuntime, useUnistyles } from "react-native-unistyles"
 import { webDimension } from "@/types/webStyles"
 import { logger } from "@/utils/Logger"
 
@@ -40,12 +40,9 @@ const AppStack = () => {
   const shouldShowOnboarding = !!user && isAuthenticated && !hasCompletedOnboarding
   const needsEmailVerification = !!user && !isEmailConfirmed
   const isWeb = Platform.OS === "web"
-  const {
-    theme: { colors },
-    theme: themeContextValue,
-  } = useAppTheme()
-  const navigationBarColor = colors.palette.neutral900
-  const statusBarStyle = themeContextValue.isDark ? "light" : "dark"
+  const { theme } = useUnistyles()
+  const navigationBarColor = theme.colors.palette.neutral900
+  const statusBarStyle = UnistylesRuntime.themeName === "dark" ? "light" : "dark"
 
   // Track previous state to detect transitions
   const prevNeedsEmailVerificationRef = useRef(needsEmailVerification)
@@ -103,7 +100,7 @@ const AppStack = () => {
         statusBarStyle,
         contentStyle: {
           flex: 1,
-          backgroundColor: colors.background,
+          backgroundColor: theme.colors.background,
           ...(isWeb && {
             minHeight: webDimension("100vh"),
             height: webDimension("100vh"),
@@ -232,7 +229,38 @@ const AppStack = () => {
 }
 
 export const AppNavigator = (props: NavigationProps) => {
-  const { navigationTheme } = useAppTheme()
+  const { theme } = useUnistyles()
+
+  // Map Unistyles theme to React Navigation theme
+  const navigationTheme = {
+    dark: UnistylesRuntime.themeName === "dark",
+    colors: {
+      primary: theme.colors.primary,
+      background: theme.colors.background,
+      card: theme.colors.card,
+      text: theme.colors.foreground,
+      border: theme.colors.border,
+      notification: theme.colors.primary,
+    },
+    fonts: {
+      regular: {
+        fontFamily: theme.typography.fonts.regular,
+        fontWeight: "400" as const,
+      },
+      medium: {
+        fontFamily: theme.typography.fonts.medium,
+        fontWeight: "500" as const,
+      },
+      bold: {
+        fontFamily: theme.typography.fonts.bold,
+        fontWeight: "700" as const,
+      },
+      heavy: {
+        fontFamily: theme.typography.fonts.bold,
+        fontWeight: "900" as const,
+      },
+    },
+  }
 
   useBackButtonHandler((routeName) => exitRoutes.includes(routeName))
 

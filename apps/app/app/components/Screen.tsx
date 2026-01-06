@@ -14,10 +14,8 @@ import {
 import { useScrollToTop } from "@react-navigation/native"
 import { SystemBars, SystemBarsProps, SystemBarStyle } from "react-native-edge-to-edge"
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller"
-import { useUnistyles } from "react-native-unistyles"
+import { UnistylesRuntime, useUnistyles } from "react-native-unistyles"
 
-import { useAppTheme } from "@/theme/context"
-import { $styles } from "@/theme/styles"
 import { ExtendedEdge, useSafeAreaInsetsStyle } from "@/utils/useSafeAreaInsetsStyle"
 
 export const DEFAULT_BOTTOM_OFFSET = 50
@@ -274,10 +272,7 @@ function ScreenWithScrolling(props: ScreenProps) {
  * @returns {JSX.Element} The rendered `Screen` component.
  */
 export function Screen(props: ScreenProps) {
-  const {
-    theme: { colors },
-    themeContext,
-  } = useAppTheme()
+  const { theme } = useUnistyles()
   const {
     backgroundColor,
     KeyboardAvoidingViewProps,
@@ -293,12 +288,12 @@ export function Screen(props: ScreenProps) {
     <View
       style={[
         $containerStyle,
-        { backgroundColor: backgroundColor || colors.background },
+        { backgroundColor: backgroundColor || theme.colors.background },
         $containerInsets,
       ]}
     >
       <SystemBars
-        style={systemBarStyle || (themeContext === "dark" ? "light" : "dark")}
+        style={systemBarStyle || (UnistylesRuntime.themeName === "dark" ? "light" : "dark")}
         {...SystemBarsProps}
       />
 
@@ -306,7 +301,7 @@ export function Screen(props: ScreenProps) {
         behavior={isIos ? "padding" : "height"}
         keyboardVerticalOffset={keyboardOffset}
         {...KeyboardAvoidingViewProps}
-        style={[$styles.flex1, KeyboardAvoidingViewProps?.style]}
+        style={[$flex1, KeyboardAvoidingViewProps?.style]}
       >
         {isNonScrolling(props.preset) ? (
           <ScreenWithoutScrolling {...props} />
@@ -341,4 +336,8 @@ const $justifyFlexEnd: ViewStyle = {
 const $innerStyle: ViewStyle = {
   justifyContent: "flex-start",
   alignItems: "stretch",
+}
+
+const $flex1: ViewStyle = {
+  flex: 1,
 }

@@ -8,8 +8,10 @@ import type {
   SubscriptionInfo,
   PricingPackage,
   SubscriptionService,
+  SubscriptionLifecycleData,
 } from "../types/subscription"
 import { logger } from "../utils/Logger"
+import { detectLifecycleEvent, getLifecycleEventDescription } from "../utils/subscriptionHelpers"
 import * as storage from "../utils/storage"
 
 const getAuthStore = () => {
@@ -32,6 +34,9 @@ interface SubscriptionState {
   packages: PricingPackage[]
   loading: boolean
 
+  // Lifecycle tracking
+  lifecycleListeners: Array<(event: SubscriptionLifecycleData) => void>
+
   // Actions
   setCustomerInfo: (info: SubscriptionInfo | null) => void
   setWebSubscriptionInfo: (info: SubscriptionInfo | null) => void
@@ -42,6 +47,7 @@ interface SubscriptionState {
   restorePurchases: () => Promise<{ error?: Error }>
   initialize: () => Promise<void>
   getActiveService: () => SubscriptionService
+  addLifecycleListener: (listener: (event: SubscriptionLifecycleData) => void) => () => void
 }
 
 // Custom storage adapter for Zustand to use MMKV
@@ -67,6 +73,7 @@ export const useSubscriptionStore = create<SubscriptionState>()(
       webSubscriptionInfo: null,
       packages: [],
       loading: false,
+      lifecycleListeners: [],
 
       getActiveService: (): SubscriptionService => {
         // RevenueCat handles both mobile and web now
@@ -74,11 +81,61 @@ export const useSubscriptionStore = create<SubscriptionState>()(
       },
 
       setCustomerInfo: (info) => {
+        const { customerInfo: oldInfo, lifecycleListeners } = get()
+
+        // Detect lifecycle events
+        const lifecycleEvent = detectLifecycleEvent(oldInfo, info)
+        if (lifecycleEvent) {
+          // Log event
+          if (__DEV__) {
+            logger.info(
+              `🔄 Subscription Event: ${getLifecycleEventDescription(lifecycleEvent.event)}`,
+              {
+                event: lifecycleEvent,
+              },
+            )
+          }
+
+          // Notify listeners
+          lifecycleListeners.forEach((listener) => {
+            try {
+              listener(lifecycleEvent)
+            } catch (error) {
+              logger.error("Lifecycle listener error", { error })
+            }
+          })
+        }
+
         set({ customerInfo: info })
         get().checkProStatus()
       },
 
       setWebSubscriptionInfo: (info) => {
+        const { webSubscriptionInfo: oldInfo, lifecycleListeners } = get()
+
+        // Detect lifecycle events
+        const lifecycleEvent = detectLifecycleEvent(oldInfo, info)
+        if (lifecycleEvent) {
+          // Log event
+          if (__DEV__) {
+            logger.info(
+              `🔄 Subscription Event: ${getLifecycleEventDescription(lifecycleEvent.event)}`,
+              {
+                event: lifecycleEvent,
+              },
+            )
+          }
+
+          // Notify listeners
+          lifecycleListeners.forEach((listener) => {
+            try {
+              listener(lifecycleEvent)
+            } catch (error) {
+              logger.error("Lifecycle listener error", { error })
+            }
+          })
+        }
+
         set({ webSubscriptionInfo: info })
         get().checkProStatus()
       },
@@ -254,6 +311,19 @@ export const useSubscriptionStore = create<SubscriptionState>()(
           }
         } catch (error) {
           logger.error("Subscription initialization failed", { error })
+        }
+      },
+
+      addLifecycleListener: (listener) => {
+        set((state) => ({
+          lifecycleListeners: [...state.lifecycleListeners, listener],
+        }))
+
+        // Return unsubscribe function
+        return () => {
+          set((state) => ({
+            lifecycleListeners: state.lifecycleListeners.filter((l) => l !== listener),
+          }))
         }
       },
     }),

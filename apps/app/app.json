@@ -22,7 +22,15 @@
       "backgroundImage": "./assets/images/app-icon-android-adaptive-background.png"
     },
     "allowBackup": false,
-    "edgeToEdgeEnabled": true
+    "edgeToEdgeEnabled": true,
+    "permissions": [
+      "READ_EXTERNAL_STORAGE",
+      "WRITE_EXTERNAL_STORAGE",
+      "READ_MEDIA_IMAGES",
+      "READ_MEDIA_VIDEO",
+      "CAMERA",
+      "RECORD_AUDIO"
+    ]
   },
   "ios": {
     "icon": "./assets/images/app-icon-ios.png",
@@ -33,7 +41,10 @@
       "UIBackgroundModes": [
         "remote-notification"
       ],
-      "NSUserTrackingUsageDescription": "This app uses analytics to improve your experience and understand how you use the app. Your data is anonymized and never sold to third parties."
+      "NSUserTrackingUsageDescription": "This app uses analytics to improve your experience and understand how you use the app. Your data is anonymized and never sold to third parties.",
+      "NSPhotoLibraryUsageDescription": "This app needs access to your photo library to let you select images for upload.",
+      "NSCameraUsageDescription": "This app needs access to your camera to let you take photos.",
+      "NSMicrophoneUsageDescription": "This app needs access to your microphone when recording videos."
     }
   },
   "web": {
@@ -49,6 +60,19 @@
   "plugins": [
     "expo-localization",
     "expo-font",
+    [
+      "expo-image-picker",
+      {
+        "photosPermission": "This app needs access to your photo library to let you select images for upload.",
+        "cameraPermission": "This app needs access to your camera to let you take photos."
+      }
+    ],
+    [
+      "expo-document-picker",
+      {
+        "iCloudContainerEnvironment": "Production"
+      }
+    ],
     [
       "expo-splash-screen",
       {

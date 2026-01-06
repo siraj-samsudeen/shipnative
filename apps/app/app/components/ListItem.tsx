@@ -353,6 +353,7 @@ const styles = StyleSheet.create((theme) => ({
     justifyContent: "center",
     alignItems: "center",
     flexGrow: 0,
+    flexShrink: 0,
   },
   iconContainerLeft: {
     marginRight: theme.spacing.md,

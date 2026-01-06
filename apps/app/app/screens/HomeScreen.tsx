@@ -1,18 +1,12 @@
 import { FC } from "react"
 import { View, ScrollView, Pressable, Platform, useWindowDimensions } from "react-native"
-import type { StyleProp, ViewStyle } from "react-native"
 import { LinearGradient } from "expo-linear-gradient"
 import { Ionicons } from "@expo/vector-icons"
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-  FadeInDown,
-} from "react-native-reanimated"
+import Animated, { FadeInDown } from "react-native-reanimated"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { StyleSheet, useUnistyles } from "react-native-unistyles"
 
-import { Text, Avatar, Badge } from "@/components"
+import { Text, Avatar, Badge, PressableCard } from "@/components"
 import { ANIMATION } from "@/config/constants"
 import type { MainTabScreenProps } from "@/navigators/navigationTypes"
 import { useAuthStore, useNotificationStore } from "@/stores"
@@ -33,63 +27,6 @@ const isWeb = Platform.OS === "web"
 const CONTENT_MAX_WIDTH = 800
 
 // Spring config for animations
-const SPRING_CONFIG = {
-  damping: 15,
-  stiffness: 200,
-}
-
-// =============================================================================
-// PRESSABLE CARD COMPONENT
-// =============================================================================
-
-interface PressableCardProps {
-  children: React.ReactNode
-  onPress?: () => void
-  style?: StyleProp<ViewStyle>
-  containerStyle?: StyleProp<ViewStyle>
-  delay?: number
-}
-
-function PressableCard({
-  children,
-  onPress,
-  style,
-  containerStyle,
-  delay = 0,
-}: PressableCardProps) {
-  const scale = useSharedValue(1)
-
-  const handlePressIn = () => {
-    scale.value = withSpring(0.97, SPRING_CONFIG)
-  }
-
-  const handlePressOut = () => {
-    scale.value = withSpring(1, SPRING_CONFIG)
-  }
-
-  const handlePress = () => {
-    haptics.cardPress()
-    onPress?.()
-  }
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }))
-
-  return (
-    <Animated.View entering={FadeInDown.delay(delay).springify()} style={containerStyle}>
-      <Pressable
-        onPress={handlePress}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
-        disabled={!onPress}
-      >
-        <Animated.View style={[style, animatedStyle]}>{children}</Animated.View>
-      </Pressable>
-    </Animated.View>
-  )
-}
-
 // =============================================================================
 // COMPONENT
 // =============================================================================
@@ -124,6 +61,8 @@ export const HomeScreen: FC<HomeScreenProps> = function HomeScreen(_props) {
     typeof user?.user_metadata?.first_name === "string" ? user.user_metadata.first_name : undefined
   const userName = firstName ?? user?.email?.split("@")[0] ?? "User"
   const userInitials = userName.slice(0, 2).toUpperCase()
+  const avatarUrl =
+    typeof user?.user_metadata?.avatar_url === "string" ? user.user_metadata.avatar_url : undefined
 
   return (
     <View style={styles.container}>
@@ -145,7 +84,7 @@ export const HomeScreen: FC<HomeScreenProps> = function HomeScreen(_props) {
           {/* Header Section */}
           <Animated.View entering={FadeInDown.delay(0).springify()} style={styles.header}>
             <View style={styles.headerLeft}>
-              <Avatar fallback={userInitials} size="md" />
+              <Avatar source={avatarUrl ? { uri: avatarUrl } : undefined} fallback={userInitials} size="md" />
               <View style={styles.headerText}>
                 <Text size="sm" color="secondary" tx="homeScreen:goodMorning" />
                 <Text size="xl" weight="bold">

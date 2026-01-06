@@ -11,6 +11,7 @@ import { Platform } from "react-native"
 import { env, isDevelopment } from "../config/env"
 import type { PricingPackage, SubscriptionService, SubscriptionInfo } from "../types/subscription"
 import { logger } from "../utils/Logger"
+import { formatPeriod } from "../utils/subscriptionHelpers"
 import { mockRevenueCat } from "./mocks/revenueCat"
 
 type RevenueCatEntitlement = {
@@ -64,6 +65,16 @@ type RevenueCatPackage = {
       unit: "DAY" | "WEEK" | "MONTH" | "YEAR"
       value: number
     }
+    introPrice?: {
+      price: number
+      priceString: string
+      period: number
+      periodUnit: "DAY" | "WEEK" | "MONTH" | "YEAR"
+    } | null
+    freeTrialPeriod?: {
+      value: number
+      unit: "DAY" | "WEEK" | "MONTH" | "YEAR"
+    } | null
   }
 }
 
@@ -78,6 +89,16 @@ type RevenueCatWebPackage = {
       formattedPrice?: string
       currency?: string
     }
+    introductoryPrice?: {
+      amountMicros?: number
+      formattedPrice?: string
+      periodCount?: number
+      periodUnit?: "DAY" | "WEEK" | "MONTH" | "YEAR"
+    } | null
+    freeTrialPeriod?: {
+      periodCount?: number
+      periodUnit?: "DAY" | "WEEK" | "MONTH" | "YEAR"
+    } | null
   }
 }
 
@@ -421,18 +442,54 @@ const revenueCatMobile: SubscriptionService = {
       const offerings = await getMobilePurchases().getOfferings()
       if (!offerings.current || !offerings.current.availablePackages) return []
 
-      return offerings.current.availablePackages.map((pkg: RevenueCatPackage) => ({
-        id: pkg.identifier,
-        identifier: pkg.identifier,
-        title: pkg.product.title,
-        description: pkg.product.description,
-        price: pkg.product.price,
-        priceString: pkg.product.priceString,
-        currencyCode: pkg.product.currencyCode,
-        billingPeriod: pkg.packageType === "ANNUAL" ? "annual" : "monthly",
-        platform: "revenuecat" as const,
-        platformData: pkg,
-      }))
+      return offerings.current.availablePackages.map((pkg: RevenueCatPackage) => {
+        // Extract intro pricing info
+        const introPrice = pkg.product.introPrice
+        const introPriceData = introPrice
+          ? {
+              introPrice: introPrice.price,
+              introPriceString: introPrice.priceString,
+              introPricePeriodUnit: introPrice.periodUnit.toLowerCase() as
+                | "day"
+                | "week"
+                | "month"
+                | "year",
+              introPricePeriodCount: introPrice.period,
+              introPricePeriod: formatPeriod(
+                introPrice.period,
+                introPrice.periodUnit.toLowerCase() as "day" | "week" | "month" | "year",
+              ),
+            }
+          : {}
+
+        // Extract free trial info
+        const freeTrial = pkg.product.freeTrialPeriod
+        const freeTrialData = freeTrial
+          ? {
+              freeTrialPeriodUnit: freeTrial.unit.toLowerCase() as "day" | "week" | "month" | "year",
+              freeTrialPeriodCount: freeTrial.value,
+              freeTrialPeriod: formatPeriod(
+                freeTrial.value,
+                freeTrial.unit.toLowerCase() as "day" | "week" | "month" | "year",
+              ),
+            }
+          : {}
+
+        return {
+          id: pkg.identifier,
+          identifier: pkg.identifier,
+          title: pkg.product.title,
+          description: pkg.product.description,
+          price: pkg.product.price,
+          priceString: pkg.product.priceString,
+          currencyCode: pkg.product.currencyCode,
+          billingPeriod: pkg.packageType === "ANNUAL" ? "annual" : "monthly",
+          platform: "revenuecat" as const,
+          platformData: pkg,
+          ...introPriceData,
+          ...freeTrialData,
+        }
+      })
     } catch (error) {
       // Handle "no products configured" error gracefully
       // This is expected when RevenueCat dashboard isn't set up yet
@@ -635,20 +692,62 @@ const revenueCatWeb: SubscriptionService = {
       const offerings = await webPurchasesInstance.getOfferings()
       if (!offerings.current || !offerings.current.availablePackages) return []
 
-      return offerings.current.availablePackages.map((pkg: RevenueCatWebPackage) => ({
-        id: pkg.identifier,
-        identifier: pkg.identifier,
-        title: pkg.rcBillingProduct?.displayName || pkg.identifier,
-        description: pkg.rcBillingProduct?.description || "",
-        price: pkg.rcBillingProduct?.currentPrice?.amountMicros
-          ? pkg.rcBillingProduct.currentPrice.amountMicros / 1_000_000
-          : 0,
-        priceString: pkg.rcBillingProduct?.currentPrice?.formattedPrice || "",
-        currencyCode: pkg.rcBillingProduct?.currentPrice?.currency || "USD",
-        billingPeriod: pkg.packageType === "ANNUAL" ? "annual" : "monthly",
-        platform: "revenuecat-web" as const,
-        platformData: pkg,
-      }))
+      return offerings.current.availablePackages.map((pkg: RevenueCatWebPackage) => {
+        // Extract intro pricing info
+        const introPrice = pkg.rcBillingProduct?.introductoryPrice
+        const introPriceData = introPrice
+          ? {
+              introPrice: introPrice.amountMicros ? introPrice.amountMicros / 1_000_000 : null,
+              introPriceString: introPrice.formattedPrice || null,
+              introPricePeriodUnit: introPrice.periodUnit
+                ? (introPrice.periodUnit.toLowerCase() as "day" | "week" | "month" | "year")
+                : null,
+              introPricePeriodCount: introPrice.periodCount || null,
+              introPricePeriod:
+                introPrice.periodCount && introPrice.periodUnit
+                  ? formatPeriod(
+                      introPrice.periodCount,
+                      introPrice.periodUnit.toLowerCase() as "day" | "week" | "month" | "year",
+                    )
+                  : null,
+            }
+          : {}
+
+        // Extract free trial info
+        const freeTrial = pkg.rcBillingProduct?.freeTrialPeriod
+        const freeTrialData = freeTrial
+          ? {
+              freeTrialPeriodUnit: freeTrial.periodUnit
+                ? (freeTrial.periodUnit.toLowerCase() as "day" | "week" | "month" | "year")
+                : null,
+              freeTrialPeriodCount: freeTrial.periodCount || null,
+              freeTrialPeriod:
+                freeTrial.periodCount && freeTrial.periodUnit
+                  ? formatPeriod(
+                      freeTrial.periodCount,
+                      freeTrial.periodUnit.toLowerCase() as "day" | "week" | "month" | "year",
+                    )
+                  : null,
+            }
+          : {}
+
+        return {
+          id: pkg.identifier,
+          identifier: pkg.identifier,
+          title: pkg.rcBillingProduct?.displayName || pkg.identifier,
+          description: pkg.rcBillingProduct?.description || "",
+          price: pkg.rcBillingProduct?.currentPrice?.amountMicros
+            ? pkg.rcBillingProduct.currentPrice.amountMicros / 1_000_000
+            : 0,
+          priceString: pkg.rcBillingProduct?.currentPrice?.formattedPrice || "",
+          currencyCode: pkg.rcBillingProduct?.currentPrice?.currency || "USD",
+          billingPeriod: pkg.packageType === "ANNUAL" ? "annual" : "monthly",
+          platform: "revenuecat-web" as const,
+          platformData: pkg,
+          ...introPriceData,
+          ...freeTrialData,
+        }
+      })
     } catch (error) {
       // Handle "no products configured" error gracefully
       // This is expected when RevenueCat dashboard isn't set up yet

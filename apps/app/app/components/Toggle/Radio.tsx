@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react"
 import { StyleProp, View, ViewStyle, Animated, Platform } from "react-native"
+import { useUnistyles } from "react-native-unistyles"
 
-import { useAppTheme } from "@/theme/context"
 import { $styles } from "@/theme/styles"
 
 import { $inputOuterBase, BaseToggleInputProps, ToggleProps, Toggle } from "./Toggle"
@@ -35,7 +35,7 @@ function RadioInput(props: RadioInputProps) {
 
   const {
     theme: { colors },
-  } = useAppTheme()
+  } = useUnistyles()
 
   const opacity = useRef(new Animated.Value(0))
 

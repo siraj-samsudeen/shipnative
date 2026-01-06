@@ -251,6 +251,11 @@ class MockRevenueCat {
               price: 9.99,
               priceString: "$9.99",
               currencyCode: "USD",
+              // Free trial for monthly
+              freeTrialPeriod: {
+                value: 7,
+                unit: "DAY",
+              },
             },
             // Web SDK format
             rcBillingProduct: {
@@ -261,6 +266,10 @@ class MockRevenueCat {
                 formattedPrice: "$9.99",
                 currency: "USD",
               },
+              freeTrialPeriod: {
+                periodCount: 7,
+                periodUnit: "DAY",
+              },
             },
           },
           {
@@ -268,20 +277,42 @@ class MockRevenueCat {
             packageType: "ANNUAL",
             product: {
               identifier: "pro_annual",
-              description: "Pro Annual Subscription - Save 20%",
+              description: "Pro Annual Subscription - Save 40%",
               title: "Pro Annual",
               price: 99.99,
               priceString: "$99.99",
               currencyCode: "USD",
+              // Intro pricing for annual
+              introPrice: {
+                price: 49.99,
+                priceString: "$49.99",
+                period: 1,
+                periodUnit: "YEAR",
+              },
+              // Free trial for annual
+              freeTrialPeriod: {
+                value: 14,
+                unit: "DAY",
+              },
             },
             // Web SDK format
             rcBillingProduct: {
               displayName: "Pro Annual",
-              description: "Pro Annual Subscription - Save 20%",
+              description: "Pro Annual Subscription - Save 40%",
               currentPrice: {
                 amountMicros: 99990000,
                 formattedPrice: "$99.99",
                 currency: "USD",
+              },
+              introductoryPrice: {
+                amountMicros: 49990000,
+                formattedPrice: "$49.99",
+                periodCount: 1,
+                periodUnit: "YEAR",
+              },
+              freeTrialPeriod: {
+                periodCount: 14,
+                periodUnit: "DAY",
               },
             },
           },

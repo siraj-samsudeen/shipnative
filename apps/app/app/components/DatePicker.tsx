@@ -1,36 +1,15 @@
 import { useCallback, useMemo, useState } from "react"
-import { View, ViewStyle, Pressable } from "react-native"
+import { View, ViewStyle, Pressable, Platform } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
-import {
-  format,
-  addMonths,
-  subMonths,
-  startOfMonth,
-  endOfMonth,
-  startOfWeek,
-  endOfWeek,
-  eachDayOfInterval,
-  isSameMonth,
-  isSameDay,
-  isToday,
-  setHours,
-  setMinutes,
-  getHours,
-  getMinutes,
-} from "date-fns"
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-  FadeIn,
-  FadeOut,
-} from "react-native-reanimated"
-import { StyleSheet, useUnistyles } from "react-native-unistyles"
+import { format } from "date-fns"
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated"
+import { StyleSheet, UnistylesRuntime, useUnistyles } from "react-native-unistyles"
+import DateTimePicker, {
+  DateTimePickerEvent,
+} from "@react-native-community/datetimepicker"
 
 import { SPRING_CONFIG } from "@/utils/animations"
 
-import { Button } from "./Button"
-import { Modal } from "./Modal"
 import { Text, TextProps } from "./Text"
 
 // =============================================================================
@@ -107,19 +86,12 @@ export interface DatePickerProps {
 }
 
 // =============================================================================
-// CONSTANTS
-// =============================================================================
-
-const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
-const HOURS = Array.from({ length: 24 }, (_, i) => i)
-const MINUTES = Array.from({ length: 12 }, (_, i) => i * 5)
-
-// =============================================================================
 // COMPONENT
 // =============================================================================
 
 /**
- * A customizable date and time picker component with calendar view.
+ * A native date and time picker component using platform-specific pickers.
+ * On iOS, shows the native wheel picker. On Android, shows the material picker modal.
  *
  * @example
  * // Basic date picker
@@ -174,10 +146,9 @@ export function DatePicker(props: DatePickerProps) {
   } = props
 
   const { theme } = useUnistyles()
-  const [isOpen, setIsOpen] = useState(false)
-  const [currentMonth, setCurrentMonth] = useState(value || new Date())
+  const [showPicker, setShowPicker] = useState(false)
+  const [pickerMode, setPickerMode] = useState<"date" | "time">("date")
   const [tempDate, setTempDate] = useState(value || new Date())
-  const [activeTab, setActiveTab] = useState<"date" | "time">("date")
 
   const scale = useSharedValue(1)
 
@@ -198,76 +169,61 @@ export function DatePicker(props: DatePickerProps) {
   const handleOpen = useCallback(() => {
     if (!disabled) {
       setTempDate(value || new Date())
-      setCurrentMonth(value || new Date())
-      setActiveTab(mode === "time" ? "time" : "date")
-      setIsOpen(true)
+      // For datetime mode, start with date picker
+      setPickerMode(mode === "time" ? "time" : "date")
+      setShowPicker(true)
     }
   }, [disabled, value, mode])
 
-  const handleClose = useCallback(() => {
-    setIsOpen(false)
-  }, [])
+  const handleChange = useCallback(
+    (event: DateTimePickerEvent, selectedDate?: Date) => {
+      // On Android, the picker dismisses after selection
+      if (Platform.OS === "android") {
+        setShowPicker(false)
 
-  const handleConfirm = useCallback(() => {
-    onChange?.(tempDate)
-    setIsOpen(false)
-  }, [onChange, tempDate])
+        // If user cancelled, don't update
+        if (event.type === "dismissed") {
+          return
+        }
 
-  const handlePrevMonth = useCallback(() => {
-    setCurrentMonth((prev) => subMonths(prev, 1))
-  }, [])
+        if (!selectedDate) {
+          return
+        }
 
-  const handleNextMonth = useCallback(() => {
-    setCurrentMonth((prev) => addMonths(prev, 1))
-  }, [])
+        // For datetime mode on Android, show time picker after date is selected
+        if (mode === "datetime" && pickerMode === "date") {
+          setTempDate(selectedDate)
+          setPickerMode("time")
+          // Show time picker after a brief delay
+          setTimeout(() => setShowPicker(true), 100)
+          return
+        }
 
-  const handleSelectDate = useCallback(
-    (date: Date) => {
-      // Preserve time from tempDate when selecting a new date
-      const newDate = new Date(date)
-      newDate.setHours(getHours(tempDate))
-      newDate.setMinutes(getMinutes(tempDate))
-      setTempDate(newDate)
+        // If we just selected time in datetime mode, merge with previously selected date
+        if (mode === "datetime" && pickerMode === "time") {
+          const finalDate = new Date(tempDate)
+          finalDate.setHours(selectedDate.getHours())
+          finalDate.setMinutes(selectedDate.getMinutes())
+          onChange?.(finalDate)
+          return
+        }
+
+        // Otherwise, just update with the selected date/time
+        onChange?.(selectedDate)
+      } else {
+        // On iOS, the picker stays open and updates in real-time
+        if (selectedDate) {
+          setTempDate(selectedDate)
+          onChange?.(selectedDate)
+        }
+      }
     },
-    [tempDate],
+    [mode, pickerMode, tempDate, onChange],
   )
 
-  const handleSelectHour = useCallback((hour: number) => {
-    setTempDate((prev) => setHours(prev, hour))
+  const handleDismiss = useCallback(() => {
+    setShowPicker(false)
   }, [])
-
-  const handleSelectMinute = useCallback((minute: number) => {
-    setTempDate((prev) => setMinutes(prev, minute))
-  }, [])
-
-  const isDateDisabled = useCallback(
-    (date: Date) => {
-      if (minDate && date < startOfMonth(minDate) && !isSameMonth(date, minDate)) {
-        return true
-      }
-      if (minDate && isSameMonth(date, minDate) && date < minDate) {
-        return true
-      }
-      if (maxDate && date > endOfMonth(maxDate) && !isSameMonth(date, maxDate)) {
-        return true
-      }
-      if (maxDate && isSameMonth(date, maxDate) && date > maxDate) {
-        return true
-      }
-      return false
-    },
-    [minDate, maxDate],
-  )
-
-  // Generate calendar days for current month
-  const calendarDays = useMemo(() => {
-    const monthStart = startOfMonth(currentMonth)
-    const monthEnd = endOfMonth(currentMonth)
-    const calendarStart = startOfWeek(monthStart)
-    const calendarEnd = endOfWeek(monthEnd)
-
-    return eachDayOfInterval({ start: calendarStart, end: calendarEnd })
-  }, [currentMonth])
 
   // Format display value
   const displayValue = useMemo(() => {
@@ -336,203 +292,76 @@ export function DatePicker(props: DatePickerProps) {
         />
       )}
 
-      {/* Picker Modal */}
-      <Modal
-        visible={isOpen}
-        onClose={handleClose}
-        title={
-          mode === "time"
-            ? "Select Time"
-            : mode === "datetime"
-              ? "Select Date & Time"
-              : "Select Date"
-        }
-      >
-        <View style={styles.modalContent}>
-          {/* Tab Switcher for datetime mode */}
-          {mode === "datetime" && (
-            <View style={styles.tabContainer}>
-              <Pressable
-                onPress={() => setActiveTab("date")}
-                style={[styles.tab, activeTab === "date" && styles.tabActive]}
-              >
-                <Ionicons
-                  name="calendar-outline"
-                  size={18}
-                  color={
-                    activeTab === "date" ? theme.colors.primary : theme.colors.foregroundSecondary
-                  }
-                />
-                <Text
-                  text="Date"
-                  weight={activeTab === "date" ? "semiBold" : "regular"}
-                  style={[styles.tabText, activeTab === "date" && styles.tabTextActive]}
-                />
-              </Pressable>
-              <Pressable
-                onPress={() => setActiveTab("time")}
-                style={[styles.tab, activeTab === "time" && styles.tabActive]}
-              >
-                <Ionicons
-                  name="time-outline"
-                  size={18}
-                  color={
-                    activeTab === "time" ? theme.colors.primary : theme.colors.foregroundSecondary
-                  }
-                />
-                <Text
-                  text="Time"
-                  weight={activeTab === "time" ? "semiBold" : "regular"}
-                  style={[styles.tabText, activeTab === "time" && styles.tabTextActive]}
-                />
-              </Pressable>
-            </View>
-          )}
+      {/* Native Picker */}
+      {showPicker && Platform.OS !== "web" && (
+        <DateTimePicker
+          value={tempDate}
+          mode={pickerMode}
+          display={Platform.OS === "ios" ? "spinner" : "default"}
+          onChange={handleChange}
+          minimumDate={minDate}
+          maximumDate={maxDate}
+          themeVariant={UnistylesRuntime.themeName === "dark" ? "dark" : "light"}
+          // iOS specific props
+          {...(Platform.OS === "ios" && {
+            onTouchCancel: handleDismiss,
+          })}
+        />
+      )}
 
-          {/* Date Picker */}
-          {(mode === "date" || (mode === "datetime" && activeTab === "date")) && (
-            <Animated.View entering={FadeIn.duration(200)} exiting={FadeOut.duration(200)}>
-              {/* Month Navigation */}
-              <View style={styles.monthNav}>
-                <Pressable onPress={handlePrevMonth} style={styles.navButton}>
-                  <Ionicons name="chevron-back" size={24} color={theme.colors.foreground} />
-                </Pressable>
-                <Text weight="semiBold" size="lg">
-                  {format(currentMonth, "MMMM yyyy")}
-                </Text>
-                <Pressable onPress={handleNextMonth} style={styles.navButton}>
-                  <Ionicons name="chevron-forward" size={24} color={theme.colors.foreground} />
-                </Pressable>
-              </View>
+      {/* Web Fallback - Native HTML5 input */}
+      {showPicker && Platform.OS === "web" && (
+        <input
+          type={pickerMode === "date" ? "date" : "time"}
+          value={
+            pickerMode === "date"
+              ? format(tempDate, "yyyy-MM-dd")
+              : format(tempDate, "HH:mm")
+          }
+          onChange={(e) => {
+            const value = e.target.value
+            if (!value) return
 
-              {/* Weekday Headers */}
-              <View style={styles.weekdaysRow}>
-                {WEEKDAYS.map((day) => (
-                  <View key={day} style={styles.weekdayCell}>
-                    <Text text={day} size="xs" weight="medium" style={styles.weekdayText} />
-                  </View>
-                ))}
-              </View>
+            let newDate: Date
+            if (pickerMode === "date") {
+              // Parse date value (format: yyyy-MM-dd)
+              const [year, month, day] = value.split("-").map(Number)
+              newDate = new Date(tempDate)
+              newDate.setFullYear(year, month - 1, day)
+            } else {
+              // Parse time value (format: HH:mm)
+              const [hours, minutes] = value.split(":").map(Number)
+              newDate = new Date(tempDate)
+              newDate.setHours(hours, minutes)
+            }
 
-              {/* Calendar Grid */}
-              <View style={styles.calendarGrid}>
-                {calendarDays.map((day, index) => {
-                  const isCurrentMonth = isSameMonth(day, currentMonth)
-                  const isSelected = tempDate && isSameDay(day, tempDate)
-                  const isTodayDate = isToday(day)
-                  const isDisabled = isDateDisabled(day) || !isCurrentMonth
-
-                  return (
-                    <Pressable
-                      key={index}
-                      onPress={() => !isDisabled && handleSelectDate(day)}
-                      style={[
-                        styles.dayCell,
-                        isSelected && styles.dayCellSelected,
-                        isTodayDate && !isSelected && styles.dayCellToday,
-                        isDisabled && styles.dayCellDisabled,
-                      ]}
-                      disabled={isDisabled}
-                    >
-                      <Text
-                        text={format(day, "d")}
-                        weight={isSelected ? "semiBold" : "regular"}
-                        style={[
-                          styles.dayText,
-                          isSelected && styles.dayTextSelected,
-                          !isCurrentMonth && styles.dayTextOtherMonth,
-                          isDisabled && styles.dayTextDisabled,
-                          isTodayDate && !isSelected && styles.dayTextToday,
-                        ]}
-                      />
-                    </Pressable>
-                  )
-                })}
-              </View>
-            </Animated.View>
-          )}
-
-          {/* Time Picker */}
-          {(mode === "time" || (mode === "datetime" && activeTab === "time")) && (
-            <Animated.View entering={FadeIn.duration(200)} exiting={FadeOut.duration(200)}>
-              <View style={styles.timeContainer}>
-                {/* Hour Picker */}
-                <View style={styles.timeColumn}>
-                  <Text text="Hour" weight="medium" size="sm" style={styles.timeLabel} />
-                  <View style={styles.timeScrollContainer}>
-                    {HOURS.map((hour) => {
-                      const isSelected = getHours(tempDate) === hour
-                      return (
-                        <Pressable
-                          key={hour}
-                          onPress={() => handleSelectHour(hour)}
-                          style={[styles.timeOption, isSelected && styles.timeOptionSelected]}
-                        >
-                          <Text
-                            text={hour.toString().padStart(2, "0")}
-                            weight={isSelected ? "semiBold" : "regular"}
-                            style={[
-                              styles.timeOptionText,
-                              isSelected && styles.timeOptionTextSelected,
-                            ]}
-                          />
-                        </Pressable>
-                      )
-                    })}
-                  </View>
-                </View>
-
-                {/* Separator */}
-                <Text text=":" weight="bold" size="xl" style={styles.timeSeparator} />
-
-                {/* Minute Picker */}
-                <View style={styles.timeColumn}>
-                  <Text text="Min" weight="medium" size="sm" style={styles.timeLabel} />
-                  <View style={styles.timeScrollContainer}>
-                    {MINUTES.map((minute) => {
-                      const isSelected = getMinutes(tempDate) === minute
-                      return (
-                        <Pressable
-                          key={minute}
-                          onPress={() => handleSelectMinute(minute)}
-                          style={[styles.timeOption, isSelected && styles.timeOptionSelected]}
-                        >
-                          <Text
-                            text={minute.toString().padStart(2, "0")}
-                            weight={isSelected ? "semiBold" : "regular"}
-                            style={[
-                              styles.timeOptionText,
-                              isSelected && styles.timeOptionTextSelected,
-                            ]}
-                          />
-                        </Pressable>
-                      )
-                    })}
-                  </View>
-                </View>
-              </View>
-
-              {/* Selected Time Display */}
-              <View style={styles.selectedTimeDisplay}>
-                <Text weight="semiBold" size="xl">
-                  {format(tempDate, "h:mm a")}
-                </Text>
-              </View>
-            </Animated.View>
-          )}
-
-          {/* Actions */}
-          <View style={styles.actions}>
-            <Button
-              text="Cancel"
-              variant="ghost"
-              onPress={handleClose}
-              style={styles.actionButton}
-            />
-            <Button text="Confirm" onPress={handleConfirm} style={styles.actionButton} />
-          </View>
-        </View>
-      </Modal>
+            // For datetime mode on web, handle both date and time
+            if (mode === "datetime" && pickerMode === "date") {
+              setTempDate(newDate)
+              setPickerMode("time")
+            } else {
+              onChange?.(newDate)
+              setShowPicker(false)
+            }
+          }}
+          onBlur={() => setShowPicker(false)}
+          style={{
+            position: "absolute",
+            top: "100%",
+            left: 0,
+            marginTop: 4,
+            padding: 12,
+            borderRadius: 8,
+            border: `1px solid ${theme.colors.inputBorder}`,
+            backgroundColor: theme.colors.card,
+            color: theme.colors.foreground,
+            fontSize: 16,
+            fontFamily: theme.typography.fonts.regular,
+            zIndex: 1000,
+          }}
+          autoFocus
+        />
+      )}
     </View>
   )
 }
@@ -580,150 +409,5 @@ const styles = StyleSheet.create((theme) => ({
   },
   helperError: {
     color: theme.colors.error,
-  },
-  modalContent: {
-    paddingHorizontal: theme.spacing.md,
-    paddingBottom: theme.spacing.md,
-  },
-  tabContainer: {
-    flexDirection: "row",
-    backgroundColor: theme.colors.backgroundSecondary,
-    borderRadius: theme.radius.lg,
-    padding: theme.spacing.xxs,
-    marginBottom: theme.spacing.lg,
-  },
-  tab: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: theme.spacing.sm,
-    borderRadius: theme.radius.md,
-    gap: theme.spacing.xs,
-  },
-  tabActive: {
-    backgroundColor: theme.colors.card,
-    ...theme.shadows.sm,
-  },
-  tabText: {
-    color: theme.colors.foregroundSecondary,
-  },
-  tabTextActive: {
-    color: theme.colors.foreground,
-  },
-  monthNav: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: theme.spacing.md,
-  },
-  navButton: {
-    padding: theme.spacing.xs,
-    borderRadius: theme.radius.full,
-  },
-  weekdaysRow: {
-    flexDirection: "row",
-    marginBottom: theme.spacing.xs,
-  },
-  weekdayCell: {
-    flex: 1,
-    alignItems: "center",
-    paddingVertical: theme.spacing.xs,
-  },
-  weekdayText: {
-    color: theme.colors.foregroundSecondary,
-  },
-  calendarGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-  },
-  dayCell: {
-    width: "14.28%",
-    aspectRatio: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: theme.radius.full,
-  },
-  dayCellSelected: {
-    backgroundColor: theme.colors.primary,
-  },
-  dayCellToday: {
-    backgroundColor: theme.colors.backgroundSecondary,
-  },
-  dayCellDisabled: {
-    opacity: 0.3,
-  },
-  dayText: {
-    color: theme.colors.foreground,
-  },
-  dayTextSelected: {
-    color: theme.colors.primaryForeground,
-  },
-  dayTextOtherMonth: {
-    color: theme.colors.foregroundTertiary,
-  },
-  dayTextDisabled: {
-    color: theme.colors.foregroundTertiary,
-  },
-  dayTextToday: {
-    color: theme.colors.primary,
-    fontFamily: theme.typography.fonts.semiBold,
-  },
-  timeContainer: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "center",
-    gap: theme.spacing.md,
-  },
-  timeColumn: {
-    alignItems: "center",
-    width: 80,
-  },
-  timeLabel: {
-    marginBottom: theme.spacing.sm,
-    color: theme.colors.foregroundSecondary,
-  },
-  timeScrollContainer: {
-    maxHeight: 200,
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "center",
-    gap: theme.spacing.xs,
-  },
-  timeOption: {
-    width: 36,
-    height: 36,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: theme.radius.md,
-    backgroundColor: theme.colors.backgroundSecondary,
-  },
-  timeOptionSelected: {
-    backgroundColor: theme.colors.primary,
-  },
-  timeOptionText: {
-    color: theme.colors.foreground,
-  },
-  timeOptionTextSelected: {
-    color: theme.colors.primaryForeground,
-  },
-  timeSeparator: {
-    marginTop: theme.spacing.xl,
-    color: theme.colors.foreground,
-  },
-  selectedTimeDisplay: {
-    alignItems: "center",
-    marginTop: theme.spacing.lg,
-    paddingVertical: theme.spacing.md,
-    backgroundColor: theme.colors.backgroundSecondary,
-    borderRadius: theme.radius.lg,
-  },
-  actions: {
-    flexDirection: "row",
-    gap: theme.spacing.sm,
-    marginTop: theme.spacing.lg,
-  },
-  actionButton: {
-    flex: 1,
   },
 }))

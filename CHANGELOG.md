@@ -7,6 +7,69 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed - Unistyles Migration
+- **Single Theme System**: Migrated entire boilerplate to use Unistyles exclusively
+  - Removed dual theme system (old custom theme + Unistyles)
+  - All components now use `StyleSheet.create((theme) => ({...}))`
+  - Dark mode detection via `UnistylesRuntime.themeName === "dark"`
+  - Theme switching via `UnistylesRuntime.setTheme()`
+  - Theme context simplified to persistence layer only
+- **Components Migrated**: Header, Screen, DatePicker, Toggle, Switch, Checkbox, Radio
+- **Navigators Migrated**: AppNavigator, MainTabNavigator
+- **Screens Migrated**: ProfileScreen, ComponentShowcaseScreen
+- **Breaking Changes**:
+  - Removed `useAppTheme()` hook - use `useUnistyles()` instead
+  - Removed `themed()` wrapper function - use styles directly
+  - Removed `ThemedStyle` type - use `StyleSheet.create()` instead
+  - Removed `setThemeContextOverride()` - use `UnistylesRuntime.setTheme()` instead
+- **Native Date/Time Pickers**: Replaced custom modal calendar with platform-native pickers
+  - iOS: Native spinner picker
+  - Android: Material Design picker
+  - Web: HTML5 input fallback
+  - Better UX with system-native controls
+
+### Added - Subscription Enhancements
+- **Lifecycle Event Tracking**: Automatic detection and tracking of subscription events
+  - Events: `trial_started`, `trial_converted`, `subscription_renewed`, `subscription_cancelled`, `billing_issue`, etc.
+  - `addLifecycleListener()` method in subscription store
+  - Automatic event detection on state changes with logging
+- **Promotional Offers Support**: Full support for free trials and introductory pricing from RevenueCat
+  - Automatic extraction of trial periods (e.g., "7 days free")
+  - Intro pricing display (e.g., "$0.99 for first month")
+  - Enhanced package data with `freeTrialPeriod`, `introPriceString`, `introPricePeriod` fields
+  - Support for both mobile (react-native-purchases) and web (@revenuecat/purchases-js) SDKs
+- **Price Localization Helpers**: New utility functions in `utils/subscriptionHelpers.ts`
+  - `formatLocalizedPrice()` - Currency/locale formatting with Intl.NumberFormat
+  - `calculateSavings()` - Percentage savings calculator
+  - `getMonthlyEquivalent()` - Annual to monthly price conversion
+  - `getPromotionalOfferText()` - Automatic promo copy generation
+  - `formatExpirationStatus()` - Relative date formatting (e.g., "Renews in 5 days")
+  - `getDaysRemaining()`, `isExpiringWithin()`, `isInGracePeriod()` - Status helpers
+- **Mock RevenueCat Updates**: Realistic promotional offers for testing
+  - Monthly: 7-day free trial + $9.99/month
+  - Annual: 14-day free trial + $49.99 intro year + $99.99/year
+- **Developer Tools**: Mock subscription toggle in Profile screen (dev mode only)
+  - Toggle Pro on/off for testing in simulator
+  - Shows "(Mock)" badge when using mock RevenueCat
+
+### Documentation
+- Added `vibe/SUBSCRIPTION_ADVANCED.md` - Comprehensive guide with examples for lifecycle events, promotional offers, and price localization
+- Updated `mintlify_docs/docs/core-features/payments.mdx` - Added sections on new features with code examples
+- Updated `boilerplate/AGENTS.md` - Added subscription helper function references
+- Updated `boilerplate/vibe/MONETIZATION.md` - Enhanced setup and testing guide
+
+### Changed
+- **Paywall & Pricing Redesign** - Complete overhaul for higher conversion:
+  - **Clear Pricing Anchors**: Annual plans show yearly price with monthly breakdown (e.g., "$69.99/year ≈ $5.83/month")
+  - **Value Delta**: Added prominent benefit stack (Unlimited projects, Priority support, Advanced analytics, No watermarks)
+  - **Outcome-Driven CTAs**: "Unlock Pro" for annual, "Choose Monthly" for monthly (instead of generic "Subscribe Now")
+  - **Visual Hierarchy**: Annual plan gets 3px border, subtle scale transform, enhanced shadow, and "Save 40%" badge
+  - **Risk Reversal**: Added "Cancel anytime • Secure App Store checkout" messaging
+  - **Better Spacing**: Increased card padding (28px), larger price typography (44px), more generous gaps between elements
+  - **Professional Icons**: Replaced emojis with Ionicons throughout (gift-outline for free, sparkles for pro, checkmark-circle for features)
+  - Removed confusing "month" billing for annual plans
+  - Monthly plan has intentionally weaker visual weight (outline button, lower contrast)
+
 ### Planned
 - Stripe/PayPal add-ons alongside RevenueCat
 - Offline-first data patterns and caching presets

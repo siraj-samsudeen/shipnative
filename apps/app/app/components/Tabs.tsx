@@ -1,4 +1,4 @@
-import { useState, useEffect, ReactNode } from "react"
+import { useState, useEffect, useCallback, ReactNode } from "react"
 import { View, Pressable, ViewStyle, LayoutChangeEvent } from "react-native"
 import type { TOptions } from "i18next"
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated"
@@ -124,20 +124,26 @@ export function Tabs(props: TabsProps) {
     }
   }, [activeTab, tabLayouts, indicatorX, indicatorWidth])
 
-  const handleTabLayout = (key: string, event: LayoutChangeEvent) => {
+  const handleTabLayout = useCallback((key: string, event: LayoutChangeEvent) => {
     const { x, width } = event.nativeEvent.layout
-    setTabLayouts((prev) => ({
-      ...prev,
-      [key]: { x, width },
-    }))
-  }
+    setTabLayouts((prev) => {
+      // Only update if values actually changed to prevent unnecessary re-renders
+      if (prev[key]?.x === x && prev[key]?.width === width) {
+        return prev
+      }
+      return {
+        ...prev,
+        [key]: { x, width },
+      }
+    })
+  }, [])
 
-  const handleTabPress = (key: string) => {
+  const handleTabPress = useCallback((key: string) => {
     if (haptic) {
       haptics.selection()
     }
     onTabChange(key)
-  }
+  }, [haptic, onTabChange])
 
   // Animated indicator style
   const indicatorStyle = useAnimatedStyle(() => ({

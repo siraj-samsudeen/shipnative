@@ -139,10 +139,12 @@ const LoadingState = () => {
 
 ## Unistyles Patterns
 
+**IMPORTANT**: This boilerplate uses **Unistyles exclusively** as the single source of truth for theming. The old custom theme system has been removed.
+
 ### Basic Styling
 
 ```typescript
-import { StyleSheet } from 'react-native-unistyles'
+import { StyleSheet, useUnistyles } from 'react-native-unistyles'
 
 // ✅ DO THIS - StyleSheet with theme function
 const styles = StyleSheet.create((theme) => ({
@@ -169,27 +171,53 @@ const styles = StyleSheet.create((theme) => ({
   <Text style={styles.title}>Hello</Text>
   <View style={styles.card}>...</View>
 </View>
+
+// ❌ DON'T DO THIS - Old theme system (deprecated)
+import { useAppTheme } from "@/theme/context"
+const { theme, themed } = useAppTheme()
+<View style={themed($container)} />
 ```
 
 ### Using Theme in Components
 
 ```typescript
-import { useUnistyles } from 'react-native-unistyles'
+import { useUnistyles, UnistylesRuntime } from 'react-native-unistyles'
 
 const MyComponent = () => {
   const { theme } = useUnistyles()
-  
+
   return (
     <View>
       {/* Use theme for dynamic values */}
-      <Ionicons 
-        name="heart" 
-        size={24} 
-        color={theme.colors.error} 
+      <Ionicons
+        name="heart"
+        size={24}
+        color={theme.colors.error}
       />
     </View>
   )
 }
+```
+
+### Dark Mode Detection
+
+```typescript
+import { UnistylesRuntime } from 'react-native-unistyles'
+
+// ✅ DO THIS - Check current theme
+const isDark = UnistylesRuntime.themeName === "dark"
+
+// ✅ DO THIS - Change theme
+UnistylesRuntime.setTheme("dark")
+UnistylesRuntime.setTheme("light")
+
+// ✅ DO THIS - Follow system theme
+UnistylesRuntime.setAdaptiveThemes(true)
+
+// ❌ DON'T DO THIS - Old methods (deprecated)
+const { themeContext, setThemeContextOverride } = useAppTheme()
+const isDark = themeContext === "dark"
+setThemeContextOverride("dark")
 ```
 
 ### Web Scrolling Pattern

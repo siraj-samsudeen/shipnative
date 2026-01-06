@@ -1,5 +1,5 @@
 import { FC, useState } from "react"
-import { View, ScrollView, Switch, useWindowDimensions, Platform } from "react-native"
+import { View, ScrollView, useWindowDimensions, Platform, Switch as RNSwitch } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { StyleSheet, useUnistyles } from "react-native-unistyles"
@@ -18,14 +18,34 @@ import {
   Progress,
   Skeleton,
   SkeletonGroup,
+  SkeletonCard,
+  SkeletonListItem,
+  SkeletonParagraph,
   AnimatedCard,
   Tabs,
   ListItem,
   EmptyState,
+  // Charts
+  LineChart,
+  BarChart,
+  PieChart,
+  // Form inputs
+  DatePicker,
+  FilePicker,
+  // Modals
+  Modal,
+  AlertModal,
+  // Business components
+  PricingCard,
+  SubscriptionStatus,
 } from "@/components"
+// Toggle controls (not exported from main index)
+import { Switch } from "@/components/Toggle/Switch"
+import { Checkbox } from "@/components/Toggle/Checkbox"
+import { Radio } from "@/components/Toggle/Radio"
 import { ANIMATION } from "@/config/constants"
 import type { MainTabScreenProps } from "@/navigators/navigationTypes"
-import { useAppTheme } from "@/theme"
+import { UnistylesRuntime } from "react-native-unistyles"
 import { webDimension } from "@/types/webStyles"
 
 // =============================================================================
@@ -48,7 +68,6 @@ export const ComponentShowcaseScreen: FC<ComponentShowcaseScreenProps> =
   function ComponentShowcaseScreen(_props) {
     const { navigation } = _props
     const { theme } = useUnistyles()
-    const { themeContext, setThemeContextOverride } = useAppTheme()
     const insets = useSafeAreaInsets()
     const { width: windowWidth } = useWindowDimensions()
 
@@ -56,6 +75,20 @@ export const ComponentShowcaseScreen: FC<ComponentShowcaseScreenProps> =
     const [isLoading, setIsLoading] = useState(false)
     const [progress, setProgress] = useState(65)
     const [activeTab, setActiveTab] = useState("overview")
+
+    // Toggle controls state
+    const [switchValue, setSwitchValue] = useState(false)
+    const [checkboxValue, setCheckboxValue] = useState(false)
+    const [radioValue, setRadioValue] = useState<string>("option1")
+
+    // Form inputs state
+    const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined)
+    const [selectedFiles, setSelectedFiles] = useState<Array<{ uri: string; name: string; type: string; size?: number }>>([])
+    const [selectedDocuments, setSelectedDocuments] = useState<Array<{ uri: string; name: string; type: string; size?: number }>>([])
+
+    // Modal state
+    const [showModal, setShowModal] = useState(false)
+    const [showAlertModal, setShowAlertModal] = useState(false)
 
     const isLargeScreen = windowWidth > 768
     const contentStyle = isLargeScreen
@@ -67,7 +100,8 @@ export const ComponentShowcaseScreen: FC<ComponentShowcaseScreenProps> =
       : {}
 
     const toggleTheme = () => {
-      setThemeContextOverride(themeContext === "dark" ? "light" : "dark")
+      const newTheme = UnistylesRuntime.themeName === "dark" ? "light" : "dark"
+      UnistylesRuntime.setTheme(newTheme)
     }
 
     const simulateLoading = () => {
@@ -498,6 +532,349 @@ export const ComponentShowcaseScreen: FC<ComponentShowcaseScreenProps> =
           </View>
         </Section>
 
+        <Divider style={styles.sectionDivider} />
+
+        {/* Charts Section */}
+        <Section title="Charts">
+          <Text size="sm" color="secondary" style={styles.sectionDescription}>
+            Animated charts with SVG rendering
+          </Text>
+
+          <Text size="sm" weight="medium" style={styles.variantLabel}>
+            Line Chart:
+          </Text>
+          <View style={styles.chartContainer}>
+            <LineChart
+              labels={["Jan", "Feb", "Mar", "Apr", "May", "Jun"]}
+              datasets={[
+                {
+                  id: "revenue",
+                  label: "Revenue",
+                  data: [30, 45, 28, 80, 65, 95],
+                  color: theme.colors.primary,
+                },
+                {
+                  id: "expenses",
+                  label: "Expenses",
+                  data: [20, 35, 40, 50, 45, 60],
+                  color: theme.colors.error,
+                },
+              ]}
+              height={200}
+              showLegend
+              showDots
+              fillArea
+            />
+          </View>
+
+          <Text size="sm" weight="medium" style={styles.variantLabel}>
+            Bar Chart:
+          </Text>
+          <View style={styles.chartContainer}>
+            <BarChart
+              data={[
+                { label: "Mon", value: 40 },
+                { label: "Tue", value: 65 },
+                { label: "Wed", value: 55 },
+                { label: "Thu", value: 80 },
+                { label: "Fri", value: 70 },
+              ]}
+              height={200}
+              showValues
+              barColor={theme.colors.primary}
+            />
+          </View>
+
+          <Text size="sm" weight="medium" style={styles.variantLabel}>
+            Pie Chart (Donut):
+          </Text>
+          <View style={styles.chartContainer}>
+            <PieChart
+              data={[
+                { label: "Desktop", value: 45, color: theme.colors.primary },
+                { label: "Mobile", value: 35, color: theme.colors.success },
+                { label: "Tablet", value: 20, color: theme.colors.warning },
+              ]}
+              height={200}
+              innerRadius={0.6}
+              showPercentage
+              showLegend
+            />
+          </View>
+        </Section>
+
+        <Divider style={styles.sectionDivider} />
+
+        {/* Toggle Controls Section */}
+        <Section title="Toggle Controls">
+          <Text size="sm" color="secondary" style={styles.sectionDescription}>
+            Switch, Checkbox, and Radio components with animations
+          </Text>
+
+          <View style={styles.toggleRow}>
+            <Switch
+              value={switchValue}
+              onValueChange={setSwitchValue}
+              label="Enable notifications"
+            />
+          </View>
+
+          <View style={styles.toggleRow}>
+            <Switch
+              value={!switchValue}
+              onValueChange={(val) => setSwitchValue(!val)}
+              label="Dark mode"
+              accessibilityMode="icon"
+            />
+          </View>
+
+          <View style={styles.toggleRow}>
+            <Checkbox
+              value={checkboxValue}
+              onValueChange={setCheckboxValue}
+              label="I agree to the terms and conditions"
+            />
+          </View>
+
+          <View style={styles.toggleRow}>
+            <Checkbox
+              value={!checkboxValue}
+              onValueChange={(val) => setCheckboxValue(!val)}
+              label="Subscribe to newsletter"
+            />
+          </View>
+
+          <Text size="sm" weight="medium" style={styles.variantLabel}>
+            Radio Group:
+          </Text>
+          <View style={styles.radioGroup}>
+            <Radio
+              value={radioValue === "option1"}
+              onValueChange={() => setRadioValue("option1")}
+              label="Option 1"
+            />
+            <Radio
+              value={radioValue === "option2"}
+              onValueChange={() => setRadioValue("option2")}
+              label="Option 2"
+            />
+            <Radio
+              value={radioValue === "option3"}
+              onValueChange={() => setRadioValue("option3")}
+              label="Option 3"
+            />
+          </View>
+        </Section>
+
+        <Divider style={styles.sectionDivider} />
+
+        {/* Date & File Pickers Section */}
+        <Section title="Date & File Pickers">
+          <Text size="sm" color="secondary" style={styles.sectionDescription}>
+            Native-feeling pickers with calendar and file selection
+          </Text>
+
+          <DatePicker
+            label="Select Date"
+            value={selectedDate}
+            onChange={setSelectedDate}
+            placeholder="Choose a date..."
+            helper="Pick any date from the calendar"
+          />
+
+          <DatePicker
+            label="Select Date & Time"
+            mode="datetime"
+            value={selectedDate}
+            onChange={setSelectedDate}
+            placeholder="Choose date and time..."
+          />
+
+          <FilePicker
+            label="Upload Image"
+            fileType="image"
+            value={selectedFiles}
+            onChange={setSelectedFiles}
+            placeholder="Tap to select an image"
+            helper="PNG, JPG up to 10MB"
+          />
+
+          <FilePicker
+            label="Upload Documents"
+            fileType="document"
+            value={selectedDocuments}
+            onChange={setSelectedDocuments}
+            placeholder="Tap to select documents"
+            multiple
+            maxFiles={5}
+            helper="PDF, DOC, XLS up to 10MB each"
+          />
+        </Section>
+
+        <Divider style={styles.sectionDivider} />
+
+        {/* Modals Section */}
+        <Section title="Modals">
+          <Text size="sm" color="secondary" style={styles.sectionDescription}>
+            Flexible modal dialogs with animations
+          </Text>
+
+          <View style={styles.buttonRow}>
+            <Button
+              text="Open Modal"
+              variant="outlined"
+              onPress={() => setShowModal(true)}
+            />
+            <Button
+              text="Alert Modal"
+              variant="danger"
+              onPress={() => setShowAlertModal(true)}
+            />
+          </View>
+
+          <Modal
+            visible={showModal}
+            onClose={() => setShowModal(false)}
+            title="Example Modal"
+            description="This is a flexible modal component with header, content, and footer sections."
+            primaryAction="Confirm"
+            onPrimaryAction={() => setShowModal(false)}
+            secondaryAction="Cancel"
+            onSecondaryAction={() => setShowModal(false)}
+          >
+            <View style={styles.modalDemoContent}>
+              <Text>You can put any content here. The modal supports scrolling for longer content.</Text>
+            </View>
+          </Modal>
+
+          <AlertModal
+            visible={showAlertModal}
+            onClose={() => setShowAlertModal(false)}
+            title="Delete Item?"
+            message="This action cannot be undone. Are you sure you want to delete this item?"
+            confirmText="Delete"
+            cancelText="Cancel"
+            onConfirm={() => setShowAlertModal(false)}
+            variant="danger"
+          />
+        </Section>
+
+        <Divider style={styles.sectionDivider} />
+
+        {/* Toast Notifications Section */}
+        <Section title="Toast Notifications">
+          <Text size="sm" color="secondary" style={styles.sectionDescription}>
+            Non-blocking notifications with auto-dismiss. Requires ToastProvider wrapper.
+          </Text>
+
+          <View style={styles.toastInfoCard}>
+            <Text size="sm" weight="semiBold">Usage Example:</Text>
+            <Text size="xs" color="secondary" style={styles.codeBlock}>
+              {`const toast = useToast()\n\ntoast.show({\n  title: "Success!",\n  description: "Your changes saved",\n  variant: "success", // success | error | warning | info\n})`}
+            </Text>
+          </View>
+
+          <Text size="sm" color="secondary">
+            Variants: default, success, error, warning, info
+          </Text>
+          <View style={styles.badgeRow}>
+            <Badge text="Success" variant="success" />
+            <Badge text="Error" variant="error" />
+            <Badge text="Warning" variant="warning" />
+            <Badge text="Info" variant="info" />
+          </View>
+
+          <Text size="sm" color="secondary" style={{ marginTop: 8 }}>
+            Features: Auto-dismiss with progress bar, action buttons, stacking, swipe to dismiss
+          </Text>
+        </Section>
+
+        <Divider style={styles.sectionDivider} />
+
+        {/* Skeleton Presets Section */}
+        <Section title="Skeleton Presets">
+          <Text size="sm" color="secondary" style={styles.sectionDescription}>
+            Pre-built skeleton layouts for common patterns
+          </Text>
+
+          <Text size="sm" weight="medium" style={styles.variantLabel}>
+            Card Skeleton:
+          </Text>
+          <SkeletonCard />
+
+          <Text size="sm" weight="medium" style={styles.variantLabel}>
+            List Item Skeleton:
+          </Text>
+          <View style={styles.skeletonListContainer}>
+            <SkeletonListItem />
+            <SkeletonListItem />
+            <SkeletonListItem showAvatar={false} />
+          </View>
+
+          <Text size="sm" weight="medium" style={styles.variantLabel}>
+            Paragraph Skeleton:
+          </Text>
+          <View style={styles.skeletonParagraphContainer}>
+            <SkeletonParagraph lines={4} />
+          </View>
+        </Section>
+
+        <Divider style={styles.sectionDivider} />
+
+        {/* Business Components Section */}
+        <Section title="Business Components">
+          <Text size="sm" color="secondary" style={styles.sectionDescription}>
+            Pre-built components for common business use cases
+          </Text>
+
+          <Text size="sm" weight="medium" style={styles.variantLabel}>
+            Subscription Status:
+          </Text>
+          <SubscriptionStatus
+            isPro={false}
+          />
+
+          <View style={{ height: 12 }} />
+
+          <SubscriptionStatus
+            isPro={true}
+            platform="mock"
+            expirationDate="2025-12-31"
+            willRenew={true}
+          />
+
+          <Text size="sm" weight="medium" style={styles.variantLabel}>
+            Pricing Card:
+          </Text>
+          <PricingCard
+            title="Pro Plan"
+            price="$9.99"
+            description="Perfect for power users"
+            billingPeriod="month"
+            features={[
+              "Unlimited projects",
+              "Priority support",
+              "Advanced analytics",
+              "Custom integrations",
+            ]}
+            isPopular
+            onPress={() => console.log("Subscribe pressed")}
+          />
+
+          <PricingCard
+            title="Basic Plan"
+            price="$4.99"
+            description="Great for getting started"
+            billingPeriod="month"
+            features={[
+              "5 projects",
+              "Email support",
+              "Basic analytics",
+            ]}
+            onPress={() => console.log("Subscribe pressed")}
+          />
+        </Section>
+
         <View style={styles.footer}>
           <Text size="sm" color="tertiary" style={styles.footerText}>
             All components are styled with Unistyles 3.0
@@ -506,7 +883,7 @@ export const ComponentShowcaseScreen: FC<ComponentShowcaseScreenProps> =
             With haptics and microanimations
           </Text>
           <Text size="sm" color="tertiary" style={styles.footerText}>
-            Theme: {themeContext}
+            Theme: {UnistylesRuntime.themeName}
           </Text>
         </View>
       </View>
@@ -523,12 +900,12 @@ export const ComponentShowcaseScreen: FC<ComponentShowcaseScreenProps> =
           </View>
           <View style={styles.themeToggle}>
             <Ionicons
-              name={themeContext === "dark" ? "moon" : "sunny"}
+              name={UnistylesRuntime.themeName === "dark" ? "moon" : "sunny"}
               size={18}
               color={theme.colors.foregroundSecondary}
             />
-            <Switch
-              value={themeContext === "dark"}
+            <RNSwitch
+              value={UnistylesRuntime.themeName === "dark"}
               onValueChange={toggleTheme}
               trackColor={{ false: theme.colors.border, true: theme.colors.tint }}
             />
@@ -750,6 +1127,51 @@ const styles = StyleSheet.create((theme) => ({
   },
   colorBoxWithBorder: {
     borderWidth: 1,
+  },
+  // Chart styles
+  chartContainer: {
+    backgroundColor: theme.colors.card,
+    borderRadius: theme.radius.lg,
+    padding: theme.spacing.md,
+    ...theme.shadows.sm,
+  },
+  // Toggle control styles
+  toggleRow: {
+    marginVertical: theme.spacing.xs,
+  },
+  radioGroup: {
+    gap: theme.spacing.sm,
+  },
+  // Modal styles
+  modalDemoContent: {
+    paddingVertical: theme.spacing.md,
+  },
+  // Skeleton preset styles
+  skeletonListContainer: {
+    backgroundColor: theme.colors.card,
+    borderRadius: theme.radius.lg,
+    overflow: "hidden",
+    ...theme.shadows.sm,
+  },
+  skeletonParagraphContainer: {
+    backgroundColor: theme.colors.card,
+    borderRadius: theme.radius.lg,
+    padding: theme.spacing.md,
+    ...theme.shadows.sm,
+  },
+  // Toast info styles
+  toastInfoCard: {
+    backgroundColor: theme.colors.backgroundSecondary,
+    borderRadius: theme.radius.lg,
+    padding: theme.spacing.md,
+    gap: theme.spacing.sm,
+  },
+  codeBlock: {
+    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
+    backgroundColor: theme.colors.background,
+    padding: theme.spacing.sm,
+    borderRadius: theme.radius.md,
+    overflow: "hidden",
   },
   footer: {
     alignItems: "center",

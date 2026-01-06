@@ -1,11 +1,10 @@
 import { useEffect, useRef, useCallback } from "react"
 import { Animated, Image, ImageStyle, Platform, StyleProp, View, ViewStyle } from "react-native"
+import { useTranslation } from "react-i18next"
+import { StyleSheet, useUnistyles } from "react-native-unistyles"
 
 import { iconRegistry } from "@/components/Icon"
-import { isRTL } from "@/i18n"
-import { useAppTheme } from "@/theme/context"
 import { $styles } from "@/theme/styles"
-import type { ThemedStyle } from "@/theme/types"
 
 import { $inputOuterBase, BaseToggleInputProps, Toggle, ToggleProps } from "./Toggle"
 
@@ -52,8 +51,10 @@ function SwitchInput(props: SwitchInputProps) {
 
   const {
     theme: { colors },
-    themed,
-  } = useAppTheme()
+  } = useUnistyles()
+  const { i18n } = useTranslation()
+  const languageTag = i18n.language?.split("-")[0]
+  const isRTL = i18n.dir?.(i18n.language) === "rtl" || languageTag === "ar"
 
   const animate = useRef(new Animated.Value(on ? 1 : 0)) // Initial value is set based on isActive
   const opacity = useRef(new Animated.Value(0))
@@ -116,17 +117,14 @@ function SwitchInput(props: SwitchInputProps) {
 
   const rtlAdjustment = isRTL ? -1 : 1
 
+  // Default padding is 4 (from switchInner style)
   const offsetLeft = ($innerStyleOverride?.paddingStart ||
     $innerStyleOverride?.paddingLeft ||
-    (themed($switchInner) as ViewStyle)?.paddingStart ||
-    (themed($switchInner) as ViewStyle)?.paddingLeft ||
-    0) as number
+    4) as number
 
   const offsetRight = ($innerStyleOverride?.paddingEnd ||
     $innerStyleOverride?.paddingRight ||
-    (themed($switchInner) as ViewStyle)?.paddingEnd ||
-    (themed($switchInner) as ViewStyle)?.paddingRight ||
-    0) as number
+    4) as number
 
   const outputRange =
     Platform.OS === "web"
@@ -145,7 +143,7 @@ function SwitchInput(props: SwitchInputProps) {
       <Animated.View
         style={[
           $styles.toggleInner,
-          themed($switchInner),
+          $switchInner,
           { backgroundColor: onBackgroundColor },
           $innerStyleOverride,
           { opacity: opacity.current },
@@ -177,7 +175,7 @@ function SwitchAccessibilityLabel(props: SwitchInputProps & { role: "on" | "off"
 
   const {
     theme: { colors },
-  } = useAppTheme()
+  } = useUnistyles()
 
   if (!accessibilityMode) return null
 
@@ -219,17 +217,17 @@ function SwitchAccessibilityLabel(props: SwitchInputProps & { role: "on" | "off"
   )
 }
 
+const $switchInner: ViewStyle = {
+  borderColor: "transparent",
+  position: "absolute",
+  paddingStart: 4,
+  paddingEnd: 4,
+}
+
 const $inputOuter: StyleProp<ViewStyle> = [
   $inputOuterBase,
   { height: 32, width: 56, borderRadius: 16, borderWidth: 0 },
 ]
-
-const $switchInner: ThemedStyle<ViewStyle> = ({ colors }) => ({
-  borderColor: colors.transparent,
-  position: "absolute",
-  paddingStart: 4,
-  paddingEnd: 4,
-})
 
 const $switchDetail: SwitchToggleProps["inputDetailStyle"] = {
   borderRadius: 12,

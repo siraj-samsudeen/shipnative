@@ -46,7 +46,7 @@ yarn app:web          # Run in browser
 
 ### Form Inputs
 - `TextField` - Text input with validation
-- `DatePicker` - Date/time selection with calendar
+- `DatePicker` - Native date/time pickers (iOS/Android/Web)
 - `FilePicker` - Image and document uploads
 - `Toggle`, `Switch`, `Checkbox`, `Radio` - Toggle controls
 
@@ -63,6 +63,33 @@ yarn app:web          # Run in browser
 ### Feedback
 - `Toast`, `Spinner`, `Skeleton`, `EmptyState`
 
+### Business Components
+- `PricingCard` - Subscription pricing display with features list (uses Ionicons for checkmarks)
+- `SubscriptionStatus` - User subscription status display (uses Ionicons for plan icons)
+
+## Subscription Features
+
+### Helper Functions (from `@/utils/subscriptionHelpers`)
+- `formatLocalizedPrice()` - Format prices with proper currency/locale
+- `calculateSavings()` - Calculate percentage savings between prices
+- `getPromotionalOfferText()` - Generate promo copy (e.g., "7 days free, then $9.99/mo")
+- `formatExpirationStatus()` - Relative expiration dates (e.g., "Renews in 5 days")
+- `detectLifecycleEvent()` - Detect subscription state changes
+- `getDaysRemaining()` - Calculate days until expiration
+
+### Lifecycle Events
+Track subscription events via `useSubscriptionStore().addLifecycleListener()`:
+- `trial_started`, `trial_converted`, `trial_cancelled`
+- `subscription_started`, `subscription_renewed`, `subscription_cancelled`
+- `subscription_expired`, `subscription_restored`
+- `billing_issue`
+
+### Package Data
+All packages include promotional pricing when configured in RevenueCat:
+- `freeTrialPeriod` - e.g., "7 days"
+- `introPriceString` - e.g., "$0.99"
+- `introPricePeriod` - e.g., "1 month"
+
 ## Detailed Docs (in `vibe/`)
 
 | Topic | File |
@@ -74,6 +101,7 @@ yarn app:web          # Run in browser
 | Auth & database | `vibe/SUPABASE.md` |
 | Realtime (chat, presence) | `vibe/SUPABASE.md` (Realtime Hooks section) |
 | Payments | `vibe/MONETIZATION.md` |
+| Advanced subscriptions | `vibe/SUBSCRIPTION_ADVANCED.md` |
 | CI/CD workflows | `.github/workflows/` |
 
 ## Platform Support

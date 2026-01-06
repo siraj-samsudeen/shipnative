@@ -1,5 +1,5 @@
-import { useCallback, useState } from "react"
-import { View, ViewStyle, Pressable, Image, Alert } from "react-native"
+import { useCallback, useState, useEffect } from "react"
+import { View, ViewStyle, Pressable, Image, Alert, Platform, Linking } from "react-native"
 import * as DocumentPicker from "expo-document-picker"
 import * as ImagePicker from "expo-image-picker"
 import { Ionicons } from "@expo/vector-icons"
@@ -17,6 +17,12 @@ import { SPRING_CONFIG } from "@/utils/animations"
 import { logger } from "@/utils/Logger"
 
 import { Text, TextProps } from "./Text"
+
+// =============================================================================
+// PERMISSION STATUS
+// =============================================================================
+
+type PermissionStatus = "granted" | "denied" | "undetermined" | "not_configured"
 
 // =============================================================================
 // TYPES
@@ -140,6 +146,31 @@ const getFileIcon = (type: string): keyof typeof Ionicons.glyphMap => {
   return "document-outline"
 }
 
+/**
+ * Check if photo library permissions are configured
+ * Returns the current permission status
+ * iOS: Checks for NSPhotoLibraryUsageDescription in Info.plist
+ * Android: Checks for READ_MEDIA_IMAGES/READ_EXTERNAL_STORAGE in AndroidManifest.xml
+ */
+const checkPhotoPermissions = async (): Promise<PermissionStatus> => {
+  // Web doesn't need permissions
+  if (Platform.OS === "web") return "granted"
+
+  try {
+    const { status } = await ImagePicker.getMediaLibraryPermissionsAsync()
+
+    // Map expo status to our status type
+    if (status === "granted") return "granted"
+    if (status === "denied") return "denied"
+    return "undetermined"
+  } catch (error) {
+    // If there's an error checking permissions, it likely means
+    // the permission keys are not configured (iOS: Info.plist, Android: AndroidManifest.xml)
+    logger.warn("Photo library permission check failed - may not be configured", { error })
+    return "not_configured"
+  }
+}
+
 // =============================================================================
 // COMPONENT
 // =============================================================================
@@ -202,8 +233,23 @@ export function FilePicker(props: FilePickerProps) {
 
   const { theme } = useUnistyles()
   const [isLoading, setIsLoading] = useState(false)
+  const [permissionStatus, setPermissionStatus] = useState<PermissionStatus>("undetermined")
+  const [showPermissionWarning, setShowPermissionWarning] = useState(false)
 
   const scale = useSharedValue(1)
+
+  // Check permissions on mount for image file types
+  useEffect(() => {
+    if (fileType === "image" || fileType === "any") {
+      checkPhotoPermissions().then((status) => {
+        setPermissionStatus(status)
+        // Show warning if not configured (this catches missing Info.plist keys)
+        if (status === "not_configured") {
+          setShowPermissionWarning(true)
+        }
+      })
+    }
+  }, [fileType])
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
@@ -247,17 +293,50 @@ export function FilePicker(props: FilePickerProps) {
     [maxFileSize, allowedExtensions],
   )
 
+  const showPermissionSetupAlert = useCallback(() => {
+    const setupMessage = Platform.select({
+      ios: "To use the image picker, add NSPhotoLibraryUsageDescription to your Info.plist and rebuild the app.\n\nSee the expo-image-picker docs for setup instructions.",
+      android: "To use the image picker, ensure READ_MEDIA_IMAGES permission is in your AndroidManifest.xml (added automatically by expo-image-picker plugin).\n\nRun 'npx expo prebuild --clean' to regenerate the native project.",
+      default: "To use the image picker, ensure your app has the required permissions configured.\n\nSee the expo-image-picker docs for setup instructions.",
+    })
+
+    Alert.alert(
+      "Setup Required",
+      setupMessage,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Open Settings",
+          onPress: () => Linking.openSettings(),
+        },
+      ],
+    )
+  }, [])
+
   const pickImage = useCallback(async () => {
+    // If permissions aren't configured, show setup instructions
+    if (permissionStatus === "not_configured") {
+      showPermissionSetupAlert()
+      return
+    }
+
     try {
       // Request permissions
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
       if (status !== "granted") {
+        setPermissionStatus("denied")
         Alert.alert(
           "Permission Required",
           "Please allow access to your photo library to select images.",
+          [
+            { text: "Cancel", style: "cancel" },
+            { text: "Open Settings", onPress: () => Linking.openSettings() },
+          ],
         )
         return
       }
+
+      setPermissionStatus("granted")
 
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ["images"],
@@ -287,10 +366,18 @@ export function FilePicker(props: FilePickerProps) {
         }
       }
     } catch (err) {
-      logger.error("Error picking image", { error: err })
-      Alert.alert("Error", "Failed to pick image. Please try again.")
+      // Check if this is a permission configuration error
+      const errorMessage = err instanceof Error ? err.message : String(err)
+      if (errorMessage.includes("NSPhotoLibraryUsageDescription") || errorMessage.includes("Info.plist")) {
+        setPermissionStatus("not_configured")
+        setShowPermissionWarning(true)
+        showPermissionSetupAlert()
+      } else {
+        logger.error("Error picking image", { error: err })
+        Alert.alert("Error", "Failed to pick image. Please try again.")
+      }
     }
-  }, [multiple, maxFiles, value, onChange, validateFile])
+  }, [multiple, maxFiles, value, onChange, validateFile, permissionStatus, showPermissionSetupAlert])
 
   const pickDocument = useCallback(async () => {
     try {
@@ -361,11 +448,31 @@ export function FilePicker(props: FilePickerProps) {
   const hasError = !!error || !!errorTx
   const canAddMore = multiple ? value.length < maxFiles : value.length === 0
 
+  // Determine if the picker should be effectively disabled due to permission issues
+  const isPermissionBlocked = permissionStatus === "not_configured" || permissionStatus === "denied"
+  const effectivelyDisabled = disabled || (fileType === "image" && isPermissionBlocked)
+
   return (
     <View style={[styles.wrapper, style]} testID={testID}>
       {/* Label */}
       {(label || labelTx) && (
         <Text text={label} tx={labelTx} weight="medium" size="sm" style={styles.label} />
+      )}
+
+      {/* Permission Warning Banner */}
+      {showPermissionWarning && (fileType === "image" || fileType === "any") && (
+        <Pressable
+          style={styles.warningBanner}
+          onPress={showPermissionSetupAlert}
+        >
+          <Ionicons name="warning-outline" size={18} color={theme.colors.warning} />
+          <Text size="xs" style={styles.warningText}>
+            {permissionStatus === "not_configured"
+              ? "Photo permissions not configured. Tap for setup instructions."
+              : "Photo access denied. Tap to open settings."}
+          </Text>
+          <Ionicons name="chevron-forward" size={14} color={theme.colors.foregroundTertiary} />
+        </Pressable>
       )}
 
       {/* Pick Button */}
@@ -377,42 +484,56 @@ export function FilePicker(props: FilePickerProps) {
           disabled={disabled || isLoading}
           accessibilityRole="button"
           accessibilityLabel={label || "File picker"}
-          accessibilityState={{ disabled }}
+          accessibilityState={{ disabled: effectivelyDisabled }}
         >
           <Animated.View
             style={[
               compact ? styles.inputCompact : styles.input,
               hasError && styles.inputError,
-              disabled && styles.inputDisabled,
+              effectivelyDisabled && styles.inputDisabled,
               animatedStyle,
             ]}
           >
-            <View style={styles.inputContent}>
-              <View style={[styles.iconContainer, compact && styles.iconContainerCompact]}>
+            <View style={[styles.inputContent, compact && styles.inputContentCompact]}>
+              <View
+                style={[
+                  styles.iconContainer,
+                  compact && styles.iconContainerCompact,
+                  { backgroundColor: fileType === "image" ? theme.colors.palette.primary100 : theme.colors.palette.secondary100 },
+                ]}
+              >
                 <Ionicons
-                  name={fileType === "image" ? "image-outline" : "cloud-upload-outline"}
-                  size={compact ? 20 : 32}
-                  color={theme.colors.foregroundSecondary}
+                  name={fileType === "image" ? "image-outline" : "document-attach-outline"}
+                  size={compact ? 18 : 28}
+                  color={fileType === "image" ? theme.colors.palette.primary500 : theme.colors.palette.secondary500}
                 />
               </View>
-              <Text
-                text={placeholder}
-                tx={placeholderTx}
-                size={compact ? "sm" : "base"}
-                style={styles.placeholder}
-              />
-              {!compact && (
+              <View style={compact ? styles.textContainerCompact : styles.textContainer}>
                 <Text
-                  text={
-                    fileType === "image"
-                      ? "PNG, JPG, GIF up to 10MB"
-                      : fileType === "document"
-                        ? "PDF, DOC, XLS up to 10MB"
-                        : "Any file type up to 10MB"
-                  }
-                  size="xs"
-                  style={styles.hint}
+                  text={placeholder}
+                  tx={placeholderTx}
+                  size={compact ? "sm" : "base"}
+                  weight="medium"
+                  style={styles.placeholder}
                 />
+                {!compact && (
+                  <Text
+                    text={
+                      fileType === "image"
+                        ? "PNG, JPG, GIF up to 10MB"
+                        : fileType === "document"
+                          ? "PDF, DOC, XLS up to 10MB"
+                          : "Any file type up to 10MB"
+                    }
+                    size="xs"
+                    style={styles.hint}
+                  />
+                )}
+              </View>
+              {!compact && (
+                <View style={styles.browseButton}>
+                  <Text text="Browse" size="sm" weight="semiBold" style={styles.browseText} />
+                </View>
               )}
             </View>
           </Animated.View>
@@ -460,7 +581,7 @@ export function FilePicker(props: FilePickerProps) {
                   style={styles.removeButton}
                   hitSlop={8}
                 >
-                  <Ionicons name="close-circle" size={20} color={theme.colors.foregroundTertiary} />
+                  <Ionicons name="close" size={16} color={theme.colors.foregroundSecondary} />
                 </Pressable>
               )}
             </Animated.View>
@@ -502,25 +623,42 @@ const styles = StyleSheet.create((theme) => ({
     marginBottom: theme.spacing.xs,
     color: theme.colors.foreground,
   },
-  input: {
+  warningBanner: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: theme.spacing.xl,
+    gap: theme.spacing.sm,
+    paddingVertical: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.md,
+    backgroundColor: theme.colors.palette.accent100,
+    borderRadius: theme.radius.md,
+    marginBottom: theme.spacing.sm,
+    borderWidth: 1,
+    borderColor: theme.colors.palette.accent200,
+  },
+  warningText: {
+    flex: 1,
+    color: theme.colors.palette.accent500,
+  },
+  input: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: theme.spacing.lg,
     paddingHorizontal: theme.spacing.lg,
-    backgroundColor: theme.colors.backgroundSecondary,
-    borderWidth: 2,
+    backgroundColor: theme.colors.card,
+    borderWidth: 1,
     borderStyle: "dashed",
     borderColor: theme.colors.border,
-    borderRadius: theme.radius.lg,
+    borderRadius: theme.radius.xl,
+    ...theme.shadows.sm,
   },
   inputCompact: {
     flexDirection: "row",
     alignItems: "center",
     height: theme.sizes.input.md,
     paddingHorizontal: theme.spacing.md,
-    backgroundColor: theme.colors.input,
+    backgroundColor: theme.colors.card,
     borderWidth: 1,
-    borderColor: theme.colors.inputBorder,
+    borderColor: theme.colors.border,
     borderRadius: theme.radius.lg,
     gap: theme.spacing.sm,
   },
@@ -531,29 +669,47 @@ const styles = StyleSheet.create((theme) => ({
     opacity: 0.5,
   },
   inputContent: {
+    flex: 1,
+    flexDirection: "row",
     alignItems: "center",
+    gap: theme.spacing.md,
+  },
+  inputContentCompact: {
     gap: theme.spacing.sm,
   },
   iconContainer: {
-    width: 64,
-    height: 64,
+    width: 56,
+    height: 56,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: theme.colors.background,
-    borderRadius: theme.radius.full,
+    borderRadius: theme.radius.lg,
   },
   iconContainerCompact: {
-    width: 32,
-    height: 32,
-    backgroundColor: "transparent",
+    width: 36,
+    height: 36,
+    borderRadius: theme.radius.md,
+  },
+  textContainer: {
+    flex: 1,
+    gap: theme.spacing.xxs,
+  },
+  textContainerCompact: {
+    flex: 1,
   },
   placeholder: {
-    color: theme.colors.foregroundSecondary,
-    textAlign: "center",
+    color: theme.colors.foreground,
   },
   hint: {
     color: theme.colors.foregroundTertiary,
-    textAlign: "center",
+  },
+  browseButton: {
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+    backgroundColor: theme.colors.foreground,
+    borderRadius: theme.radius.md,
+  },
+  browseText: {
+    color: theme.colors.card,
   },
   filesContainer: {
     marginTop: theme.spacing.md,
@@ -562,36 +718,42 @@ const styles = StyleSheet.create((theme) => ({
   fileItem: {
     flexDirection: "row",
     alignItems: "center",
-    padding: theme.spacing.sm,
+    padding: theme.spacing.md,
     backgroundColor: theme.colors.card,
-    borderRadius: theme.radius.md,
+    borderRadius: theme.radius.lg,
     borderWidth: 1,
     borderColor: theme.colors.border,
-    gap: theme.spacing.sm,
+    gap: theme.spacing.md,
+    ...theme.shadows.sm,
   },
   preview: {
-    width: 48,
-    height: 48,
-    borderRadius: theme.radius.md,
+    width: 52,
+    height: 52,
+    borderRadius: theme.radius.lg,
     backgroundColor: theme.colors.backgroundSecondary,
   },
   fileIconContainer: {
-    width: 48,
-    height: 48,
+    width: 52,
+    height: 52,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: theme.colors.backgroundSecondary,
-    borderRadius: theme.radius.md,
+    backgroundColor: theme.colors.palette.secondary100,
+    borderRadius: theme.radius.lg,
   },
   fileInfo: {
     flex: 1,
-    gap: 2,
+    gap: theme.spacing.xxs,
   },
   fileSize: {
     color: theme.colors.foregroundTertiary,
   },
   removeButton: {
-    padding: theme.spacing.xs,
+    width: 32,
+    height: 32,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: theme.radius.full,
+    backgroundColor: theme.colors.backgroundSecondary,
   },
   fileCount: {
     marginTop: theme.spacing.xs,

@@ -1,5 +1,6 @@
-import { I18nManager } from "react-native"
+import { I18nManager, Platform } from "react-native"
 import i18n from "i18next"
+import * as Updates from "expo-updates"
 
 import { loadDateFnsLocale } from "@/utils/formatDate"
 import { logger } from "@/utils/Logger"
@@ -72,11 +73,25 @@ export const changeLanguage = async (
 
   // Update RTL support
   const isRTL = languageCode === "ar"
+  const wasRTL = I18nManager.isRTL
   I18nManager.allowRTL(isRTL)
   I18nManager.forceRTL(isRTL)
 
   // Reload date-fns locale
   await loadDateFnsLocale()
+
+  // RTL changes require app restart on native platforms
+  if (Platform.OS !== "web" && wasRTL !== isRTL) {
+    // Small delay to allow storage to persist before reload
+    await new Promise((resolve) => setTimeout(resolve, 100))
+
+    try {
+      // expo-updates works in both dev and production with Expo SDK 54+
+      await Updates.reloadAsync()
+    } catch (error) {
+      logger.warn("RTL change requires app restart. Please restart the app manually.", { error })
+    }
+  }
 }
 
 /**

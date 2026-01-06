@@ -9,6 +9,29 @@ export type SubscriptionPlatform = "revenuecat" | "revenuecat-web" | "mock"
 
 export type SubscriptionStatus = "active" | "cancelled" | "expired" | "trial" | "none"
 
+/**
+ * Subscription lifecycle events
+ */
+export type SubscriptionLifecycleEvent =
+  | "trial_started"
+  | "trial_converted"
+  | "trial_cancelled"
+  | "subscription_started"
+  | "subscription_renewed"
+  | "subscription_cancelled"
+  | "subscription_expired"
+  | "subscription_paused"
+  | "subscription_restored"
+  | "billing_issue"
+
+export interface SubscriptionLifecycleData {
+  event: SubscriptionLifecycleEvent
+  timestamp: string
+  productId: string | null
+  expirationDate: string | null
+  cancellationReason?: string
+}
+
 export interface SubscriptionInfo {
   platform: SubscriptionPlatform
   status: SubscriptionStatus
@@ -17,6 +40,13 @@ export interface SubscriptionInfo {
   willRenew: boolean
   isActive: boolean
   isTrial: boolean
+  // Enhanced fields
+  introPrice?: string | null // Introductory pricing (e.g., "$0.99 for first month")
+  introPricePeriod?: string | null // "1 month", "3 months", etc.
+  freeTrialPeriod?: string | null // "7 days", "14 days", etc.
+  originalPurchaseDate?: string | null
+  billingIssueDetectedAt?: string | null
+  gracePeriodExpiresAt?: string | null
 }
 
 export interface PricingPackage {
@@ -31,6 +61,15 @@ export interface PricingPackage {
   platform: SubscriptionPlatform
   // Platform-specific data
   platformData?: unknown
+  // Enhanced pricing information
+  introPrice?: number | null // Intro price amount (e.g., 0.99)
+  introPriceString?: string | null // Formatted intro price (e.g., "$0.99")
+  introPricePeriod?: string | null // "1 month", "3 months"
+  introPricePeriodUnit?: "day" | "week" | "month" | "year" | null
+  introPricePeriodCount?: number | null // Number of periods (e.g., 3 for "3 months")
+  freeTrialPeriod?: string | null // Formatted trial period (e.g., "7 days")
+  freeTrialPeriodUnit?: "day" | "week" | "month" | "year" | null
+  freeTrialPeriodCount?: number | null
 }
 
 export interface SubscriptionService {
@@ -66,6 +105,7 @@ export interface SubscriptionService {
 
   // Listeners
   addSubscriptionUpdateListener?(listener: (info: SubscriptionInfo) => void): () => void
+  addLifecycleEventListener?(listener: (event: SubscriptionLifecycleData) => void): () => void
 }
 
 /**

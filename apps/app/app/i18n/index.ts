@@ -4,6 +4,8 @@ import i18n from "i18next"
 import { initReactI18next } from "react-i18next"
 import "intl-pluralrules"
 
+import { storage } from "@/utils/storage"
+
 // if English isn't your default language, move Translations to the appropriate language file.
 import ar from "./ar"
 import en, { Translations } from "./en"
@@ -14,6 +16,8 @@ import ja from "./ja"
 import ko from "./ko"
 
 const fallbackLocale = "en-US"
+const LANGUAGE_STORAGE_KEY = "app_language"
+const RTL_LANGUAGES = ["ar"] // Languages that use RTL layout
 
 const systemLocales = Localization.getLocales()
 
@@ -33,22 +37,33 @@ const pickSupportedLocale: () => Localization.Locale | undefined = () => {
 
 const locale = pickSupportedLocale()
 
-export let isRTL = false
+// Determine the initial language - check persisted preference first, then device locale
+const getInitialLanguage = (): string => {
+  try {
+    const persistedLanguage = storage.getString(LANGUAGE_STORAGE_KEY)
+    if (persistedLanguage && supportedTags.includes(persistedLanguage)) {
+      return persistedLanguage
+    }
+  } catch {
+    // Storage not available, fall back to device locale
+  }
+  return locale?.languageTag?.split("-")[0] ?? fallbackLocale.split("-")[0]
+}
+
+const initialLanguage = getInitialLanguage()
+export let isRTL = RTL_LANGUAGES.includes(initialLanguage)
 
 // Need to set RTL ASAP to ensure the app is rendered correctly. Waiting for i18n to init is too late.
-if (locale?.languageTag && locale?.textDirection === "rtl") {
-  I18nManager.allowRTL(true)
-  isRTL = true
-} else {
-  I18nManager.allowRTL(false)
-}
+// Must call both allowRTL and forceRTL for the change to take effect
+I18nManager.allowRTL(isRTL)
+I18nManager.forceRTL(isRTL)
 
 // Initialize i18n synchronously at module load time
 // This ensures useTranslation hook always has a valid i18n instance
 // and prevents hook order violations during initial render
 i18n.use(initReactI18next).init({
   resources,
-  lng: locale?.languageTag ?? fallbackLocale,
+  lng: initialLanguage,
   fallbackLng: fallbackLocale,
   interpolation: {
     escapeValue: false,
@@ -64,7 +79,7 @@ export const initI18n = async () => {
   if (!i18n.isInitialized) {
     await i18n.init({
       resources,
-      lng: locale?.languageTag ?? fallbackLocale,
+      lng: initialLanguage,
       fallbackLng: fallbackLocale,
       interpolation: {
         escapeValue: false,

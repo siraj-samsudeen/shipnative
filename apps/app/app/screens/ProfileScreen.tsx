@@ -1,14 +1,9 @@
-import { FC, ReactNode, useState } from "react"
+import { FC, useState } from "react"
 import { ScrollView, Switch, Pressable, View, Platform, useWindowDimensions } from "react-native"
 import { LinearGradient } from "expo-linear-gradient"
 import { Ionicons } from "@expo/vector-icons"
 import { useTranslation } from "react-i18next"
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-  FadeInDown,
-} from "react-native-reanimated"
+import Animated, { FadeInDown } from "react-native-reanimated"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { StyleSheet, useUnistyles } from "react-native-unistyles"
 
@@ -19,12 +14,15 @@ import {
   Text,
   EditProfileModal,
   LanguageSelector,
+  MenuItem,
 } from "@/components"
 import { ANIMATION } from "@/config/constants"
 import { features } from "@/config/features"
 import type { MainTabScreenProps } from "@/navigators/navigationTypes"
+import { isRevenueCatMock } from "@/services/revenuecat"
+import { mockRevenueCat } from "@/services/mocks/revenueCat"
 import { useAuthStore, useNotificationStore, useSubscriptionStore, useWidgetStore } from "@/stores"
-import { useAppTheme } from "@/theme/context"
+import { UnistylesRuntime } from "react-native-unistyles"
 import { webDimension } from "@/types/webStyles"
 import { haptics } from "@/utils/haptics"
 import { testErrors } from "@/utils/testError"
@@ -35,11 +33,6 @@ import { testErrors } from "@/utils/testError"
 
 const isWeb = Platform.OS === "web"
 const CONTENT_MAX_WIDTH = 600
-
-const SPRING_CONFIG = {
-  damping: 15,
-  stiffness: 200,
-}
 
 // =============================================================================
 // TYPES
@@ -56,10 +49,10 @@ export const ProfileScreen: FC<ProfileScreenProps> = ({ navigation }) => {
   const user = useAuthStore((state) => state.user)
   const signOut = useAuthStore((state) => state.signOut)
   const isPro = useSubscriptionStore((state) => state.isPro)
+  const checkProStatus = useSubscriptionStore((state) => state.checkProStatus)
   const { isPushEnabled, togglePush } = useNotificationStore()
   const { isWidgetsEnabled, userWidgetsEnabled, toggleWidgets, syncStatus } = useWidgetStore()
   const insets = useSafeAreaInsets()
-  const { setThemeContextOverride, themeContext } = useAppTheme()
   const { theme } = useUnistyles()
   const { width: windowWidth } = useWindowDimensions()
 
@@ -85,7 +78,8 @@ export const ProfileScreen: FC<ProfileScreenProps> = ({ navigation }) => {
 
   const toggleThemeMode = () => {
     haptics.switchChange()
-    setThemeContextOverride(themeContext === "dark" ? "light" : "dark")
+    const newTheme = UnistylesRuntime.themeName === "dark" ? "light" : "dark"
+    UnistylesRuntime.setTheme(newTheme)
   }
 
   const handleTogglePush = () => {
@@ -103,63 +97,12 @@ export const ProfileScreen: FC<ProfileScreenProps> = ({ navigation }) => {
     await signOut()
   }
 
-  const MenuItem = ({
-    icon,
-    title,
-    subtitle,
-    onPress,
-    rightElement,
-  }: {
-    icon: keyof typeof Ionicons.glyphMap
-    title: string
-    subtitle?: string
-    onPress?: () => void
-    rightElement?: ReactNode
-  }) => {
-    const scale = useSharedValue(1)
-
-    const handlePressIn = () => {
-      if (onPress) {
-        scale.value = withSpring(0.98, SPRING_CONFIG)
-      }
-    }
-
-    const handlePressOut = () => {
-      scale.value = withSpring(1, SPRING_CONFIG)
-    }
-
-    const handlePress = () => {
-      if (onPress) {
-        haptics.listItemPress()
-        onPress()
-      }
-    }
-
-    const animatedStyle = useAnimatedStyle(() => ({
-      transform: [{ scale: scale.value }],
-    }))
-
-    return (
-      <Pressable
-        onPress={handlePress}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
-        disabled={!onPress}
-      >
-        <Animated.View style={[styles.menuItem, animatedStyle]}>
-          <View style={styles.menuIconBox}>
-            <Ionicons name={icon} size={22} color={theme.colors.foreground} />
-          </View>
-          <View style={styles.menuContent}>
-            <Text style={styles.menuTitle}>{title}</Text>
-            {subtitle ? <Text style={styles.menuSubtitle}>{subtitle}</Text> : null}
-          </View>
-          {rightElement || (
-            <Ionicons name="chevron-forward" size={20} color={theme.colors.foregroundTertiary} />
-          )}
-        </Animated.View>
-      </Pressable>
-    )
+  const handleMockToggleSubscription = () => {
+    haptics.switchChange()
+    // Toggle the mock subscription status
+    mockRevenueCat.setProStatus(!isPro)
+    // Refresh the subscription store to reflect the change
+    checkProStatus()
   }
 
   return (
@@ -202,6 +145,9 @@ export const ProfileScreen: FC<ProfileScreenProps> = ({ navigation }) => {
                   <View style={styles.proBadge}>
                     <Ionicons name="diamond" size={12} color={theme.colors.background} />
                     <Text style={styles.proText} tx="profileScreen:proBadge" />
+                    {isRevenueCatMock && (
+                      <Text style={styles.mockBadge}> (Mock)</Text>
+                    )}
                   </View>
                 ) : (
                   <Pressable
@@ -252,7 +198,7 @@ export const ProfileScreen: FC<ProfileScreenProps> = ({ navigation }) => {
               title={t("profileScreen:darkMode")}
               rightElement={
                 <Switch
-                  value={themeContext === "dark"}
+                  value={UnistylesRuntime.themeName === "dark"}
                   onValueChange={toggleThemeMode}
                   trackColor={{ false: theme.colors.borderSecondary, true: theme.colors.primary }}
                   thumbColor={theme.colors.card}
@@ -319,6 +265,31 @@ export const ProfileScreen: FC<ProfileScreenProps> = ({ navigation }) => {
                 entering={FadeInDown.delay(ANIMATION.STAGGER_DELAY * 4).springify()}
                 style={styles.menuGroup}
               >
+                {isRevenueCatMock && (
+                  <>
+                    <MenuItem
+                      icon="diamond-outline"
+                      title={isPro ? "Unsubscribe (Mock)" : "Subscribe (Mock)"}
+                      subtitle={
+                        isPro
+                          ? "Toggle off mock Pro subscription"
+                          : "Toggle on mock Pro subscription"
+                      }
+                      rightElement={
+                        <Switch
+                          value={isPro}
+                          onValueChange={handleMockToggleSubscription}
+                          trackColor={{
+                            false: theme.colors.borderSecondary,
+                            true: theme.colors.palette.success500,
+                          }}
+                          thumbColor={theme.colors.card}
+                        />
+                      }
+                    />
+                    <View style={styles.divider} />
+                  </>
+                )}
                 <MenuItem
                   icon="bug-outline"
                   title={t("profileScreen:testSentryError")}
@@ -526,7 +497,14 @@ const styles = StyleSheet.create((theme) => ({
     fontFamily: theme.typography.fonts.semiBold,
     fontSize: 12,
     lineHeight: 14,
-  },
+  } as const,
+  mockBadge: {
+    color: theme.colors.background,
+    fontFamily: theme.typography.fonts.regular,
+    fontSize: 10,
+    lineHeight: 14,
+    opacity: 0.7,
+  } as const,
   upgradeButton: {
     alignSelf: "flex-start",
     backgroundColor: theme.colors.primary,

@@ -12,10 +12,9 @@ import {
   ViewProps,
   ViewStyle,
 } from "react-native"
+import { StyleSheet, useUnistyles } from "react-native-unistyles"
 
-import { useAppTheme } from "@/theme/context"
 import { $styles } from "@/theme/styles"
-import type { ThemedStyle } from "@/theme/types"
 
 import { Text, TextProps } from "../Text"
 
@@ -144,8 +143,7 @@ export function Toggle<T>(props: ToggleProps<T>) {
 
   const {
     theme: { colors },
-    themed,
-  } = useAppTheme()
+  } = useUnistyles()
 
   const disabled = editable === false || status === "disabled" || props.disabled
 
@@ -157,7 +155,7 @@ export function Toggle<T>(props: ToggleProps<T>) {
   const $containerStyles = [$containerStyleOverride]
   const $inputWrapperStyles = [$styles.row, $inputWrapper, $inputWrapperStyleOverride]
   const $helperStyles = [
-    themed($helper),
+    { marginTop: 8 }, // theme.spacing.xs
     status === "error" && { color: colors.error },
     HelperTextProps?.style,
   ]
@@ -226,16 +224,15 @@ function FieldLabel<T>(props: ToggleProps<T>) {
 
   const {
     theme: { colors },
-    themed,
-  } = useAppTheme()
+  } = useUnistyles()
 
   if (!label && !labelTx && !LabelTextProps?.children) return null
 
   const $labelStyle = [
     $label,
-    themed(status === "error" ? () => ({ color: colors.error }) : () => ({})),
-    labelPosition === "right" && themed($labelRight),
-    labelPosition === "left" && themed($labelLeft),
+    status === "error" && { color: colors.error },
+    labelPosition === "right" && $labelRight,
+    labelPosition === "left" && $labelLeft,
     $labelStyleOverride,
     LabelTextProps?.style,
   ]
@@ -250,6 +247,14 @@ function FieldLabel<T>(props: ToggleProps<T>) {
       style={$labelStyle}
     />
   )
+}
+
+const $labelRight: TextStyle = {
+  marginStart: 16, // theme.spacing.md
+}
+
+const $labelLeft: TextStyle = {
+  marginEnd: 16, // theme.spacing.md
 }
 
 const $inputWrapper: ViewStyle = {
@@ -268,18 +273,6 @@ export const $inputOuterBase: ViewStyle = {
   flexDirection: "row",
 }
 
-const $helper: ThemedStyle<TextStyle> = ({ spacing }) => ({
-  marginTop: spacing.xs,
-})
-
 const $label: TextStyle = {
   flex: 1,
 }
-
-const $labelRight: ThemedStyle<TextStyle> = ({ spacing }) => ({
-  marginStart: spacing.md,
-})
-
-const $labelLeft: ThemedStyle<TextStyle> = ({ spacing }) => ({
-  marginEnd: spacing.md,
-})

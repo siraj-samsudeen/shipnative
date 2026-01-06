@@ -116,7 +116,10 @@ const en = {
     // Badge text is typically dynamic, but we can add common ones if needed
   },
   tabs: {
-    // Tab titles are typically dynamic, passed as props
+    home: "Home",
+    components: "Components",
+    pro: "Pro",
+    profile: "Profile",
   },
   authScreenLayout: {
     closeButton: "Close",
