@@ -10,6 +10,8 @@ yarn app:android      # Run on Android emulator
 yarn app:web          # Run in browser
 ```
 
+Make sure the code you write is compliant with App Store and play store policies.
+
 ## Tech Stack
 
 ### ALWAYS USE

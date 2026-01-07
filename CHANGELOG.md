@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed - App Store Compliance
+- **iOS Privacy Manifest**: Added proper data collection declarations
+  - Declares `NSPrivacyCollectedDataTypeProductInteraction` for PostHog analytics
+  - Declares `NSPrivacyCollectedDataTypeCrashData` for Sentry error tracking
+  - Both marked as not linked to user and not used for tracking
+  - Purposes: Analytics and App Functionality
+  - Complies with iOS 17+ privacy requirements (App Review Guideline 5.1.1)
+- **Android Permissions**: Removed `SYSTEM_ALERT_WINDOW` from production builds
+  - Permission now debug-only (for React Native dev overlay)
+  - Already properly isolated in `android/app/src/debug/AndroidManifest.xml`
+  - Prevents unnecessary permission request in production
+
 ### Changed - Unistyles Migration
 - **Single Theme System**: Migrated entire boilerplate to use Unistyles exclusively
   - Removed dual theme system (old custom theme + Unistyles)
