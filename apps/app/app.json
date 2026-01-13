@@ -1,7 +1,7 @@
 {
-  "name": "reactnativestarterkit",
-  "slug": "reactnativestarterkit",
-  "scheme": "shipnative",
+  "name": "Calm Do",
+  "slug": "calmdo",
+  "scheme": "calmdo",
   "version": "1.0.0",
   "orientation": "portrait",
   "userInterfaceStyle": "automatic",
